@@ -45,13 +45,14 @@
     const diff = score - INITIAL_BANK;
     const delta = diff >= 0 ? `+${fmt(diff)}` : fmt(diff);
     const usedAll = drawsLeft <= 0;
+    const manual = reason === '途中終了。';
     const why = reason || (usedAll ? '150回のくじが終了。' : '所持コインが100未満になり終了。');
     ticketEl.textContent = 'FINISH';
     messageEl.textContent = `${why} 最終スコアは ${fmt(score)}。`;
     vibrate([120, 60, 120, 60, 240]);
     renderCount();
     render();
-    showOverlay('good', usedAll ? '150 DRAWS FINISH' : 'COIN OUT', `${why}\n最終総コイン：${fmt(score)}\n初期5,000から：${delta}`, `SCORE ${fmt(score)}`);
+    showOverlay('good', usedAll ? '150 DRAWS FINISH' : manual ? 'GAME FINISH' : 'COIN OUT', `${why}\n最終総コイン：${fmt(score)}\n初期5,000から：${delta}`, `SCORE ${fmt(score)}`);
   }
 
   function maybeFinishAfterResolution() {
@@ -439,36 +440,15 @@
     maybeFinishAfterResolution();
   }
 
-  function resetGame() {
-    bank = INITIAL_BANK;
-    pot = 0;
-    streak = 0;
-    locked = false;
-    currentDoubleChance = .5;
-    currentHint = null;
-    currentHintType = 'none';
-    history = [];
-    hiddenMode = 'cold';
-    hiddenTurns = 8;
-    atActive = false;
-    atHitRate = 0;
-    atDoubleRate = 0;
-    atRound = 0;
-    drawsLeft = MAX_DRAWS;
-    gameOver = false;
-    historyList.innerHTML = '<span class="tag">まだ記録なし</span>';
-    ticketEl.textContent = 'LOTTERY';
-    messageEl.textContent = '100コインでくじを1枚引けます。残り150回。';
-    countdownEl.textContent = '';
-    hideOverlay();
-    clearHint();
-    render();
+  function endGameFromButton() {
+    if (gameOver || locked) return;
+    finishGame('途中終了。');
   }
 
   drawBtn.addEventListener('click', drawLottery);
   doubleBtn.addEventListener('click', doDoubleUp);
   takeBtn.addEventListener('click', takePrize);
-  resetBtn.addEventListener('click', resetGame);
+  resetBtn.addEventListener('click', endGameFromButton);
   overlayClose.addEventListener('click', hideOverlay);
   overlay.addEventListener('click', (e) => { if (e.target === overlay) hideOverlay(); });
 
