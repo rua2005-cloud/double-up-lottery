@@ -85,7 +85,7 @@
       atStat.className = 'stat at-on';
       atBanner.classList.add('active');
       atMain.textContent = `AT中 (${atRound}回成功)`;
-      atSub.textContent = '無料抽選 / ハズレを引くとAT終了';
+      atSub.textContent = '無料抽選 / ハズレ・ダブルアップ失敗・賞金受取でAT終了';
       atBadge.textContent = 'AT';
     } else {
       atView.textContent = '通常状態';
@@ -318,7 +318,7 @@
 
     if (enteredATNow) {
       vibrate([80,40,120,40,180]);
-      showOverlay('good', 'AT突入', 'ボーナスタイム突入！\nAT中は無料抽選。ハズレを引くまで継続します。\n示唆はATが60%か80%かを推測する内容に切り替わります。', 'BONUS TIME');
+      showOverlay('good', 'AT突入', 'ボーナスタイム突入！\nAT中は無料抽選。ハズレ・ダブルアップ失敗・賞金受取で終了します。\n示唆はATが60%か80%かを推測する内容に切り替わります。', 'BONUS TIME');
       messageEl.textContent += ' さらにAT突入！';
     } else if (usedAT) {
       if (prize > 0) { atRound++; messageEl.textContent += ' AT継続！'; }
@@ -379,14 +379,25 @@
   function takePrize() {
     if (gameOver || pot <= 0 || locked) return;
     const amount = pot;
+    const usedAT = atActive;
     bank += pot;
     pot = 0;
     streak = 0;
     ticketEl.textContent = 'GET!';
-    messageEl.textContent = `${fmt(amount)}コインを受け取りました。`;
-    clearHint();
+
+    if (usedAT) {
+      endAT();
+      clearHint();
+      messageEl.textContent = `${fmt(amount)}コインを受け取り、AT終了。`;
+      vibrate([80,40,160]);
+      showOverlay('overlay-blue', 'AT終了', '賞金を受け取ったためAT終了。AT用の示唆も終了しました。', `${fmt(amount)} COIN GET`);
+    } else {
+      clearHint();
+      messageEl.textContent = `${fmt(amount)}コインを受け取りました。`;
+      showOverlay('green', 'GET!', '賞金を安全に受け取りました。', `${fmt(amount)} COIN`);
+    }
+
     flash('win');
-    showOverlay('green', 'GET!', atActive ? '賞金を受け取りました。ATは継続中です。示唆は次の当選までありません。' : '賞金を安全に受け取りました。', `${fmt(amount)} COIN`);
     render();
   }
 
