@@ -1,0 +1,147 @@
+name: Patch 150 draw mode
+
+on:
+  push:
+    paths:
+      - '.github/workflows/patch-150-draws.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Convert timer to draw counter
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          p = Path('game.js')
+          s = p.read_text(encoding='utf-8')
+
+          s = s.replace('let bank = 10000, pot = 0, streak = 0, locked = false;', 'let bank = 5000, pot = 0, streak = 0, locked = false;', 1)
+
+          start = s.index('  const DURATION = 3 * 60 * 1000;')
+          end = s.index('\n\n  function createParticles()', start)
+          new_block = '''  const MAX_DRAWS = 150;
+  let drawsLeft = MAX_DRAWS, gameOver = false;
+
+  function renderDraws() {
+    timerEl.textContent = String(drawsLeft);
+    timeAttack.classList.toggle('running', !gameOver && drawsLeft < MAX_DRAWS);
+    timeAttack.classList.toggle('danger', !gameOver && drawsLeft <= 20);
+    timeSub.textContent = gameOver
+      ? 'GAME FINISH'
+      : drawsLeft === MAX_DRAWS
+        ? '150回のくじで勝負'
+        : drawsLeft > 0
+          ? `残り ${drawsLeft} 回`
+          : '最後の賞金を精算';
+  }
+  function finishGame() {
+    if (gameOver) return;
+    gameOver = true;
+    locked = false;
+    renderDraws();
+    const score = bank + pot;
+    const diff = score - 5000;
+    const delta = diff >= 0 ? `+${fmt(diff)}` : fmt(diff);
+    const usedAll = drawsLeft <= 0;
+    const title = usedAll ? '150 DRAWS FINISH' : 'COIN OUT';
+    const reason = usedAll ? '150回のくじが終了。' : '所持コインが100未満になり終了。';
+    ticketEl.textContent = 'FINISH';
+    messageEl.textContent = `${reason} 最終スコアは ${fmt(score)}。`;
+    vibrate([120, 60, 120, 60, 240]);
+    showOverlay('good', title, `${reason}\n最終総コイン：${fmt(score)}\n初期5,000から：${delta}`, `SCORE ${fmt(score)}`);
+    render();
+  }
+  function maybeFinishAfterResolution() {
+    if (gameOver || locked || pot > 0) return;
+    if (drawsLeft <= 0 || (!atActive && bank < 100)) finishGame();
+  }'''
+          s = s[:start] + new_block + s[end:]
+
+          s = s.replace("    drawBtn.disabled = gameOver || locked || pot > 0 || (!atActive && bank < 100);", "    drawBtn.disabled = gameOver || locked || pot > 0 || drawsLeft <= 0 || (!atActive && bank < 100);", 1)
+
+          s = s.replace("    startTimer();\n    const usedAT = atActive;", "    if (drawsLeft <= 0) return;\n    const usedAT = atActive;\n    drawsLeft--;\n    renderDraws();", 1)
+
+          # End the game after a resolved final draw/miss, but allow a final prize to be doubled or taken first.
+          needle = "    render();\n  }\n\n  async function doDoubleUp()"
+          repl = "    render();\n    maybeFinishAfterResolution();\n  }\n\n  async function doDoubleUp()"
+          assert needle in s
+          s = s.replace(needle, repl, 1)
+
+          needle = "    render();\n  }\n\n  function takePrize()"
+          repl = "    render();\n    maybeFinishAfterResolution();\n  }\n\n  function takePrize()"
+          assert needle in s
+          s = s.replace(needle, repl, 1)
+
+          needle = "    flash('win');\n    render();\n  }\n\n  function resetGame()"
+          repl = "    flash('win');\n    render();\n    maybeFinishAfterResolution();\n  }\n\n  function resetGame()"
+          assert needle in s
+          s = s.replace(needle, repl, 1)
+
+          old_reset = '''  function resetGame() {
+    if (timerId) { clearInterval(timerId); timerId = null; }
+    bank = 10000; pot = 0; streak = 0; locked = false;
+    currentDoubleChance = .5; currentHint = null; currentHintType = 'none'; history = [];
+    hiddenMode = 'cold'; hiddenTurns = 8; atActive = false; atHitRate = 0; atDoubleRate = 0; atRound = 0;
+    started = false; gameOver = false; endAt = 0;
+    historyList.innerHTML = '<span class="tag">まだ記録なし</span>';
+    ticketEl.textContent = 'LOTTERY';
+    messageEl.textContent = '100コインでくじを1枚引けます。';
+    countdownEl.textContent = '';
+    hideOverlay();
+    clearHint();
+    renderTimer(DURATION);
+    render();
+  }'''
+          new_reset = '''  function resetGame() {
+    bank = 5000; pot = 0; streak = 0; locked = false;
+    currentDoubleChance = .5; currentHint = null; currentHintType = 'none'; history = [];
+    hiddenMode = 'cold'; hiddenTurns = 8; atActive = false; atHitRate = 0; atDoubleRate = 0; atRound = 0;
+    drawsLeft = MAX_DRAWS; gameOver = false;
+    historyList.innerHTML = '<span class="tag">まだ記録なし</span>';
+    ticketEl.textContent = 'LOTTERY';
+    messageEl.textContent = '100コインでくじを1枚引けます。残り150回。';
+    countdownEl.textContent = '';
+    hideOverlay();
+    clearHint();
+    renderDraws();
+    render();
+  }'''
+          assert old_reset in s
+          s = s.replace(old_reset, new_reset, 1)
+          s = s.replace('  renderTimer(DURATION);\n  render();\n})();', '  renderDraws();\n  render();\n})();', 1)
+          p.write_text(s, encoding='utf-8')
+
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
+          s = s.replace('<title>DOUBLE UP LOTTERY - 3 MIN TIME ATTACK</title>', '<title>DOUBLE UP LOTTERY - 150 DRAW CHALLENGE</title>', 1)
+          s = s.replace('<div class="sub">3分でどこまで増やせるか。AT中はハズレるまで続く。</div>', '<div class="sub">150回のくじでどこまで増やせるか。ATで一撃を狙え。</div>', 1)
+          s = s.replace('<div class="time-label">3 MIN TIME ATTACK</div>', '<div class="time-label">LOTTERY COUNT</div>', 1)
+          s = s.replace('<div class="time-sub" id="timeSub">最初のくじでスタート</div>', '<div class="time-sub" id="timeSub">150回のくじで勝負</div>', 1)
+          s = s.replace('<div class="time-value" id="timerValue">3:00</div>', '<div class="time-value" id="timerValue">150</div>', 1)
+          s = s.replace('<div class="stat"><span>所持コイン</span><strong id="bank">10,000</strong></div>', '<div class="stat"><span>所持コイン</span><strong id="bank">5,000</strong></div>', 1)
+          old_rules = '''    <strong>3分タイムアタック</strong><br>
+    ・最初のくじを引いた瞬間に3:00からスタート。0:00でゲーム終了。<br>
+    ・スコアは終了時の「所持コイン＋未受取賞金」。<br>'''
+          new_rules = '''    <strong>150回チャレンジ</strong><br>
+    ・くじを引くたびに残り回数が1減り、150回で終了。<br>
+    ・最後のくじで当選した賞金は、受取またはダブルアップ失敗まで遊べます。<br>
+    ・所持コインが100未満になった場合は、その時点で終了。<br>
+    ・スコアは終了時の「所持コイン＋未受取賞金」。<br>'''
+          assert old_rules in s
+          s = s.replace(old_rules, new_rules, 1)
+          s = s.replace('game.js?v=18', 'game.js?v=19', 1)
+          p.write_text(s, encoding='utf-8')
+          PY
+      - name: Commit changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add game.js index.html
+          git commit -m "Switch to 150 draw challenge with 5000 coins"
+          git push
