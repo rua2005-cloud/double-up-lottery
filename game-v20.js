@@ -160,6 +160,8 @@
   function shouldEnterAT(prize) {
     if (atActive || prize === 0) return false;
     let p = hiddenMode === 'cold' ? .05 : .10;
+    // 100回消化後（101回目以降）はAT突入率を一律+5pt。
+    if (drawsLeft < 50) p += .05;
     if (prize >= 500) p += .08;
     if (prize >= 1000) p += .08;
     return Math.random() < p;
