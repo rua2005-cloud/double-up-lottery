@@ -1,1 +1,87 @@
-<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no"><meta name="theme-color" content="#020617"><meta name="apple-mobile-web-app-capable" content="yes"><title>DOUBLE UP LOTTERY</title><style>*{box-sizing:border-box}html,body{overscroll-behavior:none;-webkit-tap-highlight-color:transparent}body{margin:0;min-height:100dvh;padding:max(10px,env(safe-area-inset-top)) max(10px,env(safe-area-inset-right)) max(10px,env(safe-area-inset-bottom)) max(10px,env(safe-area-inset-left));font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:#f8fafc;background:radial-gradient(circle at 50% 0,#1e293b,#020617 60%);display:grid;place-items:center}.game{width:min(100%,760px);background:rgba(15,23,42,.95);border:1px solid #334155;border-radius:24px;padding:20px;box-shadow:0 24px 80px #0008}h1{margin:0;text-align:center;font-size:clamp(28px,8vw,46px);letter-spacing:.05em}.sub{text-align:center;color:#94a3b8;margin:5px 0 18px}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.stat{background:#ffffff0d;border-radius:14px;padding:12px;text-align:center}.stat small{display:block;color:#94a3b8}.stat b{font-size:21px}.at{display:none;margin:14px 0;padding:16px;border-radius:16px;background:linear-gradient(135deg,#f59e0b33,#fde04718);border:1px solid #f59e0b66;text-align:center;box-shadow:0 0 24px #f59e0b33}.at.on{display:block;animation:pop .3s ease}.at strong{font-size:26px;color:#fde68a}.at div{margin-top:4px;color:#fef3c7}.hint{margin:14px 0;padding:16px;border-radius:16px;background:#ffffff0a;border:1px solid #ffffff14;text-align:center;min-height:108px;display:grid;place-items:center}.hint small{display:block;color:#94a3b8;letter-spacing:.12em}.hint b{display:block;font-size:clamp(20px,6vw,30px);margin:5px 0}.hint em{font-style:normal;color:#94a3b8;font-size:13px}.stage{position:relative;min-height:245px;border-radius:20px;background:#ffffff08;border:1px solid #ffffff14;display:grid;place-items:center;text-align:center;padding:22px;overflow:hidden}.ticket{width:210px;height:125px;border-radius:18px;background:linear-gradient(135deg,#fff,#cbd5e1);color:#0f172a;display:grid;place-items:center;font-size:28px;font-weight:1000;box-shadow:0 14px 35px #0007;transform:rotate(-2deg);margin:auto}.ticket.shake{animation:shake .55s}.ticket.flip{animation:flip .8s}.msg{margin-top:16px;color:#cbd5e1;min-height:24px}.count{font-size:46px;font-weight:1000;min-height:55px;margin-top:6px}.controls{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:14px;position:sticky;bottom:max(8px,env(safe-area-inset-bottom));background:#0f1726e;padding:10px;border-radius:18px;backdrop-filter:blur(10px);border:1px solid #ffffff12}button{min-height:56px;border:0;border-radius:14px;font-size:16px;font-weight:900;cursor:pointer}button:disabled{opacity:.3}.draw{grid-column:1/-1;background:#f8fafc;color:#0f172a}.double{background:linear-gradient(135deg,#f59e0b,#fbbf24);color:#111827}.take{background:linear-gradient(135deg,#22c55e,#4ade80);color:#052e16}.reset{grid-column:1/-1;background:#334155;color:#f8fafc;min-height:44px}.history{margin-top:14px;color:#94a3b8;font-size:12px;line-height:1.7}.overlay{position:fixed;inset:0;background:#020617b8;backdrop-filter:blur(5px);display:none;place-items:center;padding:20px;z-index:9}.overlay.on{display:grid}.card{width:min(92vw,500px);background:#0f172a;border:1px solid #ffffff20;border-radius:26px;padding:30px;text-align:center;box-shadow:0 30px 90px #000b;animation:pop .28s}.card h2{font-size:clamp(38px,11vw,70px);margin:0 0 8px;color:#fbbf24}.card p{color:#cbd5e1;white-space:pre-line}.card button{margin-top:10px;padding:0 24px;background:#334155;color:#fff}@keyframes shake{0%,100%{transform:rotate(-2deg) translateX(0)}25%{transform:rotate(3deg) translateX(-9px)}50%{transform:rotate(-4deg) translateX(8px)}75%{transform:rotate(2deg) translateX(-5px)}}@keyframes flip{50%{transform:rotateY(180deg) scale(1.08)}100%{transform:rotateY(360deg) rotate(-2deg)}}@keyframes pop{from{transform:scale(.88);opacity:0}to{transform:scale(1);opacity:1}}@media(max-width:560px){body{place-items:start center}.game{padding:16px 12px;min-height:calc(100dvh - 20px)}.stats{grid-template-columns:1fr 1fr 1fr}.stat{padding:9px 5px}.stat b{font-size:18px}.controls{grid-template-columns:1fr}.draw,.reset{grid-column:auto}.ticket{width:190px;height:115px}}</style></head><body><main class="game"><h1>DOUBLE UP LOTTERY</h1><div class="sub">示唆を信じるか、賞金を守るか。</div><section class="stats"><div class="stat"><small>所持コイン</small><b id="bank">10,000</b></div><div class="stat"><small>今回の賞金</small><b id="pot">0</b></div><div class="stat"><small>連続成功</small><b id="streak">0</b></div></section><section class="at" id="at"><strong>AT突入中</strong><div id="atText">無料抽選 / ハズレで終了</div></section><section class="hint"><div><small>NEXT DOUBLE-UP HINT</small><b id="hint">まだ示唆はありません</b><em id="hintSub">当選すると次の示唆が表示されます。</em></div></section><section class="stage"><div><div class="ticket" id="ticket">LOTTERY</div><div class="msg" id="msg">100コインでくじを1枚引けます。</div><div class="count" id="count"></div></div></section><div class="controls"><button class="draw" id="draw">くじを引く</button><button class="double" id="double" disabled>ダブルアップ</button><button class="take" id="take" disabled>賞金を受け取る</button><button class="reset" id="reset">リセット</button></div><div class="history" id="history">通常時の内部状態は非表示。ATに入ったときだけ告知されます。</div></main><div class="overlay" id="overlay"><div class="card"><h2 id="ovTitle">AT</h2><p id="ovText"></p><button id="close">閉じる</button></div></div><script>(()=>{const $=id=>document.getElementById(id),bankE=$('bank'),potE=$('pot'),streakE=$('streak'),atE=$('at'),atText=$('atText'),hintE=$('hint'),hintSub=$('hintSub'),ticket=$('ticket'),msg=$('msg'),count=$('count'),draw=$('draw'),dbl=$('double'),take=$('take'),reset=$('reset'),history=$('history'),overlay=$('overlay'),ovTitle=$('ovTitle'),ovText=$('ovText');let bank=10000,pot=0,streak=0,locked=false,hidden='cold',hiddenTurns=8,at=false,atHit=.6,atHits=0,doubleChance=.5,currentHint='';const fmt=n=>n.toLocaleString('ja-JP'),sleep=ms=>new Promise(r=>setTimeout(r,ms)),ri=(a,b)=>Math.floor(Math.random()*(b-a+1))+a,vib=p=>{try{navigator.vibrate&&navigator.vibrate(p)}catch(e){}};function render(){bankE.textContent=fmt(bank);potE.textContent=fmt(pot);streakE.textContent=streak;atE.classList.toggle('on',at);atText.textContent=`無料抽選 / ${atHits}回成功 / ハズレで終了`;draw.textContent=at?'AT中：無料で引く':'くじを引く';draw.disabled=locked||pot>0||(!at&&bank<100);dbl.disabled=locked||pot<=0;take.disabled=locked||pot<=0}function anim(c){ticket.classList.remove('shake','flip');void ticket.offsetWidth;ticket.classList.add(c)}function show(title,text){ovTitle.textContent=title;ovText.textContent=text;overlay.classList.add('on')}function clearHint(){currentHint='';hintE.textContent='まだ示唆はありません';hintSub.textContent='当選すると次の示唆が表示されます。'}function advanceHidden(){if(--hiddenTurns>0)return;if(hidden==='cold'){hidden='normal';hiddenTurns=ri(3,5)}else{hidden='cold';hiddenTurns=ri(7,10)}}function prize(){let r=Math.random()*100;if(at){if(r>=atHit*100)return 0;let h=Math.random()*100;return h<34?100:h<68?200:h<92?500:1000}if(hidden==='cold')return r<74?0:r<88?100:r<96?200:r<99?500:1000;return r<54?0:r<77?100:r<91?200:r<98?500:1000}function startAT(){at=true;atHit=Math.random()<.5?.6:.8;atHits=0;vib([80,40,120,40,180]);show('AT突入','ボーナスタイム突入！\nAT中は無料抽選。\nハズレを引いた瞬間にAT終了。')}function endAT(){at=false;atHits=0;hidden='cold';hiddenTurns=ri(8,11);vib([220]);show('AT終了','ハズレを引いたためAT終了。')}function mayAT(p){if(!p||at)return false;let x=hidden==='cold'?.05:.10;if(p>=500)x+=.08;if(p>=1000)x+=.08;return Math.random()<x}function rollDouble(){let t=at?[.6,.7,.8]:hidden==='cold'?[.2,.3,.4,.5,.6]:[.3,.4,.5,.6,.7];return t[Math.floor(Math.random()*t.length)]}function hintFor(c){let choices;if(c>=.75)choices=['かなり良い気配がする','今日は攻めてもよさそうだ','悪くない流れだ'];else if(c>=.55)choices=['今日は攻めてもよさそうだ','悪くない流れだ','何とも言えない空気だ','嫌な予感がする…'];else if(c>=.4)choices=['何とも言えない空気だ','嫌な予感がする…','悪くない流れだ'];else choices=['かなり危険な気配だ','嫌な予感がする…','何とも言えない空気だ','今日は攻めてもよさそうだ'];return choices[Math.floor(Math.random()*choices.length)]}function newHint(){doubleChance=rollDouble();currentHint=hintFor(doubleChance);hintE.textContent=currentHint;hintSub.textContent='示唆は内部状態をある程度反映。ただし確実ではありません。'}async function suspense(words){for(const w of words){count.textContent=w;await sleep(250)}count.textContent=''}draw.onclick=async()=>{if(draw.disabled)return;const wasAT=at;if(!wasAT)bank-=100;locked=true;streak=0;clearHint();ticket.textContent='?';anim('shake');msg.textContent=wasAT?'AT中…':'抽選中…';render();await suspense(wasAT?['AT','GO!']:['…','OPEN']);let p=prize();if(!wasAT)advanceHidden();let entered=!wasAT&&mayAT(p);if(entered)startAT();pot=p;locked=false;if(p){ticket.textContent=fmt(p);msg.textContent=`${fmt(p)}コイン当選。示唆を見て判断。`;newHint();if(wasAT)atHits++}else{ticket.textContent='LOSE';msg.textContent=wasAT?'AT中ハズレ。AT終了。':'ハズレ。';vib([100]);if(wasAT)endAT()}render()};dbl.onclick=async()=>{if(dbl.disabled)return;locked=true;let old=pot,h=currentHint;ticket.textContent='???';anim('flip');msg.textContent='ダブルアップ抽選中…';render();await suspense(['3','2','1']);locked=false;if(Math.random()<doubleChance){pot*=2;streak++;ticket.textContent='DOUBLE!';msg.textContent=`成功！ ${fmt(pot)}コイン`;vib([60,35,90]);history.textContent=`直近：成功 ${fmt(old)}→${fmt(pot)} / 「${h}」`;newHint();if(pot>=2000||streak>=3)show('SUCCESS',`${fmt(pot)} COIN`)}else{pot=0;streak=0;ticket.textContent='BUST';msg.textContent='失敗。今回の賞金は0。';vib([180,70,180]);history.textContent=`直近：失敗 ${fmt(old)}→0 / 「${h}」`;clearHint();show('BUST','ダブルアップ失敗。今回の賞金は消滅しました。')}render()};take.onclick=()=>{if(take.disabled)return;let x=pot;bank+=pot;pot=0;streak=0;ticket.textContent='GET!';msg.textContent=`${fmt(x)}コインを受け取りました。`;clearHint();show('GET!',`${fmt(x)} COIN`);render()};reset.onclick=()=>{bank=10000;pot=0;streak=0;locked=false;hidden='cold';hiddenTurns=8;at=false;atHit=.6;atHits=0;ticket.textContent='LOTTERY';msg.textContent='100コインでくじを1枚引けます。';history.textContent='通常時の内部状態は非表示。ATに入ったときだけ告知されます。';clearHint();render()};$('close').onclick=()=>overlay.classList.remove('on');overlay.onclick=e=>{if(e.target===overlay)overlay.classList.remove('on')};clearHint();render()})();</script></body></html>
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
+<meta name="theme-color" content="#020617" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<title>DOUBLE UP LOTTERY - SECRET MODE AT</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<div class="particles" id="particles"></div>
+
+  <main class="game" id="game">
+    <h1>DOUBLE UP LOTTERY</h1>
+    <div class="sub">内部状態は見えない。AT中はハズレるまで続く。</div>
+
+    <section class="stats">
+      <div class="stat"><span>所持コイン</span><strong id="bank">10,000</strong></div>
+      <div class="stat"><span>今回の賞金</span><strong id="pot">0</strong></div>
+      <div class="stat"><span>連続成功</span><strong id="streak">0</strong></div>
+      <div class="stat at-off" id="atStat"><span>AT状態</span><strong id="atView">通常状態</strong></div>
+    </section>
+
+    <section class="atBanner" id="atBanner">
+      <div>
+        <div class="at-main" id="atMain">ATはまだ始まっていません</div>
+        <div class="at-sub" id="atSub">通常時の内部状態は非表示。AT突入時だけ告知されます。</div>
+      </div>
+      <div class="atBadge" id="atBadge">—</div>
+    </section>
+
+    <section class="hintbox" id="hintBox">
+      <div>
+        <div class="hint-label">NEXT DOUBLE-UP HINT</div>
+        <div class="hint-text" id="hintText">まだ示唆はありません</div>
+        <div class="hint-sub" id="hintSub">当選すると次のダブルアップ示唆が表示されます。</div>
+        <div class="aura-wrap" id="auraWrap"></div>
+      </div>
+    </section>
+
+    <section class="stage" id="stage">
+      <div>
+        <div class="ticket-wrap">
+          <div class="ticket" id="ticket">LOTTERY</div>
+        </div>
+        <div class="message" id="message">100コインでくじを1枚引けます。</div>
+        <div class="countdown" id="countdown"></div>
+      </div>
+    </section>
+
+    <div class="controls">
+      <button class="primary" id="drawBtn">くじを引く</button>
+      <button class="double" id="doubleBtn" disabled>示唆を信じてダブルアップ</button>
+      <button class="take" id="takeBtn" disabled>賞金を受け取る</button>
+      <button class="reset" id="resetBtn">リセット</button>
+    </div>
+
+    <section class="history">
+      <div class="history-title">直近のダブルアップ</div>
+      <div class="history-list" id="historyList">
+        <span class="tag">まだ記録なし</span>
+      </div>
+    </section>
+
+    <div class="rules">
+      <strong>仕様</strong><br>
+      ・通常時の内部状態（重い時間・普通の時間）は非表示。<br>
+      ・ATに入ったときだけ告知。<br>
+      ・AT中は無料で引けて当たりやすい。<br>
+      ・AT突入時に、AT中の当選率が <strong>60% / 80%</strong> のどちらかに内部抽選されます。<br>
+      ・AT中にハズレを引いた時点でAT終了。AT終了後は、再び内部状態のみで進みます。
+    </div>
+  </main>
+
+  <div class="overlay" id="overlay">
+    <div class="overlay-card" id="overlayCard">
+      <div class="overlay-title" id="overlayTitle">SUCCESS</div>
+      <div class="overlay-sub" id="overlaySub"></div>
+      <div class="overlay-amount" id="overlayAmount"></div>
+      <button class="overlay-close" id="overlayClose">閉じる</button>
+    </div>
+  </div>
+<script src="game.js"></script>
+</body>
+</html>
