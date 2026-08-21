@@ -9,7 +9,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
-<title>DOUBLE UP LOTTERY - 3 MIN TIME ATTACK</title>
+<title>DOUBLE UP LOTTERY - 150 DRAW CHALLENGE</title>
 <link rel="stylesheet" href="style.css?v=12" />
 <link rel="stylesheet" href="mobile-v13.css?v=15" />
 <link rel="stylesheet" href="desktop-v17.css?v=17" />
@@ -20,18 +20,18 @@
 <main class="game" id="game">
   <button class="reset mobile-reset" id="resetBtn">リセット</button>
   <h1>DOUBLE UP LOTTERY</h1>
-  <div class="sub">3分でどこまで増やせるか。AT中はハズレるまで続く。</div>
+  <div class="sub">150回のくじでどこまで増やせるか。ATで一撃を狙え。</div>
 
   <section class="timeAttack" id="timeAttack">
     <div>
-      <div class="time-label">3 MIN TIME ATTACK</div>
-      <div class="time-sub" id="timeSub">最初のくじでスタート</div>
+      <div class="time-label">LOTTERY COUNT</div>
+      <div class="time-sub" id="timeSub">150回のくじで勝負</div>
     </div>
-    <div class="time-value" id="timerValue">3:00</div>
+    <div class="time-value" id="timerValue">150</div>
   </section>
 
   <section class="stats">
-    <div class="stat"><span>所持コイン</span><strong id="bank">10,000</strong></div>
+    <div class="stat"><span>所持コイン</span><strong id="bank">5,000</strong></div>
     <div class="stat"><span>今回の賞金</span><strong id="pot">0</strong></div>
     <div class="stat"><span>連続成功</span><strong id="streak">0</strong></div>
     <div class="stat at-off" id="atStat"><span>AT状態</span><strong id="atView">通常状態</strong></div>
@@ -57,7 +57,7 @@
   <section class="stage" id="stage">
     <div>
       <div class="ticket-wrap"><div class="ticket" id="ticket">LOTTERY</div></div>
-      <div class="message" id="message">100コインでくじを1枚引けます。</div>
+      <div class="message" id="message">100コインでくじを1枚引けます。残り150回。</div>
       <div class="countdown" id="countdown"></div>
     </div>
   </section>
@@ -75,8 +75,10 @@
 
   <details class="rules">
     <summary>遊び方・仕様を見る</summary>
-    <strong>3分タイムアタック</strong><br>
-    ・最初のくじを引いた瞬間に3:00からスタート。0:00でゲーム終了。<br>
+    <strong>150回チャレンジ</strong><br>
+    ・くじを引くたびに残り回数が1減り、150回で終了。<br>
+    ・最後のくじで当選した賞金は、受取またはダブルアップ失敗まで遊べます。<br>
+    ・所持コインが100未満になった場合は、その時点で終了。<br>
     ・スコアは終了時の「所持コイン＋未受取賞金」。<br>
     <br><strong>示唆</strong><br>
     ・通常時：次のダブルアップ成功率をぼかして示唆。<br>
@@ -85,10 +87,8 @@
     <br><strong>AT仕様</strong><br>
     ・通常時の内部状態（重い時間・普通の時間）は非表示。<br>
     ・ATに入ったときだけ告知。<br>
-    ・AT中は無料で引けて当たりやすい。<br>
-    ・ATくじの当選率は従来どおり内部で60% / 80%のどちらか。<br>
-    ・AT中のダブルアップ成功率は、AT突入時に別抽選で <strong>60% / 80%</strong> のどちらかに決まり、そのAT終了まで固定。<br>
-    ・AT中は、ハズレ・ダブルアップ失敗・賞金受取のいずれかでAT終了します。
+    ・AT中のダブルアップ成功率は、AT突入時に <strong>60% / 80%</strong> のどちらかに決まり、そのAT終了まで固定。<br>
+    ・AT中は、ダブルアップ失敗・賞金受取でAT終了します。
   </details>
 </main>
 
@@ -100,6 +100,6 @@
     <button class="overlay-close" id="overlayClose">閉じる</button>
   </div>
 </div>
-<script src="game.js?v=18"></script>
+<script src="game-v20.js?v=20"></script>
 </body>
 </html>
