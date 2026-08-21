@@ -24,7 +24,7 @@
     left: max(6px, env(safe-area-inset-left)) !important;
     right: max(6px, env(safe-area-inset-right)) !important;
     bottom: max(6px, env(safe-area-inset-bottom)) !important;
-    z-index: 9 !important;
+    z-index: 50 !important;
     display: grid !important;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
     grid-template-rows: 56px 56px !important;
@@ -33,12 +33,13 @@
     margin: 0 !important;
     padding: 8px !important;
     border-radius: 17px !important;
-    background: rgba(15,23,42,.97) !important;
+    background: rgba(15,23,42,.98) !important;
     border: 1px solid rgba(255,255,255,.10) !important;
     box-shadow: 0 10px 36px rgba(0,0,0,.45) !important;
     backdrop-filter: blur(12px) !important;
     -webkit-backdrop-filter: blur(12px) !important;
     align-items: stretch !important;
+    transform: none !important;
   }
 
   .controls .primary {
@@ -80,6 +81,26 @@
 
   .controls .double {
     font-size: 12.5px !important;
+  }
+
+  /* ハズレ時にgame全体へtransformを掛けると、内部のfixed操作バーまで
+     containing blockに巻き込まれるブラウザがある。スマホではgameを動かさず、
+     stageだけ揺らして操作バーを完全固定する。 */
+  .game.shake-screen {
+    animation: none !important;
+    transform: none !important;
+  }
+
+  .game.shake-screen .stage {
+    animation: mobileStageShake .35s linear !important;
+  }
+
+  @keyframes mobileStageShake {
+    0%,100% { transform: translateX(0); }
+    20% { transform: translateX(-7px); }
+    40% { transform: translateX(6px); }
+    60% { transform: translateX(-4px); }
+    80% { transform: translateX(3px); }
   }
 }
 
