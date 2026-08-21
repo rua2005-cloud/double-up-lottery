@@ -233,7 +233,7 @@
       {text:'少し不安な気配がする',sub:'やや弱めのAT示唆。',rank:1,w:32},
       {text:'油断できない流れだ',sub:'弱めのAT示唆。',rank:0,w:15}
     ];
-    return weightedPick(atHitRate >= .80 ? pool80 : pool60);
+    return weightedPick(atDoubleRate >= .80 ? pool80 : pool60);
   }
   function renderAura(rank) {
     auraWrap.innerHTML = '';
@@ -262,7 +262,7 @@
     currentHintType = 'at';
     hintLabel.textContent = 'AT MODE HINT';
     hintText.textContent = currentHint.text;
-    hintSub.textContent = `${currentHint.sub} 60%AT / 80%ATのどちらかを推測する示唆です。`;
+    hintSub.textContent = `${currentHint.sub} AT中のダブルアップ成功率が60% / 80%のどちらかを推測する示唆です。`;
     hintBox.className = `hintbox rank${currentHint.rank}`;
     renderAura(currentHint.rank);
   }
