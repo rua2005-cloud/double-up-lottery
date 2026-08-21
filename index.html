@@ -79,13 +79,14 @@
     ・スコアは終了時の「所持コイン＋未受取賞金」。<br>
     <br><strong>示唆</strong><br>
     ・通常時：次のダブルアップ成功率をぼかして示唆。<br>
-    ・AT中：そのATが60% / 80%のどちら寄りかをぼかして示唆。ダブルアップ成功率とは別です。<br>
+    ・AT中：ATくじの当選率が60% / 80%のどちら寄りかをぼかして示唆。<br>
     ・AT終了と同時にAT用の示唆も終了し、通常時の示唆欄へ戻ります。<br>
     <br><strong>AT仕様</strong><br>
     ・通常時の内部状態（重い時間・普通の時間）は非表示。<br>
     ・ATに入ったときだけ告知。<br>
     ・AT中は無料で引けて当たりやすい。<br>
-    ・AT突入時に、AT中の当選率が <strong>60% / 80%</strong> のどちらかに内部抽選されます。<br>
+    ・ATくじの当選率は従来どおり内部で60% / 80%のどちらか。<br>
+    ・AT中のダブルアップ成功率は、AT突入時に別抽選で <strong>60% / 80%</strong> のどちらかに決まり、そのAT終了まで固定。<br>
     ・AT中は、ハズレ・ダブルアップ失敗・賞金受取のいずれかでAT終了します。
   </details>
 </main>
@@ -98,6 +99,6 @@
     <button class="overlay-close" id="overlayClose">閉じる</button>
   </div>
 </div>
-<script src="game.js?v=11"></script>
+<script src="game.js?v=16"></script>
 </body>
 </html>
