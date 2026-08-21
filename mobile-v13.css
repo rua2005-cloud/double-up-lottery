@@ -1,0 +1,97 @@
+@media (max-width: 760px) {
+  .game {
+    padding-bottom: calc(142px + env(safe-area-inset-bottom)) !important;
+  }
+
+  .mobile-reset {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 8;
+    width: auto !important;
+    min-width: 0 !important;
+    height: 34px !important;
+    min-height: 34px !important;
+    padding: 0 10px !important;
+    border-radius: 999px !important;
+    font-size: 11px !important;
+    line-height: 34px !important;
+    opacity: .78;
+  }
+
+  .controls {
+    position: fixed !important;
+    left: max(6px, env(safe-area-inset-left)) !important;
+    right: max(6px, env(safe-area-inset-right)) !important;
+    bottom: max(6px, env(safe-area-inset-bottom)) !important;
+    z-index: 9 !important;
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+    grid-template-rows: 56px 56px !important;
+    gap: 8px !important;
+    height: 128px !important;
+    margin: 0 !important;
+    padding: 8px !important;
+    border-radius: 17px !important;
+    background: rgba(15,23,42,.97) !important;
+    border: 1px solid rgba(255,255,255,.10) !important;
+    box-shadow: 0 10px 36px rgba(0,0,0,.45) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+    align-items: stretch !important;
+  }
+
+  .controls .primary {
+    grid-column: 1 / -1 !important;
+    grid-row: 1 !important;
+  }
+
+  .controls .double {
+    grid-column: 1 !important;
+    grid-row: 2 !important;
+  }
+
+  .controls .take {
+    grid-column: 2 !important;
+    grid-row: 2 !important;
+  }
+
+  .controls button {
+    width: 100% !important;
+    height: 56px !important;
+    min-height: 56px !important;
+    max-height: 56px !important;
+    margin: 0 !important;
+    padding: 6px 8px !important;
+    border-radius: 13px !important;
+    font-size: 14px !important;
+    line-height: 1.15 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+    overflow: hidden !important;
+    transform: none !important;
+  }
+
+  .controls button:active:not(:disabled) {
+    transform: none !important;
+  }
+
+  .controls .double {
+    font-size: 12.5px !important;
+  }
+}
+
+@media (min-width: 761px) {
+  .mobile-reset {
+    position: absolute;
+    top: 18px;
+    right: 18px;
+    z-index: 8;
+    min-height: 38px;
+    padding: 8px 12px;
+    font-size: 12px;
+    border-radius: 999px;
+  }
+}
