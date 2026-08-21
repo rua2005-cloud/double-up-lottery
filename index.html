@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <title>DOUBLE UP LOTTERY - TIME ATTACK</title>
-<link rel="stylesheet" href="style.css?v=5" />
+<link rel="stylesheet" href="style.css?v=6" />
 </head>
 <body>
 <div class="particles" id="particles"></div>
@@ -15,6 +15,14 @@
   <main class="game" id="game">
     <h1>DOUBLE UP LOTTERY</h1>
     <div class="sub">10分でどこまで増やせるか。AT中はハズレるまで続く。</div>
+
+    <section class="timeAttack" id="timeAttack">
+      <div>
+        <div class="time-label">TIME ATTACK</div>
+        <div class="time-sub" id="timeSub">最初のくじでスタート</div>
+      </div>
+      <div class="time-value" id="timerValue">10:00</div>
+    </section>
 
     <section class="stats">
       <div class="stat"><span>所持コイン</span><strong id="bank">10,000</strong></div>
@@ -85,6 +93,6 @@
       <button class="overlay-close" id="overlayClose">閉じる</button>
     </div>
   </div>
-<script src="game.js?v=5"></script>
+<script src="game.js?v=6"></script>
 </body>
 </html>
