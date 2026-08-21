@@ -4,9 +4,7 @@
   const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
   const randInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
   const vibrate = (pattern) => {
-    try {
-      if (navigator.vibrate) navigator.vibrate(pattern);
-    } catch (_) {}
+    try { if (navigator.vibrate) navigator.vibrate(pattern); } catch (_) {}
   };
 
   const bankEl = $('bank');
@@ -18,11 +16,9 @@
   const atMain = $('atMain');
   const atSub = $('atSub');
   const atBadge = $('atBadge');
-
   const timeAttack = $('timeAttack');
   const timerEl = $('timerValue');
   const timeSub = $('timeSub');
-
   const messageEl = $('message');
   const ticketEl = $('ticket');
   const stageEl = $('stage');
@@ -30,7 +26,6 @@
   const doubleBtn = $('doubleBtn');
   const takeBtn = $('takeBtn');
   const resetBtn = $('resetBtn');
-
   const hintLabel = $('hintLabel') || document.querySelector('.hint-label');
   const hintText = $('hintText');
   const hintSub = $('hintSub');
@@ -38,13 +33,11 @@
   const auraWrap = $('auraWrap');
   const historyList = $('historyList');
   const countdownEl = $('countdown');
-
   const overlay = $('overlay');
   const overlayTitle = $('overlayTitle');
   const overlaySub = $('overlaySub');
   const overlayAmount = $('overlayAmount');
   const overlayClose = $('overlayClose');
-
   const game = $('game');
   const particles = $('particles');
 
@@ -56,15 +49,13 @@
   let currentHint = null;
   let currentHintType = 'none';
   let history = [];
-
   let hiddenMode = 'cold';
   let hiddenTurns = 8;
-
   let atActive = false;
   let atHitRate = 0;
   let atRound = 0;
 
-  const DURATION = 10 * 60 * 1000;
+  const DURATION = 3 * 60 * 1000;
   let started = false;
   let gameOver = false;
   let endAt = 0;
@@ -80,12 +71,8 @@
   function renderTimer(ms = DURATION) {
     timerEl.textContent = timerText(ms);
     timeAttack.classList.toggle('running', started && !gameOver);
-    timeAttack.classList.toggle('danger', started && !gameOver && ms <= 60000);
-    timeSub.textContent = gameOver
-      ? 'TIME UP'
-      : started
-        ? '10分タイムアタック進行中'
-        : '最初のくじでスタート';
+    timeAttack.classList.toggle('danger', started && !gameOver && ms <= 30000);
+    timeSub.textContent = gameOver ? 'TIME UP' : started ? '3分タイムアタック進行中' : '最初のくじでスタート';
   }
 
   function startTimer() {
@@ -99,10 +86,7 @@
   function tickTimer() {
     if (!started || gameOver) return;
     const remaining = endAt - Date.now();
-    if (remaining <= 0) {
-      finishGame();
-      return;
-    }
+    if (remaining <= 0) return finishGame();
     renderTimer(remaining);
   }
 
@@ -115,20 +99,13 @@
       timerId = null;
     }
     renderTimer(0);
-
     const score = bank + pot;
     const diff = score - 10000;
     const delta = diff >= 0 ? `+${fmt(diff)}` : fmt(diff);
-
     ticketEl.textContent = 'TIME UP';
-    messageEl.textContent = `10分終了。最終スコアは ${fmt(score)}。`;
+    messageEl.textContent = `3分終了。最終スコアは ${fmt(score)}。`;
     vibrate([120, 60, 120, 60, 240]);
-    showOverlay(
-      'good',
-      'TIME UP',
-      `10分タイムアタック終了\n最終総コイン：${fmt(score)}\n初期10,000から：${delta}`,
-      `SCORE ${fmt(score)}`
-    );
+    showOverlay('good', 'TIME UP', `3分タイムアタック終了\n最終総コイン：${fmt(score)}\n初期10,000から：${delta}`, `SCORE ${fmt(score)}`);
     render();
   }
 
@@ -172,15 +149,11 @@
     potEl.textContent = fmt(pot);
     streakEl.textContent = streak;
     renderATStatus();
-
     drawBtn.disabled = gameOver || locked || pot > 0 || (!atActive && bank < 100);
     doubleBtn.disabled = gameOver || locked || pot <= 0;
     takeBtn.disabled = gameOver || locked || pot <= 0;
-
     drawBtn.textContent = atActive ? 'AT中：無料で引く' : 'くじを引く';
-    doubleBtn.textContent = atActive
-      ? 'ダブルアップ（AT示唆とは別抽選）'
-      : '示唆を信じてダブルアップ';
+    doubleBtn.textContent = atActive ? 'ダブルアップ（AT示唆とは別抽選）' : '示唆を信じてダブルアップ';
   }
 
   function flash(type) {
@@ -224,7 +197,6 @@
   function advanceHiddenMode() {
     hiddenTurns -= 1;
     if (hiddenTurns > 0) return;
-
     if (hiddenMode === 'cold') {
       hiddenMode = 'normal';
       hiddenTurns = randInt(3, 5);
@@ -241,7 +213,6 @@
 
   function lotteryByInternalState() {
     const r = Math.random() * 100;
-
     if (atActive) {
       if (r >= atHitRate * 100) return 0;
       const h = Math.random() * 100;
@@ -250,7 +221,6 @@
       if (h < 92) return 500;
       return 1000;
     }
-
     if (hiddenMode === 'cold') {
       if (r < 74) return 0;
       if (r < 88) return 100;
@@ -258,7 +228,6 @@
       if (r < 99) return 500;
       return 1000;
     }
-
     if (r < 54) return 0;
     if (r < 77) return 100;
     if (r < 91) return 200;
@@ -288,11 +257,7 @@
   }
 
   function rollDoubleChance() {
-    const table = atActive
-      ? [0.60, 0.70, 0.80]
-      : hiddenMode === 'cold'
-        ? [0.20, 0.30, 0.40, 0.50, 0.60]
-        : [0.30, 0.40, 0.50, 0.60, 0.70];
+    const table = atActive ? [0.60, 0.70, 0.80] : hiddenMode === 'cold' ? [0.20, 0.30, 0.40, 0.50, 0.60] : [0.30, 0.40, 0.50, 0.60, 0.70];
     return table[Math.floor(Math.random() * table.length)];
   }
 
@@ -307,40 +272,32 @@
   }
 
   function makeDoubleHint(chance) {
-    if (chance >= 0.80) {
-      return weightedPick([
-        { text: 'かなり良い気配がする', sub: 'かなり強い示唆。だが確定ではない。', rank: 4, w: 52 },
-        { text: '今日は攻めてもよさそうだ', sub: 'やや強めの示唆。', rank: 3, w: 26 },
-        { text: '悪くない流れだ', sub: '中程度の示唆。', rank: 2, w: 14 },
-        { text: '嫌な予感がする…', sub: 'まれに逆示唆もある。', rank: 1, w: 8 }
-      ]);
-    }
-    if (chance >= 0.60) {
-      return weightedPick([
-        { text: 'かなり良い気配がする', sub: '強めの示唆。', rank: 4, w: 24 },
-        { text: '今日は攻めてもよさそうだ', sub: '前向きな示唆。', rank: 3, w: 38 },
-        { text: '悪くない流れだ', sub: '中程度の示唆。', rank: 2, w: 22 },
-        { text: '嫌な予感がする…', sub: '外れる逆示唆もある。', rank: 1, w: 16 }
-      ]);
-    }
-    if (chance >= 0.45) {
-      return weightedPick([
-        { text: '今日は攻めてもよさそうだ', sub: '少し前向きな示唆。', rank: 3, w: 18 },
-        { text: '何とも言えない空気だ', sub: '五分前後かもしれない。', rank: 2, w: 36 },
-        { text: '悪くない流れだ', sub: '中立より少し上。', rank: 2, w: 16 },
-        { text: '嫌な予感がする…', sub: '少し後ろ向きな示唆。', rank: 1, w: 18 },
-        { text: 'かなり危険な気配だ', sub: '強い警戒示唆。', rank: 0, w: 12 }
-      ]);
-    }
-    if (chance >= 0.30) {
-      return weightedPick([
-        { text: 'かなり良い気配がする', sub: '逆示唆が出ることもある。', rank: 4, w: 9 },
-        { text: '今日は攻めてもよさそうだ', sub: '弱い逆示唆。', rank: 3, w: 14 },
-        { text: '何とも言えない空気だ', sub: '中立寄り。', rank: 2, w: 22 },
-        { text: '嫌な予感がする…', sub: 'やや危険寄り。', rank: 1, w: 30 },
-        { text: 'かなり危険な気配だ', sub: 'かなり危険。', rank: 0, w: 25 }
-      ]);
-    }
+    if (chance >= 0.80) return weightedPick([
+      { text: 'かなり良い気配がする', sub: 'かなり強い示唆。だが確定ではない。', rank: 4, w: 52 },
+      { text: '今日は攻めてもよさそうだ', sub: 'やや強めの示唆。', rank: 3, w: 26 },
+      { text: '悪くない流れだ', sub: '中程度の示唆。', rank: 2, w: 14 },
+      { text: '嫌な予感がする…', sub: 'まれに逆示唆もある。', rank: 1, w: 8 }
+    ]);
+    if (chance >= 0.60) return weightedPick([
+      { text: 'かなり良い気配がする', sub: '強めの示唆。', rank: 4, w: 24 },
+      { text: '今日は攻めてもよさそうだ', sub: '前向きな示唆。', rank: 3, w: 38 },
+      { text: '悪くない流れだ', sub: '中程度の示唆。', rank: 2, w: 22 },
+      { text: '嫌な予感がする…', sub: '外れる逆示唆もある。', rank: 1, w: 16 }
+    ]);
+    if (chance >= 0.45) return weightedPick([
+      { text: '今日は攻めてもよさそうだ', sub: '少し前向きな示唆。', rank: 3, w: 18 },
+      { text: '何とも言えない空気だ', sub: '五分前後かもしれない。', rank: 2, w: 36 },
+      { text: '悪くない流れだ', sub: '中立より少し上。', rank: 2, w: 16 },
+      { text: '嫌な予感がする…', sub: '少し後ろ向きな示唆。', rank: 1, w: 18 },
+      { text: 'かなり危険な気配だ', sub: '強い警戒示唆。', rank: 0, w: 12 }
+    ]);
+    if (chance >= 0.30) return weightedPick([
+      { text: 'かなり良い気配がする', sub: '逆示唆が出ることもある。', rank: 4, w: 9 },
+      { text: '今日は攻めてもよさそうだ', sub: '弱い逆示唆。', rank: 3, w: 14 },
+      { text: '何とも言えない空気だ', sub: '中立寄り。', rank: 2, w: 22 },
+      { text: '嫌な予感がする…', sub: 'やや危険寄り。', rank: 1, w: 30 },
+      { text: 'かなり危険な気配だ', sub: 'かなり危険。', rank: 0, w: 25 }
+    ]);
     return weightedPick([
       { text: 'かなり良い気配がする', sub: 'ごく稀に逆の強示唆も出る。', rank: 4, w: 5 },
       { text: '悪くない流れだ', sub: '少し紛らわしい示唆。', rank: 2, w: 14 },
@@ -356,7 +313,6 @@
       { text: '悪くないATの流れ', sub: 'やや前向きなAT示唆。', rank: 2, w: 16 },
       { text: '少し不安な気配がする', sub: '強いATでも弱い示唆は出る。', rank: 1, w: 7 }
     ];
-
     const pool60 = [
       { text: 'かなり強いATの気配', sub: '低めのATでも強い示唆が出ることはある。', rank: 4, w: 8 },
       { text: 'まだまだ続きそうだ', sub: '少し期待できるが油断は禁物。', rank: 3, w: 18 },
@@ -364,7 +320,6 @@
       { text: '少し不安な気配がする', sub: 'やや弱めのAT示唆。', rank: 1, w: 32 },
       { text: '油断できない流れだ', sub: '弱めのAT示唆。', rank: 0, w: 15 }
     ];
-
     return weightedPick(atHitRate >= 0.80 ? pool80 : pool60);
   }
 
@@ -417,22 +372,13 @@
     hintBox.className = 'hintbox';
     hintLabel.textContent = atActive ? 'AT MODE HINT' : 'NEXT DOUBLE-UP HINT';
     hintText.textContent = 'まだ示唆はありません';
-    hintSub.textContent = atActive
-      ? 'AT中に当たると、60%AT / 80%ATを推測する示唆が表示されます。'
-      : '当選すると次のダブルアップ示唆が表示されます。';
+    hintSub.textContent = atActive ? 'AT中に当たると、60%AT / 80%ATを推測する示唆が表示されます。' : '当選すると次のダブルアップ示唆が表示されます。';
     renderAura(2);
   }
 
   function updateHistory(result, oldPot, newPot, hint, hintType) {
-    history.unshift({
-      result,
-      oldPot,
-      newPot,
-      hint: hint ? hint.text : '示唆なし',
-      hintType
-    });
+    history.unshift({ result, oldPot, newPot, hint: hint ? hint.text : '示唆なし', hintType });
     history = history.slice(0, 6);
-
     historyList.innerHTML = '';
     history.forEach((item) => {
       const span = document.createElement('span');
@@ -448,12 +394,9 @@
   async function drawLottery() {
     if (gameOver || locked || pot > 0) return;
     if (bank < 100 && !atActive) return;
-
     startTimer();
-
     const usedAT = atActive;
     if (!usedAT) bank -= 100;
-
     locked = true;
     streak = 0;
     clearHint();
@@ -461,13 +404,11 @@
     ticketEl.textContent = '?';
     messageEl.textContent = usedAT ? 'AT中！ 無料で抽選中…' : '抽選中…';
     render();
-
     await suspenseSequence(usedAT ? ['AT', 'GO!'] : ['…', 'OPEN']);
     if (gameOver) return;
 
     const prize = lotteryByInternalState();
     if (!usedAT) advanceHiddenMode();
-
     let enteredATNow = false;
     if (!usedAT && shouldEnterAT(prize)) {
       startAT();
@@ -476,7 +417,6 @@
 
     pot = prize;
     locked = false;
-
     if (prize === 0) {
       ticketEl.textContent = 'LOSE';
       messageEl.textContent = usedAT ? 'AT中ハズレ。AT終了。' : 'ハズレ。';
@@ -486,20 +426,13 @@
       ticketEl.textContent = fmt(prize);
       messageEl.textContent = `${fmt(prize)}コイン当選。示唆を確認。`;
       flash('win');
-      if (prize >= 500) {
-        showOverlay('good', 'CHANCE', '大きめの当選。ここから伸ばせるかも。', `${fmt(prize)} COIN`);
-      }
+      if (prize >= 500) showOverlay('good', 'CHANCE', '大きめの当選。ここから伸ばせるかも。', `${fmt(prize)} COIN`);
       setNewHint();
     }
 
     if (enteredATNow) {
       vibrate([80, 40, 120, 40, 180]);
-      showOverlay(
-        'good',
-        'AT突入',
-        'ボーナスタイム突入！\nAT中は無料抽選。ハズレを引くまで継続します。\n示唆はATが60%か80%かを推測する内容に切り替わります。',
-        'BONUS TIME'
-      );
+      showOverlay('good', 'AT突入', 'ボーナスタイム突入！\nAT中は無料抽選。ハズレを引くまで継続します。\n示唆はATが60%か80%かを推測する内容に切り替わります。', 'BONUS TIME');
       messageEl.textContent += ' さらにAT突入！';
     } else if (usedAT) {
       if (prize > 0) {
@@ -512,33 +445,26 @@
         showOverlay('overlay-blue', 'AT終了', 'ハズレを引いたためAT終了。ここからは再び通常状態です。', 'END');
       }
     }
-
     render();
   }
 
   async function doDoubleUp() {
     if (gameOver || pot <= 0 || locked) return;
-
     locked = true;
     const oldPot = pot;
     const usedChance = currentDoubleChance;
     const usedHint = currentHint;
     const usedHintType = currentHintType;
     const usedAT = atActive;
-
-    messageEl.textContent = usedAT
-      ? 'AT示唆はAT当選率のヒント。ダブルアップは別抽選…'
-      : '示唆確認… ダブルアップ抽選へ';
+    messageEl.textContent = usedAT ? 'AT示唆はAT当選率のヒント。ダブルアップは別抽選…' : '示唆確認… ダブルアップ抽選へ';
     ticketEl.textContent = '???';
     animateTicket('flip');
     render();
-
     await suspenseSequence(['3', '2', '1']);
     if (gameOver) return;
 
     const win = Math.random() < usedChance;
     locked = false;
-
     if (win) {
       pot *= 2;
       streak += 1;
@@ -549,35 +475,26 @@
       flash('win');
       game.classList.add('glow-gold');
       setTimeout(() => game.classList.remove('glow-gold'), 700);
-      if (pot >= 2000 || streak >= 3) {
-        showOverlay('good', 'SUCCESS', 'ダブルアップ成功！', `${fmt(pot)} COIN`);
-      }
+      if (pot >= 2000 || streak >= 3) showOverlay('good', 'SUCCESS', 'ダブルアップ成功！', `${fmt(pot)} COIN`);
       setNewHint();
     } else {
       pot = 0;
       streak = 0;
       ticketEl.textContent = 'BUST';
       vibrate([180, 70, 180]);
-
       if (usedAT) {
         endAT();
         messageEl.textContent = 'ダブルアップ失敗。今回の賞金は0になり、ATも終了しました。';
       } else {
         messageEl.textContent = '失敗。今回の賞金は0になりました。示唆は確実ではありません。';
       }
-
       updateHistory('lose', oldPot, 0, usedHint, usedHintType);
       clearHint();
       flash('lose');
       shakeScreen();
-
-      if (usedAT) {
-        showOverlay('overlay-blue', 'AT終了', 'ダブルアップ失敗。今回の賞金は消滅し、ATも終了しました。', 'END');
-      } else {
-        showOverlay('bad', 'BUST', 'ダブルアップ失敗。今回の賞金は消滅しました。', '0 COIN');
-      }
+      if (usedAT) showOverlay('overlay-blue', 'AT終了', 'ダブルアップ失敗。今回の賞金は消滅し、ATも終了しました。', 'END');
+      else showOverlay('bad', 'BUST', 'ダブルアップ失敗。今回の賞金は消滅しました。', '0 COIN');
     }
-
     render();
   }
 
@@ -600,7 +517,6 @@
       clearInterval(timerId);
       timerId = null;
     }
-
     bank = 10000;
     pot = 0;
     streak = 0;
@@ -614,11 +530,9 @@
     atActive = false;
     atHitRate = 0;
     atRound = 0;
-
     started = false;
     gameOver = false;
     endAt = 0;
-
     historyList.innerHTML = '<span class="tag">まだ記録なし</span>';
     ticketEl.textContent = 'LOTTERY';
     messageEl.textContent = '100コインでくじを1枚引けます。';
