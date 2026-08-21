@@ -1,0 +1,64 @@
+name: Patch finish and auto reset v22
+
+on:
+  push:
+    paths:
+      - '.github/workflows/patch-finish-reset-v22.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch finish behavior
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          p = Path('game-v20.js')
+          s = p.read_text(encoding='utf-8')
+
+          old = """    const usedAll = drawsLeft <= 0;\n    const manual = reason === '途中終了。';\n    const why = reason || (usedAll ? '150回のくじが終了。' : '所持コインが100未満になり終了。');"""
+          new = """    const usedAll = drawsLeft <= 0;\n    const coinOut = !usedAll && bank < 100 && pot <= 0;\n    const why = reason || (usedAll ? '150回のくじが終了。' : coinOut ? '所持コインが100未満になり終了。' : 'ゲーム終了。');"""
+          assert old in s, 'finishGame block not found'
+          s = s.replace(old, new, 1)
+
+          old = "showOverlay('good', usedAll ? '150 DRAWS FINISH' : manual ? 'GAME FINISH' : 'COIN OUT', `${why}\\n最終総コイン：${fmt(score)}\\n初期5,000から：${delta}`, `SCORE ${fmt(score)}`);"
+          new = "showOverlay('good', usedAll ? '150 DRAWS FINISH' : coinOut ? 'COIN OUT' : 'GAME FINISH', `${why}\\n最終総コイン：${fmt(score)}\\n初期5,000から：${delta}`, `SCORE ${fmt(score)}`);"
+          assert old in s, 'overlay title block not found'
+          s = s.replace(old, new, 1)
+
+          old = """  function endGameFromButton() {\n    if (gameOver || locked) return;\n    finishGame('途中終了。');\n  }\n\n  drawBtn.addEventListener('click', drawLottery);"""
+          new = """  function resetGame() {\n    bank = INITIAL_BANK;\n    pot = 0;\n    streak = 0;\n    locked = false;\n    currentDoubleChance = .5;\n    currentHint = null;\n    currentHintType = 'none';\n    history = [];\n    hiddenMode = 'cold';\n    hiddenTurns = 8;\n    atActive = false;\n    atHitRate = 0;\n    atDoubleRate = 0;\n    atRound = 0;\n    drawsLeft = MAX_DRAWS;\n    gameOver = false;\n    historyList.innerHTML = '<span class=\"tag\">まだ記録なし</span>';\n    ticketEl.textContent = 'LOTTERY';\n    messageEl.textContent = '100コインでくじを1枚引けます。残り150回。';\n    countdownEl.textContent = '';\n    hideOverlay();\n    overlayClose.textContent = '閉じる';\n    clearHint();\n    render();\n  }\n\n  function endGameFromButton() {\n    if (gameOver || locked) return;\n    finishGame('ゲーム終了。');\n    overlayClose.textContent = 'もう一度';\n  }\n\n  function closeOverlay() {\n    if (gameOver) resetGame();\n    else hideOverlay();\n  }\n\n  drawBtn.addEventListener('click', drawLottery);"""
+          assert old in s, 'endGame block not found'
+          s = s.replace(old, new, 1)
+
+          old = """  overlayClose.addEventListener('click', hideOverlay);\n  overlay.addEventListener('click', (e) => { if (e.target === overlay) hideOverlay(); });"""
+          new = """  overlayClose.addEventListener('click', closeOverlay);\n  overlay.addEventListener('click', (e) => { if (e.target === overlay) closeOverlay(); });"""
+          assert old in s, 'overlay listeners not found'
+          s = s.replace(old, new, 1)
+
+          # Automatic endings should also offer a clean next game after the score screen.
+          old = """    showOverlay('good', usedAll ? '150 DRAWS FINISH' : coinOut ? 'COIN OUT' : 'GAME FINISH', `${why}\\n最終総コイン：${fmt(score)}\\n初期5,000から：${delta}`, `SCORE ${fmt(score)}`);\n  }"""
+          new = """    showOverlay('good', usedAll ? '150 DRAWS FINISH' : coinOut ? 'COIN OUT' : 'GAME FINISH', `${why}\\n最終総コイン：${fmt(score)}\\n初期5,000から：${delta}`, `SCORE ${fmt(score)}`);\n    overlayClose.textContent = 'もう一度';\n  }"""
+          assert old in s, 'finish overlay block not found'
+          s = s.replace(old, new, 1)
+
+          p.write_text(s, encoding='utf-8')
+
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
+          s = s.replace('・「終了」ボタンを押すと、途中でもその時点の最終スコアを表示します。', '・「終了」ボタンを押すと、その時点の最終スコアを表示します。結果画面を閉じると新しいゲームにリセットされます。')
+          s = s.replace('game-v20.js?v=21', 'game-v20.js?v=22')
+          p.write_text(s, encoding='utf-8')
+          PY
+      - name: Commit patch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add game-v20.js index.html
+          git commit -m "Reset after game finish and remove midway wording"
+          git push
