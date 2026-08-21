@@ -169,7 +169,6 @@
       const hitLine = atHitRate * 100;
       if (r >= hitLine) return 0;
 
-      // Prize distribution conditional on having hit.
       const h = Math.random() * 100;
       if (h < 34) return 100;
       if (h < 68) return 200;
@@ -185,7 +184,6 @@
       return 1000;
     }
 
-    // normal
     if (r < 54) return 0;
     if (r < 77) return 100;
     if (r < 91) return 200;
@@ -354,7 +352,6 @@
 
     const prize = lotteryByInternalState();
 
-    // Hidden wave only advances outside AT
     if (!usedAT) {
       advanceHiddenMode();
     }
@@ -370,7 +367,7 @@
 
     if (prize === 0) {
       ticketEl.textContent = 'LOSE';
-      messageEl.textContent = usedAT ? 'AT中でもハズレ…。まだ継続に期待。' : 'ハズレ。';
+      messageEl.textContent = usedAT ? 'AT中ハズレ。AT終了。' : 'ハズレ。';
       flash('lose');
       shakeScreen();
     } else {
@@ -413,6 +410,7 @@
     const oldPot = pot;
     const usedChance = currentDoubleChance;
     const usedHint = currentHint;
+    const usedAT = atActive;
 
     messageEl.textContent = '示唆確認… ダブルアップ抽選へ';
     ticketEl.textContent = '???';
@@ -443,12 +441,21 @@
       streak = 0;
       ticketEl.textContent = 'BUST';
       vibrate([180,70,180]);
-      messageEl.textContent = '失敗。今回の賞金は0になりました。示唆は確実ではありません。';
+      if (usedAT) {
+        endAT();
+        messageEl.textContent = 'ダブルアップ失敗。今回の賞金は0になり、ATも終了しました。';
+      } else {
+        messageEl.textContent = '失敗。今回の賞金は0になりました。示唆は確実ではありません。';
+      }
       updateHistory('lose', oldPot, 0, usedHint);
       clearHint();
       flash('lose');
       shakeScreen();
-      showOverlay('bad', 'BUST', 'ダブルアップ失敗。今回の賞金は消滅しました。', '0 COIN');
+      if (usedAT) {
+        showOverlay('overlay-blue', 'AT終了', 'ダブルアップ失敗。今回の賞金は消滅し、ATも終了しました。', 'END');
+      } else {
+        showOverlay('bad', 'BUST', 'ダブルアップ失敗。今回の賞金は消滅しました。', '0 COIN');
+      }
     }
     render();
   }
