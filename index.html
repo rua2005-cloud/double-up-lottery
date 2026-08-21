@@ -6,93 +6,92 @@
 <meta name="theme-color" content="#020617" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-<title>DOUBLE UP LOTTERY - TIME ATTACK</title>
-<link rel="stylesheet" href="style.css?v=6" />
+<title>DOUBLE UP LOTTERY - 3 MIN TIME ATTACK</title>
+<link rel="stylesheet" href="style.css?v=8" />
 </head>
 <body>
 <div class="particles" id="particles"></div>
 
-  <main class="game" id="game">
-    <h1>DOUBLE UP LOTTERY</h1>
-    <div class="sub">10分でどこまで増やせるか。AT中はハズレるまで続く。</div>
+<main class="game" id="game">
+  <h1>DOUBLE UP LOTTERY</h1>
+  <div class="sub">3分でどこまで増やせるか。AT中はハズレるまで続く。</div>
 
-    <section class="timeAttack" id="timeAttack">
-      <div>
-        <div class="time-label">TIME ATTACK</div>
-        <div class="time-sub" id="timeSub">最初のくじでスタート</div>
-      </div>
-      <div class="time-value" id="timerValue">10:00</div>
-    </section>
-
-    <section class="stats">
-      <div class="stat"><span>所持コイン</span><strong id="bank">10,000</strong></div>
-      <div class="stat"><span>今回の賞金</span><strong id="pot">0</strong></div>
-      <div class="stat"><span>連続成功</span><strong id="streak">0</strong></div>
-      <div class="stat at-off" id="atStat"><span>AT状態</span><strong id="atView">通常状態</strong></div>
-    </section>
-
-    <section class="atBanner" id="atBanner">
-      <div>
-        <div class="at-main" id="atMain">ATはまだ始まっていません</div>
-        <div class="at-sub" id="atSub">通常時の内部状態は非表示。AT突入時だけ告知されます。</div>
-      </div>
-      <div class="atBadge" id="atBadge">—</div>
-    </section>
-
-    <section class="hintbox" id="hintBox">
-      <div>
-        <div class="hint-label">NEXT DOUBLE-UP HINT</div>
-        <div class="hint-text" id="hintText">まだ示唆はありません</div>
-        <div class="hint-sub" id="hintSub">当選すると次のダブルアップ示唆が表示されます。</div>
-        <div class="aura-wrap" id="auraWrap"></div>
-      </div>
-    </section>
-
-    <section class="stage" id="stage">
-      <div>
-        <div class="ticket-wrap">
-          <div class="ticket" id="ticket">LOTTERY</div>
-        </div>
-        <div class="message" id="message">100コインでくじを1枚引けます。</div>
-        <div class="countdown" id="countdown"></div>
-      </div>
-    </section>
-
-    <div class="controls">
-      <button class="primary" id="drawBtn">くじを引く</button>
-      <button class="double" id="doubleBtn" disabled>示唆を信じてダブルアップ</button>
-      <button class="take" id="takeBtn" disabled>賞金を受け取る</button>
-      <button class="reset" id="resetBtn">リセット</button>
+  <section class="timeAttack" id="timeAttack">
+    <div>
+      <div class="time-label">TIME ATTACK</div>
+      <div class="time-sub" id="timeSub">最初のくじでスタート</div>
     </div>
+    <div class="time-value" id="timerValue">3:00</div>
+  </section>
 
-    <section class="history">
-      <div class="history-title">直近のダブルアップ</div>
-      <div class="history-list" id="historyList">
-        <span class="tag">まだ記録なし</span>
-      </div>
-    </section>
+  <section class="stats">
+    <div class="stat"><span>所持コイン</span><strong id="bank">10,000</strong></div>
+    <div class="stat"><span>今回の賞金</span><strong id="pot">0</strong></div>
+    <div class="stat"><span>連続成功</span><strong id="streak">0</strong></div>
+    <div class="stat at-off" id="atStat"><span>AT状態</span><strong id="atView">通常状態</strong></div>
+  </section>
 
-    <div class="rules">
-      <strong>10分タイムアタック</strong><br>
-      ・最初のくじを引いた瞬間に10:00からスタート。0:00でゲーム終了。<br>
-      ・スコアは終了時の「所持コイン＋未受取賞金」。<br>
-      <br><strong>仕様</strong><br>
-      ・通常時の内部状態（重い時間・普通の時間）は非表示。<br>
-      ・ATに入ったときだけ告知。<br>
-      ・AT中は無料で引けて当たりやすい。<br>
-      ・AT突入時に、AT中の当選率が <strong>60% / 80%</strong> のどちらかに内部抽選されます。<br>
-      ・AT中にハズレを引いた時点でAT終了。AT終了後は、再び内部状態のみで進みます。
+  <section class="atBanner" id="atBanner">
+    <div>
+      <div class="at-main" id="atMain">ATはまだ始まっていません</div>
+      <div class="at-sub" id="atSub">通常時の内部状態は非表示。AT突入時だけ告知されます。</div>
     </div>
-  </main>
+    <div class="atBadge" id="atBadge">—</div>
+  </section>
 
-  <div class="overlay" id="overlay">
-    <div class="overlay-card" id="overlayCard">
-      <div class="overlay-title" id="overlayTitle">SUCCESS</div>
-      <div class="overlay-sub" id="overlaySub"></div>
-      <div class="overlay-amount" id="overlayAmount"></div>
-      <button class="overlay-close" id="overlayClose">閉じる</button>
+  <section class="hintbox" id="hintBox">
+    <div>
+      <div class="hint-label" id="hintLabel">NEXT DOUBLE-UP HINT</div>
+      <div class="hint-text" id="hintText">まだ示唆はありません</div>
+      <div class="hint-sub" id="hintSub">当選すると次のダブルアップ示唆が表示されます。</div>
+      <div class="aura-wrap" id="auraWrap"></div>
     </div>
+  </section>
+
+  <section class="stage" id="stage">
+    <div>
+      <div class="ticket-wrap"><div class="ticket" id="ticket">LOTTERY</div></div>
+      <div class="message" id="message">100コインでくじを1枚引けます。</div>
+      <div class="countdown" id="countdown"></div>
+    </div>
+  </section>
+
+  <div class="controls">
+    <button class="primary" id="drawBtn">くじを引く</button>
+    <button class="double" id="doubleBtn" disabled>示唆を信じてダブルアップ</button>
+    <button class="take" id="takeBtn" disabled>賞金を受け取る</button>
+    <button class="reset" id="resetBtn">リセット</button>
   </div>
-<script src="game.js?v=6"></script>
+
+  <section class="history">
+    <div class="history-title">直近のダブルアップ</div>
+    <div class="history-list" id="historyList"><span class="tag">まだ記録なし</span></div>
+  </section>
+
+  <div class="rules">
+    <strong>3分タイムアタック</strong><br>
+    ・最初のくじを引いた瞬間に3:00からスタート。0:00でゲーム終了。<br>
+    ・スコアは終了時の「所持コイン＋未受取賞金」。<br>
+    <br><strong>示唆</strong><br>
+    ・通常時：次のダブルアップ成功率をぼかして示唆。<br>
+    ・AT中：そのATが60% / 80%のどちら寄りかをぼかして示唆。ダブルアップ成功率とは別です。<br>
+    <br><strong>AT仕様</strong><br>
+    ・通常時の内部状態（重い時間・普通の時間）は非表示。<br>
+    ・ATに入ったときだけ告知。<br>
+    ・AT中は無料で引けて当たりやすい。<br>
+    ・AT突入時に、AT中の当選率が <strong>60% / 80%</strong> のどちらかに内部抽選されます。<br>
+    ・AT中にハズレを引いた時点でAT終了。AT終了後は、再び内部状態のみで進みます。
+  </div>
+</main>
+
+<div class="overlay" id="overlay">
+  <div class="overlay-card" id="overlayCard">
+    <div class="overlay-title" id="overlayTitle">SUCCESS</div>
+    <div class="overlay-sub" id="overlaySub"></div>
+    <div class="overlay-amount" id="overlayAmount"></div>
+    <button class="overlay-close" id="overlayClose">閉じる</button>
+  </div>
+</div>
+<script src="game.js?v=8"></script>
 </body>
 </html>
