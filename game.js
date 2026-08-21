@@ -18,7 +18,7 @@
   let bank = 10000, pot = 0, streak = 0, locked = false;
   let currentDoubleChance = 0.5, currentHint = null, currentHintType = 'none', history = [];
   let hiddenMode = 'cold', hiddenTurns = 8;
-  let atActive = false, atHitRate = 0, atRound = 0;
+  let atActive = false, atHitRate = 0, atDoubleRate = 0, atRound = 0;
 
   const DURATION = 3 * 60 * 1000;
   let started = false, gameOver = false, endAt = 0, timerId = null;
@@ -105,7 +105,7 @@
     doubleBtn.disabled = gameOver || locked || pot <= 0;
     takeBtn.disabled = gameOver || locked || pot <= 0;
     drawBtn.textContent = atActive ? 'AT中：無料で引く' : 'くじを引く';
-    doubleBtn.textContent = atActive ? 'ダブルアップ（AT示唆とは別抽選）' : '示唆を信じてダブルアップ';
+    doubleBtn.textContent = atActive ? 'AT中：ダブルアップ' : '示唆を信じてダブルアップ';
   }
 
   function flash(type) {
@@ -161,11 +161,23 @@
     if (prize >= 1000) p += .08;
     return Math.random() < p;
   }
-  function startAT() { atActive = true; atRound = 0; atHitRate = Math.random() < .5 ? .60 : .80; }
-  function endAT() { atActive = false; atHitRate = 0; atRound = 0; forcePostATCold(); }
+  function startAT() {
+    atActive = true;
+    atRound = 0;
+    atHitRate = Math.random() < .5 ? .60 : .80;
+    atDoubleRate = Math.random() < .5 ? .60 : .80;
+  }
+  function endAT() {
+    atActive = false;
+    atHitRate = 0;
+    atDoubleRate = 0;
+    atRound = 0;
+    forcePostATCold();
+  }
 
   function rollDoubleChance() {
-    const table = atActive ? [.60, .70, .80] : hiddenMode === 'cold' ? [.20, .30, .40, .50, .60] : [.30, .40, .50, .60, .70];
+    if (atActive) return atDoubleRate;
+    const table = hiddenMode === 'cold' ? [.20, .30, .40, .50, .60] : [.30, .40, .50, .60, .70];
     return table[Math.floor(Math.random() * table.length)];
   }
   function weightedPick(items) {
@@ -318,7 +330,7 @@
 
     if (enteredATNow) {
       vibrate([80,40,120,40,180]);
-      showOverlay('good', 'AT突入', 'ボーナスタイム突入！\nAT中は無料抽選。ハズレ・ダブルアップ失敗・賞金受取で終了します。\n示唆はATが60%か80%かを推測する内容に切り替わります。', 'BONUS TIME');
+      showOverlay('good', 'AT突入', 'ボーナスタイム突入！\nAT中は無料抽選。ハズレ・ダブルアップ失敗・賞金受取で終了します。\nAT中のダブルアップ成功率は60%か80%のどちらかに固定されます。', 'BONUS TIME');
       messageEl.textContent += ' さらにAT突入！';
     } else if (usedAT) {
       if (prize > 0) { atRound++; messageEl.textContent += ' AT継続！'; }
@@ -336,7 +348,7 @@
     if (gameOver || pot <= 0 || locked) return;
     locked = true;
     const oldPot = pot, usedChance = currentDoubleChance, usedHint = currentHint, usedHintType = currentHintType, usedAT = atActive;
-    messageEl.textContent = usedAT ? 'AT示唆はAT当選率のヒント。ダブルアップは別抽選…' : '示唆確認… ダブルアップ抽選へ';
+    messageEl.textContent = usedAT ? 'AT中の固定ダブルアップ抽選…' : '示唆確認… ダブルアップ抽選へ';
     ticketEl.textContent = '???';
     animateTicket('flip');
     render();
@@ -405,7 +417,7 @@
     if (timerId) { clearInterval(timerId); timerId = null; }
     bank = 10000; pot = 0; streak = 0; locked = false;
     currentDoubleChance = .5; currentHint = null; currentHintType = 'none'; history = [];
-    hiddenMode = 'cold'; hiddenTurns = 8; atActive = false; atHitRate = 0; atRound = 0;
+    hiddenMode = 'cold'; hiddenTurns = 8; atActive = false; atHitRate = 0; atDoubleRate = 0; atRound = 0;
     started = false; gameOver = false; endAt = 0;
     historyList.innerHTML = '<span class="tag">まだ記録なし</span>';
     ticketEl.textContent = 'LOTTERY';
