@@ -17,6 +17,7 @@ import {
   serverTimestamp
 } from 'https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js';
 
+const INITIAL_SCORE = 1000;
 const $ = id => document.getElementById(id);
 const emailEl = $('adminEmail');
 const passwordEl = $('adminPassword');
@@ -31,6 +32,7 @@ const refreshBtn = $('refreshBtn');
 const userCountEl = $('userCount');
 const playCountEl = $('playCount');
 const topScoreEl = $('topScore');
+const totalNetEl = $('totalNet');
 const userList = $('userList');
 
 const config = window.FIREBASE_CONFIG || {};
@@ -48,6 +50,12 @@ function formatDate(value) {
   return new Intl.DateTimeFormat('ja-JP', {
     year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit'
   }).format(date);
+}
+
+function formatSigned(value) {
+  const n = Math.trunc(Number(value) || 0);
+  const sign = n > 0 ? '+' : '';
+  return `${sign}${n.toLocaleString('ja-JP')}`;
 }
 
 function showLoggedOut() {
@@ -95,6 +103,7 @@ function makeUserCard(entry) {
   const stats = document.createElement('div');
   stats.className = 'userstats';
   const statDefs = [
+    ['累計収支', `${formatSigned(entry.cumulativeNet)} COIN`],
     ['最高', `${entry.highest.toLocaleString('ja-JP')} COIN`],
     ['プレイ', `${entry.scores.length}回`],
     ['平均', `${entry.average.toLocaleString('ja-JP')} COIN`]
@@ -125,7 +134,7 @@ function makeUserCard(entry) {
   const table = document.createElement('table');
   const thead = document.createElement('thead');
   const hrow = document.createElement('tr');
-  for (const text of ['最終スコア', '総ゲーム数', '総払い出し', '終了日時']) {
+  for (const text of ['最終スコア', '収支', '総ゲーム数', '総払い出し', '終了日時']) {
     const th = document.createElement('th');
     th.textContent = text;
     hrow.appendChild(th);
@@ -133,9 +142,11 @@ function makeUserCard(entry) {
   thead.appendChild(hrow);
   const tbody = document.createElement('tbody');
   for (const score of entry.scores) {
+    const net = score.score - INITIAL_SCORE;
     const tr = document.createElement('tr');
     tr.append(
       makeCell(`${score.score.toLocaleString('ja-JP')} COIN`),
+      makeCell(`${formatSigned(net)} COIN`),
       makeCell(`${score.games.toLocaleString('ja-JP')}G`),
       makeCell(`${score.totalPaid.toLocaleString('ja-JP')} COIN`),
       makeCell(formatDate(score.finishedAt))
@@ -191,15 +202,18 @@ if (!configured) {
         });
         const highest = scores.reduce((m, s) => Math.max(m, s.score), 0);
         const average = scores.length ? Math.round(scores.reduce((sum, s) => sum + s.score, 0) / scores.length) : 0;
-        return { uid:userDoc.id, email:profile.email || '', scores, highest, average };
+        const cumulativeNet = scores.reduce((sum, s) => sum + (s.score - INITIAL_SCORE), 0);
+        return { uid:userDoc.id, email:profile.email || '', scores, highest, average, cumulativeNet };
       }));
 
-      entries.sort((a,b) => b.highest - a.highest || a.email.localeCompare(b.email));
+      entries.sort((a,b) => b.cumulativeNet - a.cumulativeNet || b.highest - a.highest || a.email.localeCompare(b.email));
       const totalPlays = entries.reduce((sum, e) => sum + e.scores.length, 0);
       const best = entries.reduce((m, e) => Math.max(m, e.highest), 0);
+      const totalNet = entries.reduce((sum, e) => sum + e.cumulativeNet, 0);
       userCountEl.textContent = entries.length.toLocaleString('ja-JP');
       playCountEl.textContent = totalPlays.toLocaleString('ja-JP');
       topScoreEl.textContent = `${best.toLocaleString('ja-JP')} COIN`;
+      if (totalNetEl) totalNetEl.textContent = `${formatSigned(totalNet)} COIN`;
 
       userList.innerHTML = '';
       if (!entries.length) {
