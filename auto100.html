@@ -48,10 +48,10 @@
 <main class="game" id="game">
   <h1>LOTTERY AT</h1>
   <div class="sub">1,000コインから、ATだけで一撃を狙う。</div>
-  <div class="prototype-note">AUTO 100G / AT-ONLY PAYOUT</div>
+  <div class="prototype-note">AUTO 100G / 1 ACCOUNT = 10 PLAYS</div>
 
   <section class="account-panel" id="accountPanel">
-    <div class="account-head"><div class="account-title">ACCOUNT / SCORE HISTORY</div><div class="account-status" id="accountStatus">ログイン機能を読み込み中…</div></div>
+    <div class="account-head"><div class="account-title">ACCOUNT / 10 PLAY CHALLENGE</div><div class="account-status" id="accountStatus">ログイン機能を読み込み中…</div></div>
     <div class="auth-row">
       <input id="authEmail" type="email" autocomplete="email" placeholder="メールアドレス" aria-label="メールアドレス" />
       <input id="authPassword" type="password" autocomplete="current-password" placeholder="パスワード" aria-label="パスワード" />
@@ -59,7 +59,7 @@
       <button id="signUpBtn" type="button">新規登録</button>
       <button id="signOutBtn" type="button" hidden>ログアウト</button>
     </div>
-    <div class="saved-scores"><div class="saved-title">過去20件の最終スコア</div><div class="score-history" id="scoreHistory"><span class="account-empty">読み込み中…</span></div></div>
+    <div class="saved-scores"><div class="saved-title">10 PLAY CHALLENGE</div><div class="score-history" id="scoreHistory"><span class="account-empty">読み込み中…</span></div></div>
   </section>
 
   <section class="stats">
@@ -76,7 +76,7 @@
   <section class="lottery-stage" id="stage">
     <div class="lottery-wrap">
       <div class="ticket-wrap"><div class="ticket" id="ticket">LOTTERY</div></div>
-      <div class="slot-caption" id="message" aria-live="polite">ボタン1回で100ゲームを高速消化します。</div>
+      <div class="slot-caption" id="message" aria-live="polite">ログイン後、AUTO 100Gでプレイを開始します。</div>
       <div class="result-payout" id="payout"></div>
       <div class="batch-progress"><div id="progressBar"></div></div>
       <div class="batch-line" id="batchLine">READY</div>
@@ -93,15 +93,19 @@
 
   <details class="rules">
     <summary>遊び方・確率を見る</summary>
+    <strong>【10 PLAY CHALLENGE】</strong><br>
+    ・プレイにはログインが必要です。<br>
+    ・1アカウントにつき最大 <strong>10プレイ</strong>。最初のAUTO 100Gを押した時点で1プレイ枠を消費します。<br>
+    ・途中でリロード・離脱した使用済み枠は、最終スコア <strong>0</strong>、累計収支 <strong>-1,000</strong> として扱います。<br>
+    ・10プレイの累計収支は、各プレイの <strong>最終スコア - 1,000</strong> の合計です。<br><br>
     <strong>【操作】</strong><br>
     ・<strong>AUTO 100G</strong>を1回押すと、通常時・AT中を含めて最大100ゲームを高速消化します。<br>
     ・100G目がAT途中なら、AT状態と内部継続率は次のAUTO 100Gへ引き継がれます。<br>
     ・途中で所持コインが0になった場合は、その時点で終了します。<br>
     ・任意のタイミングで「ゲームを終了」を押すと、その時点の<strong>所持コインが最終スコア</strong>になります。<br>
-    ・ログイン中に終了したスコアは、そのアカウントの履歴に保存されます。<br>
-    ・終了後はそのプレイをやり直せません。<br><br>
+    ・終了後はそのプレイをやり直せません。次のプレイはページを開き直して開始します。<br><br>
     <strong>【基本】</strong><br>
-    ・初期所持コインは <strong>1,000コイン</strong>。回数上限はありません。<br>
+    ・各プレイの初期所持コインは <strong>1,000コイン</strong>。<br>
     ・通常時もAT中も1ゲームにつき <strong>1コイン</strong>消費します。<br><br>
     <strong>【通常時】</strong><br>
     ・ハズレ：<strong>48/49（約97.96%）</strong> / 払い出し0<br>
@@ -115,7 +119,7 @@
     ・長期理論機械割は <strong>100.00%</strong> です。AUTO化は抽選をまとめて実行するだけで、確率は変更しません。
   </details>
 
-  <div class="theory"><strong>狙い：</strong>1ゲームずつ押す作業をなくし、100G単位で所持コインの上下とATの一撃性だけを観察できるようにした版です。</div>
+  <div class="theory"><strong>正式成績：</strong>10プレイ終了時の累計収支。プラスになった瞬間だけで逃げる無限試行はできません。</div>
 </main>
 
 <div class="overlay" id="overlay"><div class="overlay-card"><div class="overlay-title" id="overlayTitle">100G RESULT</div><div class="overlay-sub" id="overlaySub"></div><div class="overlay-amount" id="overlayAmount"></div><button class="overlay-close" id="overlayClose">閉じる</button></div></div>
@@ -166,6 +170,7 @@
   function finishGame(reason='manual'){
     if(gameOver)return;
     gameOver=true;
+    window.__lotteryGameOver=true;
     locked=false;
     setTicket('FINISH','lose');
     message.textContent=`ゲーム終了。FINAL SCORE ${bank.toLocaleString('ja-JP')} COIN`;
@@ -252,7 +257,7 @@
   createParticles();render();
 })();
 </script>
-<script src="firebase-config.js?v=1"></script>
-<script type="module" src="auth-history.js?v=1"></script>
+<script src="firebase-config.js?v=2"></script>
+<script type="module" src="auth-history.js?v=4"></script>
 </body>
 </html>
