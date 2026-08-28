@@ -27,7 +27,13 @@ const passwordEl = document.getElementById('authPassword');
 const signInBtn = document.getElementById('signInBtn');
 const signUpBtn = document.getElementById('signUpBtn');
 const signOutBtn = document.getElementById('signOutBtn');
+const autoBtn = document.getElementById('autoBtn');
+const endBtn = document.getElementById('endBtn');
+const messageEl = document.getElementById('message');
 const savedTitleEl = root?.querySelector('.saved-title');
+const accountTitleEl = root?.querySelector('.account-title');
+const prototypeNoteEl = document.querySelector('.prototype-note');
+const rulesEl = document.querySelector('.rules');
 
 const config = window.FIREBASE_CONFIG || {};
 const configured = Boolean(config.apiKey && config.authDomain && config.projectId && config.appId);
@@ -80,6 +86,14 @@ function formatDate(value) {
 }
 
 if (savedTitleEl) savedTitleEl.textContent = '10 PLAY CHALLENGE';
+if (accountTitleEl) accountTitleEl.textContent = 'ACCOUNT / 10 PLAY CHALLENGE';
+if (prototypeNoteEl) prototypeNoteEl.textContent = 'AUTO 100G / 1 ACCOUNT = 10 PLAYS';
+if (rulesEl) {
+  rulesEl.innerHTML = rulesEl.innerHTML
+    .replace('・ログイン中に終了したスコアは、そのアカウントの履歴に保存されます。', '・プレイにはログインが必要です。最初のAUTO 100Gを押した時点で1プレイ枠を消費します。')
+    .replace('・終了後はそのプレイをやり直せません。', '・途中でリロード・離脱したプレイ枠も使用済みとなり、最終スコア0として累計収支は-1,000扱いです。')
+    .replace('・初期所持コインは <strong>1,000コイン</strong>。回数上限はありません。', '・初期所持コインは <strong>1,000コイン</strong>。1アカウントにつき最大<strong>10プレイ</strong>です。');
+}
 
 if (!configured) {
   root?.classList.add('not-configured');
@@ -90,7 +104,8 @@ if (!configured) {
     isLoggedIn: () => false,
     getState: () => ({...state}),
     claimPlay: async () => ({ claimed:false, reason:'not-configured' }),
-    finishPlay: async () => ({ saved:false, reason:'not-configured' })
+    finishPlay: async () => ({ saved:false, reason:'not-configured' }),
+    saveScore: async () => ({ saved:false, reason:'not-configured' })
   };
   publishState();
 } else {
@@ -98,6 +113,9 @@ if (!configured) {
   const auth = getAuth(app);
   const db = getFirestore(app);
   let currentUser = null;
+  let activePlayId = null;
+  let claimingPlay = false;
+  let bypassNextAutoClick = false;
 
   async function syncProfile(user) {
     if (!user) return;
@@ -205,6 +223,9 @@ if (!configured) {
         return { claimed:false, reason:'limit-reached' };
       }
 
+      activePlayId = playId;
+      window.__lotteryPlayStarted = true;
+      window.__lotteryGameOver = false;
       await loadHistory();
       setStatus(`PLAY ${playId}/${MAX_PLAYS} を開始しました。この枠は使用済みです。`, 'ok');
       return { claimed:true, playId };
@@ -230,6 +251,8 @@ if (!configured) {
       });
       await loadHistory();
       setStatus(`PLAY ${playId}：${score.toLocaleString('ja-JP')} COIN で確定しました。`, 'ok');
+      activePlayId = null;
+      window.__lotteryGameOver = true;
       return { saved:true };
     } catch (error) {
       console.error(error);
@@ -237,6 +260,62 @@ if (!configured) {
       return { saved:false, reason:'error' };
     }
   }
+
+  // Compatibility hook used by the existing game core on FINAL SCORE.
+  async function saveScore(payload) {
+    return finishPlay(activePlayId, payload);
+  }
+
+  // Capture AUTO before the game core sees it. The first AUTO consumes a slot.
+  autoBtn?.addEventListener('click', async event => {
+    if (bypassNextAutoClick) {
+      bypassNextAutoClick = false;
+      return;
+    }
+
+    if (activePlayId) return;
+
+    event.preventDefault();
+    event.stopImmediatePropagation();
+
+    if (!currentUser) {
+      setStatus('プレイするにはログインしてください。', 'warn');
+      if (messageEl) messageEl.textContent = 'ログイン後にAUTO 100Gを押してください。';
+      return;
+    }
+    if (claimingPlay) return;
+    if (state.remaining <= 0) {
+      setStatus('10 PLAYをすべて使用済みです。このアカウントではこれ以上プレイできません。', 'warn');
+      if (messageEl) messageEl.textContent = '10 PLAY COMPLETE';
+      return;
+    }
+
+    claimingPlay = true;
+    const originalText = autoBtn.textContent;
+    autoBtn.disabled = true;
+    autoBtn.textContent = 'PLAY SLOT CHECK…';
+    const result = await claimPlay();
+    claimingPlay = false;
+    autoBtn.disabled = false;
+
+    if (!result.claimed) {
+      autoBtn.textContent = originalText;
+      if (result.reason === 'limit-reached' && messageEl) messageEl.textContent = '10 PLAY COMPLETE';
+      return;
+    }
+
+    bypassNextAutoClick = true;
+    autoBtn.textContent = originalText;
+    autoBtn.click();
+  }, true);
+
+  // A 1,000-point no-play record cannot be created by pressing END before AUTO.
+  endBtn?.addEventListener('click', event => {
+    if (activePlayId) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    setStatus(currentUser ? 'まずAUTO 100Gを押してプレイを開始してください。' : 'プレイするにはログインしてください。', 'warn');
+  }, true);
 
   signInBtn?.addEventListener('click', async () => {
     const email = emailEl.value.trim();
@@ -269,7 +348,7 @@ if (!configured) {
   });
 
   signOutBtn?.addEventListener('click', async () => {
-    if (window.__lotteryPlayStarted && !window.__lotteryGameOver) {
+    if (activePlayId && !window.__lotteryGameOver) {
       const ok = window.confirm('進行中のプレイがあります。ログアウトするとその枠は0 COIN扱いになります。ログアウトしますか？');
       if (!ok) return;
     }
@@ -291,6 +370,7 @@ if (!configured) {
       await loadHistory();
     } else {
       root?.classList.remove('logged-in');
+      activePlayId = null;
       state = { loggedIn:false, email:'', used:0, remaining:MAX_PLAYS, cumulativeNet:0 };
       setStatus('未ログイン：プレイするにはログインしてください。');
       if (emailEl) emailEl.disabled = false;
@@ -308,6 +388,7 @@ if (!configured) {
     getState: () => ({...state}),
     claimPlay,
     finishPlay,
+    saveScore,
     reloadHistory: loadHistory
   };
 }
