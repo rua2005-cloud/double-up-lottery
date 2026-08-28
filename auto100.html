@@ -11,6 +11,10 @@
 <link rel="stylesheet" href="style.css?v=12" />
 <style>
   .prototype-note{margin:0 0 12px;text-align:center;color:#94a3b8;font-size:12px}
+  .account-panel{margin:0 0 14px;padding:13px;border:1px solid rgba(255,255,255,.08);border-radius:15px;background:rgba(255,255,255,.03)}
+  .account-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:9px}.account-title{font-size:13px;font-weight:900}.account-status{font-size:11px;color:#94a3b8;text-align:right}.account-status[data-kind="ok"]{color:#86efac}.account-status[data-kind="warn"]{color:#fde68a}.account-status[data-kind="error"]{color:#fca5a5}
+  .auth-row{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr) auto auto auto;gap:7px;align-items:center}.auth-row input{min-width:0;height:38px;border:1px solid rgba(255,255,255,.10);border-radius:9px;background:rgba(2,6,23,.65);color:#f8fafc;padding:0 10px;font-size:13px}.auth-row button{height:38px;padding:0 11px;border-radius:9px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.06);color:#e2e8f0;font-size:12px;font-weight:850;cursor:pointer}.auth-row button:disabled,.auth-row input:disabled{opacity:.55;cursor:not-allowed}
+  .saved-scores{margin-top:10px;border-top:1px solid rgba(255,255,255,.06);padding-top:9px}.saved-title{font-size:11px;color:#94a3b8;margin-bottom:7px}.score-history{display:flex;gap:7px;overflow-x:auto;padding-bottom:2px}.score-row{flex:0 0 auto;min-width:140px;padding:8px 10px;border-radius:10px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.06);display:grid;gap:2px}.score-row strong{font-size:13px}.score-row span,.score-row small{font-size:10px;color:#94a3b8}.account-empty{font-size:11px;color:#64748b}
   .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:14px}
   .controls{display:grid;grid-template-columns:1fr;gap:9px;margin-top:14px}
   .controls .primary{grid-column:auto}
@@ -35,7 +39,7 @@
   .batch-progress{margin-top:12px;height:8px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden}.batch-progress>div{height:100%;width:0;background:linear-gradient(90deg,#60a5fa,#f59e0b);transition:width .04s linear}
   .batch-line{margin-top:7px;color:#94a3b8;font-size:12px;min-height:18px}
   .theory{margin-top:12px;padding:10px 12px;border-radius:13px;border:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.025);font-size:12px;color:#94a3b8;line-height:1.7}.theory strong{color:#f8fafc}
-  @media(max-width:760px){.stats{grid-template-columns:repeat(3,1fr)}.game{padding-bottom:118px}.controls{position:fixed;left:max(6px,env(safe-area-inset-left));right:max(6px,env(safe-area-inset-right));bottom:max(6px,env(safe-area-inset-bottom));z-index:8;background:rgba(15,23,42,.95);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:8px}.controls button{min-height:58px;font-size:17px}.mode-title{font-size:17px}.lottery-stage{min-height:220px;padding:16px 8px}.ticket{width:min(78vw,220px);height:126px;font-size:28px}.slot-caption{font-size:12px}.result-payout{font-size:22px}.end-zone{margin-bottom:4px}}
+  @media(max-width:760px){.auth-row{grid-template-columns:1fr 1fr}.auth-row input{font-size:16px}.auth-row button{min-height:40px}.auth-row #signOutBtn{grid-column:1/-1}.account-head{align-items:flex-start;flex-direction:column}.account-status{text-align:left}.stats{grid-template-columns:repeat(3,1fr)}.game{padding-bottom:118px}.controls{position:fixed;left:max(6px,env(safe-area-inset-left));right:max(6px,env(safe-area-inset-right));bottom:max(6px,env(safe-area-inset-bottom));z-index:8;background:rgba(15,23,42,.95);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:8px}.controls button{min-height:58px;font-size:17px}.mode-title{font-size:17px}.lottery-stage{min-height:220px;padding:16px 8px}.ticket{width:min(78vw,220px);height:126px;font-size:28px}.slot-caption{font-size:12px}.result-payout{font-size:22px}.end-zone{margin-bottom:4px}}
   @media(prefers-reduced-motion:reduce){.ticket.running{animation:none}.batch-progress>div{transition:none}}
 </style>
 </head>
@@ -45,6 +49,18 @@
   <h1>LOTTERY AT</h1>
   <div class="sub">1,000コインから、ATだけで一撃を狙う。</div>
   <div class="prototype-note">AUTO 100G / AT-ONLY PAYOUT</div>
+
+  <section class="account-panel" id="accountPanel">
+    <div class="account-head"><div class="account-title">ACCOUNT / SCORE HISTORY</div><div class="account-status" id="accountStatus">ログイン機能を読み込み中…</div></div>
+    <div class="auth-row">
+      <input id="authEmail" type="email" autocomplete="email" placeholder="メールアドレス" aria-label="メールアドレス" />
+      <input id="authPassword" type="password" autocomplete="current-password" placeholder="パスワード" aria-label="パスワード" />
+      <button id="signInBtn" type="button">ログイン</button>
+      <button id="signUpBtn" type="button">新規登録</button>
+      <button id="signOutBtn" type="button" hidden>ログアウト</button>
+    </div>
+    <div class="saved-scores"><div class="saved-title">過去20件の最終スコア</div><div class="score-history" id="scoreHistory"><span class="account-empty">読み込み中…</span></div></div>
+  </section>
 
   <section class="stats">
     <div class="stat"><span>所持コイン</span><strong id="bank">1,000</strong></div>
@@ -82,6 +98,7 @@
     ・100G目がAT途中なら、AT状態と内部継続率は次のAUTO 100Gへ引き継がれます。<br>
     ・途中で所持コインが0になった場合は、その時点で終了します。<br>
     ・任意のタイミングで「ゲームを終了」を押すと、その時点の<strong>所持コインが最終スコア</strong>になります。<br>
+    ・ログイン中に終了したスコアは、そのアカウントの履歴に保存されます。<br>
     ・終了後はそのプレイをやり直せません。<br><br>
     <strong>【基本】</strong><br>
     ・初期所持コインは <strong>1,000コイン</strong>。回数上限はありません。<br>
@@ -159,6 +176,11 @@
     const detail=reason==='empty'?`所持コインが0になりました。\n総ゲーム数：${games.toLocaleString('ja-JP')}G`:`総ゲーム数：${games.toLocaleString('ja-JP')}G\nこのスコアで終了しました。`;
     showOverlay(bank>INITIAL_BANK?'good':'bad','FINAL SCORE',detail,`${bank.toLocaleString('ja-JP')} COIN`);
     render();
+    const scoreData={score:bank,games,totalPaid};
+    window.__lastLotteryScore=scoreData;
+    if(window.lotteryAccount?.saveScore){
+      window.lotteryAccount.saveScore(scoreData).catch(error=>console.error('Score save failed',error));
+    }
   }
 
   function playOneFast(batch){
@@ -230,5 +252,7 @@
   createParticles();render();
 })();
 </script>
+<script src="firebase-config.js?v=1"></script>
+<script type="module" src="auth-history.js?v=1"></script>
 </body>
 </html>
