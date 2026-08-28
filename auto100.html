@@ -11,7 +11,7 @@
 <link rel="stylesheet" href="style.css?v=12" />
 <style>
   .prototype-note{margin:0 0 12px;text-align:center;color:#94a3b8;font-size:12px}
-  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-bottom:14px}
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:14px}
   .controls{display:grid;grid-template-columns:1fr;gap:9px;margin-top:14px}
   .controls .primary,.controls .reset{grid-column:auto}
   .mode-panel{margin-bottom:12px;padding:14px 16px;border-radius:16px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.035);display:flex;align-items:center;justify-content:space-between;gap:12px}
@@ -32,7 +32,7 @@
   .batch-progress{margin-top:12px;height:8px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden}.batch-progress>div{height:100%;width:0;background:linear-gradient(90deg,#60a5fa,#f59e0b);transition:width .04s linear}
   .batch-line{margin-top:7px;color:#94a3b8;font-size:12px;min-height:18px}
   .theory{margin-top:12px;padding:10px 12px;border-radius:13px;border:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.025);font-size:12px;color:#94a3b8;line-height:1.7}.theory strong{color:#f8fafc}
-  @media(max-width:760px){.stats{grid-template-columns:repeat(2,1fr)}.game{padding-bottom:118px}.controls{position:fixed;left:max(6px,env(safe-area-inset-left));right:max(6px,env(safe-area-inset-right));bottom:max(6px,env(safe-area-inset-bottom));z-index:8;background:rgba(15,23,42,.95);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:8px}.controls button{min-height:58px;font-size:17px}.mode-title{font-size:17px}.lottery-stage{min-height:220px;padding:16px 8px}.ticket{width:min(78vw,220px);height:126px;font-size:28px}.slot-caption{font-size:12px}.result-payout{font-size:22px}}
+  @media(max-width:760px){.stats{grid-template-columns:repeat(3,1fr)}.game{padding-bottom:118px}.controls{position:fixed;left:max(6px,env(safe-area-inset-left));right:max(6px,env(safe-area-inset-right));bottom:max(6px,env(safe-area-inset-bottom));z-index:8;background:rgba(15,23,42,.95);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:8px}.controls button{min-height:58px;font-size:17px}.mode-title{font-size:17px}.lottery-stage{min-height:220px;padding:16px 8px}.ticket{width:min(78vw,220px);height:126px;font-size:28px}.slot-caption{font-size:12px}.result-payout{font-size:22px}}
   @media(prefers-reduced-motion:reduce){.ticket.running{animation:none}.batch-progress>div{transition:none}}
 </style>
 </head>
@@ -41,13 +41,12 @@
 <main class="game" id="game">
   <h1>LOTTERY AT</h1>
   <div class="sub">1,000コインから、ATだけで一撃を狙う。</div>
-  <div class="prototype-note">RTP 100.00% / AUTO 100G / AT-ONLY PAYOUT</div>
+  <div class="prototype-note">AUTO 100G / AT-ONLY PAYOUT</div>
 
   <section class="stats">
     <div class="stat"><span>所持コイン</span><strong id="bank">1,000</strong></div>
     <div class="stat"><span>総ゲーム数</span><strong id="games">0</strong></div>
     <div class="stat"><span>総払い出し</span><strong id="paid">0</strong></div>
-    <div class="stat"><span>実績機械割</span><strong id="actualRtp">—</strong></div>
   </section>
 
   <section class="mode-panel" id="modePanel">
@@ -90,7 +89,7 @@
     ・AT中はHITなら <strong>3コイン払い出し</strong>＋AT継続。MISSなら0でAT終了です。<br>
     ・ATの内部継続率は非表示です。<br><br>
     <strong>【理論値】</strong><br>
-    ・長期理論機械割は <strong>100.00%</strong> のままです。AUTO化は抽選をまとめて実行するだけで、確率は変更しません。
+    ・長期理論機械割は <strong>100.00%</strong> です。AUTO化は抽選をまとめて実行するだけで、確率は変更しません。
   </details>
 
   <div class="theory"><strong>狙い：</strong>1ゲームずつ押す作業をなくし、100G単位で所持コインの上下とATの一撃性だけを観察できるようにした版です。</div>
@@ -107,14 +106,14 @@
   const $ = id => document.getElementById(id);
   const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-  const bankEl=$('bank'),gamesEl=$('games'),paidEl=$('paid'),actualRtpEl=$('actualRtp');
+  const bankEl=$('bank'),gamesEl=$('games'),paidEl=$('paid');
   const modePanel=$('modePanel'),modeTitle=$('modeTitle'),modeSub=$('modeSub'),modeBadge=$('modeBadge');
   const ticket=$('ticket'),message=$('message'),payout=$('payout'),stage=$('stage'),game=$('game');
   const autoBtn=$('autoBtn'),resetBtn=$('resetBtn'),historyList=$('historyList'),particles=$('particles');
   const progressBar=$('progressBar'),batchLine=$('batchLine');
   const overlay=$('overlay'),overlayTitle=$('overlayTitle'),overlaySub=$('overlaySub'),overlayAmount=$('overlayAmount'),overlayClose=$('overlayClose');
 
-  let bank=INITIAL_BANK,games=0,totalBet=0,totalPaid=0;
+  let bank=INITIAL_BANK,games=0,totalPaid=0;
   let atActive=false,atRate=0,atHits=0;
   let locked=false,gameOver=false,history=[];
 
@@ -133,7 +132,6 @@
     bankEl.textContent=bank.toLocaleString('ja-JP');
     gamesEl.textContent=games.toLocaleString('ja-JP');
     paidEl.textContent=totalPaid.toLocaleString('ja-JP');
-    actualRtpEl.textContent=totalBet>0?`${(totalPaid/totalBet*100).toFixed(1)}%`:'—';
     modePanel.classList.toggle('at',atActive);
     if(atActive){modeTitle.textContent=`AT中 (${atHits} HIT)`;modeSub.textContent='継続率は内部固定。100G区切りを跨いでも継続。';modeBadge.textContent='AT'}
     else{modeTitle.textContent='通常状態';modeSub.textContent='AT当選以外はすべてハズレ。';modeBadge.textContent='NORMAL'}
@@ -143,12 +141,12 @@
   }
 
   function finishGame(){
-    gameOver=true;locked=false;setTicket('FINISH','lose');message.textContent=`コインが尽きました。${games.toLocaleString('ja-JP')}ゲーム遊びました。`;payout.textContent='';batchLine.textContent='GAME OVER';progressBar.style.width='100%';overlayClose.textContent='もう一度';showOverlay('bad','GAME OVER',`総ゲーム数：${games.toLocaleString('ja-JP')}\n総払い出し：${totalPaid.toLocaleString('ja-JP')}コイン\n実績機械割：${totalBet?(totalPaid/totalBet*100).toFixed(1):'0.0'}%`,'0 COIN');render();
+    gameOver=true;locked=false;setTicket('FINISH','lose');message.textContent=`コインが尽きました。${games.toLocaleString('ja-JP')}ゲーム遊びました。`;payout.textContent='';batchLine.textContent='GAME OVER';progressBar.style.width='100%';overlayClose.textContent='もう一度';showOverlay('bad','GAME OVER',`総ゲーム数：${games.toLocaleString('ja-JP')}\n総払い出し：${totalPaid.toLocaleString('ja-JP')}コイン`,'0 COIN');render();
   }
 
   function playOneFast(batch){
     if(bank<1)return null;
-    bank--;games++;totalBet++;batch.played++;
+    bank--;games++;batch.played++;
 
     if(atActive){
       if(Math.random()<atRate){
@@ -203,7 +201,7 @@
   }
 
   function reset(){
-    bank=INITIAL_BANK;games=0;totalBet=0;totalPaid=0;atActive=false;atRate=0;atHits=0;locked=false;gameOver=false;history=[];
+    bank=INITIAL_BANK;games=0;totalPaid=0;atActive=false;atRate=0;atHits=0;locked=false;gameOver=false;history=[];
     historyList.innerHTML='<span class="tag">まだ記録なし</span>';setTicket('LOTTERY');message.textContent='ボタン1回で100ゲームを高速消化します。';payout.textContent='';batchLine.textContent='READY';progressBar.style.width='0%';overlay.className='overlay';overlayClose.textContent='閉じる';render();
   }
 
