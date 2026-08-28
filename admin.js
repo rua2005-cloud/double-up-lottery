@@ -11,13 +11,13 @@ import {
   doc,
   getDoc,
   getDocs,
-  query,
-  orderBy,
+  deleteDoc,
   setDoc,
   serverTimestamp
 } from 'https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js';
 
 const INITIAL_SCORE = 1000;
+const MAX_PLAYS = 10;
 const $ = id => document.getElementById(id);
 const emailEl = $('adminEmail');
 const passwordEl = $('adminPassword');
@@ -44,7 +44,7 @@ function setStatus(text, kind='') {
 }
 
 function formatDate(value) {
-  if (!value) return '保存中';
+  if (!value) return '未終了';
   const date = value.toDate ? value.toDate() : new Date(value);
   if (Number.isNaN(date.getTime())) return '日時不明';
   return new Intl.DateTimeFormat('ja-JP', {
@@ -54,8 +54,7 @@ function formatDate(value) {
 
 function formatSigned(value) {
   const n = Math.trunc(Number(value) || 0);
-  const sign = n > 0 ? '+' : '';
-  return `${sign}${n.toLocaleString('ja-JP')}`;
+  return `${n > 0 ? '+' : ''}${n.toLocaleString('ja-JP')}`;
 }
 
 function showLoggedOut() {
@@ -105,8 +104,8 @@ function makeUserCard(entry) {
   const statDefs = [
     ['累計収支', `${formatSigned(entry.cumulativeNet)} COIN`],
     ['最高', `${entry.highest.toLocaleString('ja-JP')} COIN`],
-    ['プレイ', `${entry.scores.length}回`],
-    ['平均', `${entry.average.toLocaleString('ja-JP')} COIN`]
+    ['使用枠', `${entry.plays.length}/${MAX_PLAYS}`],
+    ['残り', `${MAX_PLAYS-entry.plays.length} PLAY`]
   ];
   for (const [label, value] of statDefs) {
     const box = document.createElement('div');
@@ -121,10 +120,10 @@ function makeUserCard(entry) {
   head.append(identity, stats);
   card.appendChild(head);
 
-  if (!entry.scores.length) {
+  if (!entry.plays.length) {
     const empty = document.createElement('div');
     empty.className = 'empty';
-    empty.textContent = '保存されたスコアはありません。';
+    empty.textContent = 'まだ10プレイチャレンジを開始していません。';
     card.appendChild(empty);
     return card;
   }
@@ -134,22 +133,24 @@ function makeUserCard(entry) {
   const table = document.createElement('table');
   const thead = document.createElement('thead');
   const hrow = document.createElement('tr');
-  for (const text of ['最終スコア', '収支', '総ゲーム数', '総払い出し', '終了日時']) {
+  for (const text of ['PLAY', '状態', '最終スコア', '収支', '総ゲーム数', '総払い出し', '終了日時']) {
     const th = document.createElement('th');
     th.textContent = text;
     hrow.appendChild(th);
   }
   thead.appendChild(hrow);
   const tbody = document.createElement('tbody');
-  for (const score of entry.scores) {
-    const net = score.score - INITIAL_SCORE;
+  for (const play of entry.plays) {
+    const net = play.score - INITIAL_SCORE;
     const tr = document.createElement('tr');
     tr.append(
-      makeCell(`${score.score.toLocaleString('ja-JP')} COIN`),
+      makeCell(String(play.id)),
+      makeCell(play.status === 'finished' ? '確定' : '未終了・0扱い'),
+      makeCell(`${play.score.toLocaleString('ja-JP')} COIN`),
       makeCell(`${formatSigned(net)} COIN`),
-      makeCell(`${score.games.toLocaleString('ja-JP')}G`),
-      makeCell(`${score.totalPaid.toLocaleString('ja-JP')} COIN`),
-      makeCell(formatDate(score.finishedAt))
+      makeCell(`${play.games.toLocaleString('ja-JP')}G`),
+      makeCell(`${play.totalPaid.toLocaleString('ja-JP')} COIN`),
+      makeCell(formatDate(play.finishedAt))
     );
     tbody.appendChild(tr);
   }
@@ -167,6 +168,7 @@ if (!configured) {
   const auth = getAuth(app);
   const db = getFirestore(app);
   let currentUser = null;
+  let legacyDeletedThisSession = 0;
 
   async function syncOwnProfile(user) {
     try {
@@ -179,6 +181,22 @@ if (!configured) {
     }
   }
 
+  // Old records lived under users/{uid}/scores. New records never use that path,
+  // so this is safe to run repeatedly after the reset.
+  async function purgeLegacyScores() {
+    const userSnapshot = await getDocs(collection(db, 'users'));
+    let deleted = 0;
+    for (const userDoc of userSnapshot.docs) {
+      const legacySnapshot = await getDocs(collection(db, 'users', userDoc.id, 'scores'));
+      if (legacySnapshot.empty) continue;
+      await Promise.all(legacySnapshot.docs.map(async scoreDoc => {
+        await deleteDoc(scoreDoc.ref);
+        deleted++;
+      }));
+    }
+    return deleted;
+  }
+
   async function loadDashboard() {
     if (!currentUser) return;
     refreshBtn.disabled = true;
@@ -187,41 +205,47 @@ if (!configured) {
       const userSnapshot = await getDocs(collection(db, 'users'));
       const entries = await Promise.all(userSnapshot.docs.map(async userDoc => {
         const profile = userDoc.data();
-        const scoreSnapshot = await getDocs(query(
-          collection(db, 'users', userDoc.id, 'scores'),
-          orderBy('finishedAt', 'desc')
-        ));
-        const scores = scoreSnapshot.docs.map(s => {
+        const playSnapshot = await getDocs(collection(db, 'users', userDoc.id, 'plays'));
+        const plays = playSnapshot.docs.map(s => {
           const d = s.data();
+          const id = Number(s.id);
+          const finished = d.status === 'finished';
           return {
-            score: Math.max(0, Math.floor(Number(d.score) || 0)),
-            games: Math.max(0, Math.floor(Number(d.games) || 0)),
-            totalPaid: Math.max(0, Math.floor(Number(d.totalPaid) || 0)),
-            finishedAt: d.finishedAt || null
+            id,
+            status:finished ? 'finished' : 'started',
+            score:finished ? Math.max(0, Math.floor(Number(d.score) || 0)) : 0,
+            games:finished ? Math.max(0, Math.floor(Number(d.games) || 0)) : 0,
+            totalPaid:finished ? Math.max(0, Math.floor(Number(d.totalPaid) || 0)) : 0,
+            finishedAt:d.finishedAt || null
           };
-        });
-        const highest = scores.reduce((m, s) => Math.max(m, s.score), 0);
-        const average = scores.length ? Math.round(scores.reduce((sum, s) => sum + s.score, 0) / scores.length) : 0;
-        const cumulativeNet = scores.reduce((sum, s) => sum + (s.score - INITIAL_SCORE), 0);
-        return { uid:userDoc.id, email:profile.email || '', scores, highest, average, cumulativeNet };
+        }).filter(p => Number.isInteger(p.id) && p.id >= 1 && p.id <= MAX_PLAYS)
+          .sort((a,b) => a.id - b.id);
+
+        const highest = plays.reduce((m,p) => Math.max(m,p.score), 0);
+        const cumulativeNet = plays.reduce((sum,p) => sum + (p.score - INITIAL_SCORE), 0);
+        return { uid:userDoc.id, email:profile.email || '', plays, highest, cumulativeNet };
       }));
 
       entries.sort((a,b) => b.cumulativeNet - a.cumulativeNet || b.highest - a.highest || a.email.localeCompare(b.email));
-      const totalPlays = entries.reduce((sum, e) => sum + e.scores.length, 0);
-      const best = entries.reduce((m, e) => Math.max(m, e.highest), 0);
-      const totalNet = entries.reduce((sum, e) => sum + e.cumulativeNet, 0);
+      const totalPlays = entries.reduce((sum,e) => sum + e.plays.length, 0);
+      const best = entries.reduce((m,e) => Math.max(m,e.highest), 0);
+      const totalNet = entries.reduce((sum,e) => sum + e.cumulativeNet, 0);
       userCountEl.textContent = entries.length.toLocaleString('ja-JP');
       playCountEl.textContent = totalPlays.toLocaleString('ja-JP');
       topScoreEl.textContent = `${best.toLocaleString('ja-JP')} COIN`;
-      if (totalNetEl) totalNetEl.textContent = `${formatSigned(totalNet)} COIN`;
+      totalNetEl.textContent = `${formatSigned(totalNet)} COIN`;
 
       userList.innerHTML = '';
       if (!entries.length) {
-        userList.innerHTML = '<div class="empty">ユーザープロフィールがまだありません。各ユーザーがゲームへ再ログインすると登録されます。</div>';
+        userList.innerHTML = '<div class="empty">ユーザープロフィールがまだありません。</div>';
       } else {
         for (const entry of entries) userList.appendChild(makeUserCard(entry));
       }
-      setStatus(`管理者としてログイン中：${currentUser.email || currentUser.uid}`, 'ok');
+
+      const resetNote = legacyDeletedThisSession > 0
+        ? ` / 旧履歴 ${legacyDeletedThisSession}件を削除済み`
+        : '';
+      setStatus(`管理者としてログイン中：${currentUser.email || currentUser.uid}${resetNote}`, 'ok');
     } catch (error) {
       console.error(error);
       dashboard.classList.add('hidden');
@@ -238,10 +262,17 @@ if (!configured) {
       const adminSnap = await getDoc(doc(db, 'admins', user.uid));
       if (!adminSnap.exists()) {
         dashboard.classList.add('hidden');
-        setStatus('このアカウントはまだ管理者登録されていません。上のUIDをFirestoreの admins コレクションに登録してください。', 'warn');
+        setStatus('このアカウントは管理者登録されていません。', 'warn');
         return;
       }
       dashboard.classList.remove('hidden');
+      try {
+        legacyDeletedThisSession = await purgeLegacyScores();
+      } catch (error) {
+        console.error('Legacy history purge failed', error);
+        legacyDeletedThisSession = 0;
+        setStatus('管理者ログイン成功。ただし旧履歴の削除に失敗しました。最新版のFirestoreルールを公開してください。', 'warn');
+      }
       await loadDashboard();
     } catch (error) {
       console.error(error);
