@@ -14,7 +14,9 @@ import {
   query,
   orderBy,
   limit,
-  serverTimestamp
+  serverTimestamp,
+  doc,
+  setDoc
 } from 'https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js';
 
 const root = document.getElementById('accountPanel');
@@ -73,6 +75,18 @@ if (!configured) {
   const auth = getAuth(app);
   const db = getFirestore(app);
   let currentUser = null;
+
+  async function syncProfile(user) {
+    if (!user) return;
+    try {
+      await setDoc(doc(db, 'users', user.uid), {
+        email: user.email || '',
+        lastSeenAt: serverTimestamp()
+      }, { merge:true });
+    } catch (error) {
+      console.warn('Profile sync failed', error);
+    }
+  }
 
   async function loadHistory() {
     if (!currentUser || !historyEl) return;
@@ -170,6 +184,7 @@ if (!configured) {
       if (signInBtn) signInBtn.hidden = true;
       if (signUpBtn) signUpBtn.hidden = true;
       if (signOutBtn) signOutBtn.hidden = false;
+      await syncProfile(user);
       await loadHistory();
     } else {
       root?.classList.remove('logged-in');
