@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
+<meta name="theme-color" content="#020617" />
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+<meta http-equiv="Pragma" content="no-cache" />
+<meta http-equiv="Expires" content="0" />
+<title>LOTTERY AT - AUTO 100G</title>
+<link rel="stylesheet" href="style.css?v=12" />
+<style>
+  .prototype-note{margin:0 0 12px;text-align:center;color:#94a3b8;font-size:12px}
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-bottom:14px}
+  .controls{display:grid;grid-template-columns:1fr;gap:9px;margin-top:14px}
+  .controls .primary,.controls .reset{grid-column:auto}
+  .mode-panel{margin-bottom:12px;padding:14px 16px;border-radius:16px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.035);display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .mode-panel.at{background:linear-gradient(135deg,rgba(245,158,11,.20),rgba(251,191,36,.08));box-shadow:0 0 24px rgba(245,158,11,.15)}
+  .mode-title{font-size:20px;font-weight:950}.mode-sub{margin-top:3px;color:#94a3b8;font-size:12px;line-height:1.45}
+  .mode-badge{padding:9px 13px;border-radius:999px;background:rgba(255,255,255,.07);font-weight:900;white-space:nowrap}.mode-panel.at .mode-badge{background:rgba(245,158,11,.22);color:#fde68a}
+  .lottery-stage{min-height:250px;display:grid;place-items:center;text-align:center;border-radius:18px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.08);padding:22px 14px;position:relative;overflow:hidden}
+  .lottery-stage::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 50% 20%,rgba(255,255,255,.08),transparent 36%);pointer-events:none}
+  .lottery-wrap{position:relative;z-index:1;width:min(100%,520px)}
+  .ticket-wrap{perspective:900px;display:grid;place-items:center;margin-bottom:16px}
+  .ticket{width:min(78vw,260px);height:150px;border-radius:20px;display:grid;place-items:center;font-size:34px;font-weight:1000;letter-spacing:.05em;background:linear-gradient(135deg,#f8fafc,#cbd5e1);color:#0f172a;box-shadow:0 14px 40px rgba(0,0,0,.32);position:relative;overflow:hidden;transform:rotate(-2deg);user-select:none}
+  .ticket::before,.ticket::after{content:"";position:absolute;top:0;bottom:0;width:18px;background:radial-gradient(circle,#020617 0 4px,transparent 5px) center/18px 22px repeat-y;opacity:.22}.ticket::before{left:-9px}.ticket::after{right:-9px}
+  .ticket.at{background:linear-gradient(135deg,#fde68a,#f59e0b);color:#451a03;box-shadow:0 0 30px rgba(245,158,11,.38),0 14px 40px rgba(0,0,0,.32)}
+  .ticket.hit{background:linear-gradient(135deg,#dcfce7,#4ade80);color:#052e16}.ticket.lose{background:linear-gradient(135deg,#e2e8f0,#94a3b8);color:#0f172a}
+  .ticket.running{animation:pulseFast .22s linear infinite alternate}
+  @keyframes pulseFast{from{transform:rotate(-2deg) scale(.98)}to{transform:rotate(1deg) scale(1.02)}}
+  .slot-caption{margin-top:10px;color:#cbd5e1;font-size:14px;min-height:24px;line-height:1.45}.result-payout{margin-top:5px;min-height:34px;font-size:26px;font-weight:1000}
+  .batch-progress{margin-top:12px;height:8px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden}.batch-progress>div{height:100%;width:0;background:linear-gradient(90deg,#60a5fa,#f59e0b);transition:width .04s linear}
+  .batch-line{margin-top:7px;color:#94a3b8;font-size:12px;min-height:18px}
+  .theory{margin-top:12px;padding:10px 12px;border-radius:13px;border:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.025);font-size:12px;color:#94a3b8;line-height:1.7}.theory strong{color:#f8fafc}
+  @media(max-width:760px){.stats{grid-template-columns:repeat(2,1fr)}.game{padding-bottom:118px}.controls{position:fixed;left:max(6px,env(safe-area-inset-left));right:max(6px,env(safe-area-inset-right));bottom:max(6px,env(safe-area-inset-bottom));z-index:8;background:rgba(15,23,42,.95);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:8px}.controls button{min-height:58px;font-size:17px}.mode-title{font-size:17px}.lottery-stage{min-height:220px;padding:16px 8px}.ticket{width:min(78vw,220px);height:126px;font-size:28px}.slot-caption{font-size:12px}.result-payout{font-size:22px}}
+  @media(prefers-reduced-motion:reduce){.ticket.running{animation:none}.batch-progress>div{transition:none}}
+</style>
+</head>
+<body>
+<div class="particles" id="particles"></div>
+<main class="game" id="game">
+  <h1>LOTTERY AT</h1>
+  <div class="sub">1,000コインから、ATだけで一撃を狙う。</div>
+  <div class="prototype-note">RTP 100.00% / AUTO 100G / AT-ONLY PAYOUT</div>
+
+  <section class="stats">
+    <div class="stat"><span>所持コイン</span><strong id="bank">1,000</strong></div>
+    <div class="stat"><span>総ゲーム数</span><strong id="games">0</strong></div>
+    <div class="stat"><span>総払い出し</span><strong id="paid">0</strong></div>
+    <div class="stat"><span>実績機械割</span><strong id="actualRtp">—</strong></div>
+  </section>
+
+  <section class="mode-panel" id="modePanel">
+    <div><div class="mode-title" id="modeTitle">通常状態</div><div class="mode-sub" id="modeSub">AUTO 100Gで一気に100ゲーム消化します。</div></div>
+    <div class="mode-badge" id="modeBadge">NORMAL</div>
+  </section>
+
+  <section class="lottery-stage" id="stage">
+    <div class="lottery-wrap">
+      <div class="ticket-wrap"><div class="ticket" id="ticket">LOTTERY</div></div>
+      <div class="slot-caption" id="message" aria-live="polite">ボタン1回で100ゲームを高速消化します。</div>
+      <div class="result-payout" id="payout"></div>
+      <div class="batch-progress"><div id="progressBar"></div></div>
+      <div class="batch-line" id="batchLine">READY</div>
+    </div>
+  </section>
+
+  <div class="controls">
+    <button class="primary" id="autoBtn">AUTO 100G</button>
+    <button class="reset" id="resetBtn">最初からやり直す</button>
+  </div>
+
+  <section class="history"><div class="history-title">直近の100G</div><div class="history-list" id="historyList"><span class="tag">まだ記録なし</span></div></section>
+
+  <details class="rules">
+    <summary>遊び方・確率を見る</summary>
+    <strong>【操作】</strong><br>
+    ・<strong>AUTO 100G</strong>を1回押すと、通常時・AT中を含めて最大100ゲームを高速消化します。<br>
+    ・100G目がAT途中なら、AT状態と内部継続率は次のAUTO 100Gへ引き継がれます。<br>
+    ・途中で所持コインが0になった場合は、その時点で終了します。<br><br>
+    <strong>【基本】</strong><br>
+    ・初期所持コインは <strong>1,000コイン</strong>。回数上限はありません。<br>
+    ・通常時もAT中も1ゲームにつき <strong>1コイン</strong>消費します。<br><br>
+    <strong>【通常時】</strong><br>
+    ・ハズレ：<strong>48/49（約97.96%）</strong> / 払い出し0<br>
+    ・AT当選：<strong>1/49（約2.04%）</strong> / 払い出し0、その次ゲームからAT<br><br>
+    <strong>【AT】</strong><br>
+    ・AT当選時に継続率を内部抽選し、AT終了まで固定します。<br>
+    ・90%継続：60% / 97%継続：30% / 99%継続：10%<br>
+    ・AT中はHITなら <strong>3コイン払い出し</strong>＋AT継続。MISSなら0でAT終了です。<br>
+    ・ATの内部継続率は非表示です。<br><br>
+    <strong>【理論値】</strong><br>
+    ・長期理論機械割は <strong>100.00%</strong> のままです。AUTO化は抽選をまとめて実行するだけで、確率は変更しません。
+  </details>
+
+  <div class="theory"><strong>狙い：</strong>1ゲームずつ押す作業をなくし、100G単位で所持コインの上下とATの一撃性だけを観察できるようにした版です。</div>
+</main>
+
+<div class="overlay" id="overlay"><div class="overlay-card"><div class="overlay-title" id="overlayTitle">100G RESULT</div><div class="overlay-sub" id="overlaySub"></div><div class="overlay-amount" id="overlayAmount"></div><button class="overlay-close" id="overlayClose">閉じる</button></div></div>
+
+<script>
+(() => {
+  const INITIAL_BANK = 1000;
+  const NORMAL_AT_P = 1 / 49;
+  const BATCH_SIZE = 100;
+  const STEP_MS = 10;
+  const $ = id => document.getElementById(id);
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+  const bankEl=$('bank'),gamesEl=$('games'),paidEl=$('paid'),actualRtpEl=$('actualRtp');
+  const modePanel=$('modePanel'),modeTitle=$('modeTitle'),modeSub=$('modeSub'),modeBadge=$('modeBadge');
+  const ticket=$('ticket'),message=$('message'),payout=$('payout'),stage=$('stage'),game=$('game');
+  const autoBtn=$('autoBtn'),resetBtn=$('resetBtn'),historyList=$('historyList'),particles=$('particles');
+  const progressBar=$('progressBar'),batchLine=$('batchLine');
+  const overlay=$('overlay'),overlayTitle=$('overlayTitle'),overlaySub=$('overlaySub'),overlayAmount=$('overlayAmount'),overlayClose=$('overlayClose');
+
+  let bank=INITIAL_BANK,games=0,totalBet=0,totalPaid=0;
+  let atActive=false,atRate=0,atHits=0;
+  let locked=false,gameOver=false,history=[];
+
+  function createParticles(){particles.innerHTML='';for(let i=0;i<24;i++){const p=document.createElement('span');const size=3+Math.random()*6;p.className='particle';p.style.left=`${Math.random()*100}vw`;p.style.bottom=`${-20-Math.random()*60}px`;p.style.width=`${size}px`;p.style.height=`${size}px`;p.style.animationDuration=`${6+Math.random()*8}s`;p.style.animationDelay=`${Math.random()*8}s`;particles.appendChild(p)}}
+  function showOverlay(kind,title,sub,amount=''){overlay.className=`overlay show ${kind}`;overlayTitle.textContent=title;overlaySub.textContent=sub;overlayAmount.textContent=amount}
+  function hideOverlay(){if(!gameOver)overlay.className='overlay'}
+  function setTicket(text,kind=''){ticket.className=`ticket${kind?` ${kind}`:''}${locked?' running':''}`;ticket.textContent=text}
+  function flash(type){stage.classList.remove('flash-win','flash-lose');void stage.offsetWidth;stage.classList.add(type==='win'?'flash-win':'flash-lose')}
+  function addHistory(text){history.unshift(text);history=history.slice(0,8);historyList.innerHTML='';for(const item of history){const tag=document.createElement('span');tag.className='tag';tag.textContent=item;historyList.appendChild(tag)}}
+
+  function selectATRate(){const r=Math.random();if(r<.60)return .90;if(r<.90)return .97;return .99}
+  function startAT(){atActive=true;atRate=selectATRate();atHits=0}
+  function endAT(){atActive=false;atRate=0;atHits=0}
+
+  function render(){
+    bankEl.textContent=bank.toLocaleString('ja-JP');
+    gamesEl.textContent=games.toLocaleString('ja-JP');
+    paidEl.textContent=totalPaid.toLocaleString('ja-JP');
+    actualRtpEl.textContent=totalBet>0?`${(totalPaid/totalBet*100).toFixed(1)}%`:'—';
+    modePanel.classList.toggle('at',atActive);
+    if(atActive){modeTitle.textContent=`AT中 (${atHits} HIT)`;modeSub.textContent='継続率は内部固定。100G区切りを跨いでも継続。';modeBadge.textContent='AT'}
+    else{modeTitle.textContent='通常状態';modeSub.textContent='AT当選以外はすべてハズレ。';modeBadge.textContent='NORMAL'}
+    autoBtn.disabled=locked||gameOver||bank<1;
+    resetBtn.disabled=locked;
+    autoBtn.textContent=locked?'AUTO RUNNING…':'AUTO 100G';
+  }
+
+  function finishGame(){
+    gameOver=true;locked=false;setTicket('FINISH','lose');message.textContent=`コインが尽きました。${games.toLocaleString('ja-JP')}ゲーム遊びました。`;payout.textContent='';batchLine.textContent='GAME OVER';progressBar.style.width='100%';overlayClose.textContent='もう一度';showOverlay('bad','GAME OVER',`総ゲーム数：${games.toLocaleString('ja-JP')}\n総払い出し：${totalPaid.toLocaleString('ja-JP')}コイン\n実績機械割：${totalBet?(totalPaid/totalBet*100).toFixed(1):'0.0'}%`,'0 COIN');render();
+  }
+
+  function playOneFast(batch){
+    if(bank<1)return null;
+    bank--;games++;totalBet++;batch.played++;
+
+    if(atActive){
+      if(Math.random()<atRate){
+        bank+=3;totalPaid+=3;atHits++;batch.atHits++;
+        return {text:'HIT',kind:'hit',payout:'+3'};
+      }
+      batch.atEnds++;endAT();
+      return {text:'MISS',kind:'lose',payout:'AT END'};
+    }
+
+    if(Math.random()<NORMAL_AT_P){
+      startAT();batch.atEntries++;
+      return {text:'AT',kind:'at',payout:'AT IN'};
+    }
+    return {text:'LOSE',kind:'lose',payout:'0'};
+  }
+
+  async function run100(){
+    if(locked||gameOver||bank<1)return;
+    locked=true;overlay.className='overlay';overlayClose.textContent='閉じる';
+    const startBank=bank;
+    const batch={played:0,atEntries:0,atHits:0,atEnds:0};
+    message.textContent='100ゲーム高速消化中…';payout.textContent='';batchLine.textContent='0 / 100G';progressBar.style.width='0%';setTicket('RUN');render();
+
+    for(let i=0;i<BATCH_SIZE;i++){
+      if(bank<1)break;
+      const result=playOneFast(batch);
+      setTicket(result.text,result.kind);
+      payout.textContent=result.payout;
+      progressBar.style.width=`${batch.played}%`;
+      batchLine.textContent=`${batch.played} / 100G　現在 ${bank.toLocaleString('ja-JP')} COIN`;
+      if(batch.played%4===0||result.text==='AT'||result.text==='MISS')render();
+      await sleep(STEP_MS);
+    }
+
+    locked=false;
+    const diff=bank-startBank;
+    const sign=diff>=0?'+':'';
+    const status=atActive?' / AT継続中':'';
+    setTicket(atActive?'AT':'DONE',atActive?'at':'');
+    message.textContent=`${batch.played}ゲーム消化完了。収支 ${sign}${diff}コイン。${status}`;
+    payout.textContent=`${bank.toLocaleString('ja-JP')} COIN`;
+    batchLine.textContent=`AT突入 ${batch.atEntries}回 / AT HIT ${batch.atHits}回`;
+    progressBar.style.width=`${batch.played}%`;
+    addHistory(`${batch.played}G ${sign}${diff} / AT ${batch.atEntries} / HIT ${batch.atHits}`);
+    render();
+
+    if(bank<1){finishGame();return;}
+    const kind=diff>=0?'good':'bad';
+    showOverlay(kind,'100G RESULT',`消化：${batch.played}G\nAT突入：${batch.atEntries}回\nAT HIT：${batch.atHits}回\nAT終了：${batch.atEnds}回${atActive?'\n現在AT継続中':''}`,`${sign}${diff} COIN`);
+    flash(diff>=0?'win':'lose');
+  }
+
+  function reset(){
+    bank=INITIAL_BANK;games=0;totalBet=0;totalPaid=0;atActive=false;atRate=0;atHits=0;locked=false;gameOver=false;history=[];
+    historyList.innerHTML='<span class="tag">まだ記録なし</span>';setTicket('LOTTERY');message.textContent='ボタン1回で100ゲームを高速消化します。';payout.textContent='';batchLine.textContent='READY';progressBar.style.width='0%';overlay.className='overlay';overlayClose.textContent='閉じる';render();
+  }
+
+  autoBtn.addEventListener('click',run100);
+  resetBtn.addEventListener('click',reset);
+  overlayClose.addEventListener('click',()=>gameOver?reset():hideOverlay());
+  overlay.addEventListener('click',e=>{if(e.target===overlay){if(gameOver)reset();else hideOverlay()}});
+  createParticles();render();
+})();
+</script>
+</body>
+</html>
