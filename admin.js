@@ -29,6 +29,7 @@ const uidEl = $('currentUid');
 const copyUidBtn = $('copyUid');
 const dashboard = $('dashboard');
 const refreshBtn = $('refreshBtn');
+const resetAllBtn = $('resetAllBtn');
 const userCountEl = $('userCount');
 const playCountEl = $('playCount');
 const topScoreEl = $('topScore');
@@ -168,7 +169,6 @@ if (!configured) {
   const auth = getAuth(app);
   const db = getFirestore(app);
   let currentUser = null;
-  let legacyDeletedThisSession = 0;
 
   async function syncOwnProfile(user) {
     try {
@@ -181,25 +181,36 @@ if (!configured) {
     }
   }
 
-  // Old records lived under users/{uid}/scores. New records never use that path,
-  // so this is safe to run repeatedly after the reset.
-  async function purgeLegacyScores() {
+  async function resetAllResults() {
     const userSnapshot = await getDocs(collection(db, 'users'));
-    let deleted = 0;
+    let deletedLegacy = 0;
+    let deletedPlays = 0;
+
     for (const userDoc of userSnapshot.docs) {
-      const legacySnapshot = await getDocs(collection(db, 'users', userDoc.id, 'scores'));
-      if (legacySnapshot.empty) continue;
-      await Promise.all(legacySnapshot.docs.map(async scoreDoc => {
-        await deleteDoc(scoreDoc.ref);
-        deleted++;
-      }));
+      const [legacySnapshot, playSnapshot] = await Promise.all([
+        getDocs(collection(db, 'users', userDoc.id, 'scores')),
+        getDocs(collection(db, 'users', userDoc.id, 'plays'))
+      ]);
+
+      await Promise.all([
+        ...legacySnapshot.docs.map(async scoreDoc => {
+          await deleteDoc(scoreDoc.ref);
+          deletedLegacy++;
+        }),
+        ...playSnapshot.docs.map(async playDoc => {
+          await deleteDoc(playDoc.ref);
+          deletedPlays++;
+        })
+      ]);
     }
-    return deleted;
+
+    return { deletedLegacy, deletedPlays };
   }
 
   async function loadDashboard() {
     if (!currentUser) return;
     refreshBtn.disabled = true;
+    if (resetAllBtn) resetAllBtn.disabled = true;
     userList.innerHTML = '<div class="empty">全ユーザーを読み込み中…</div>';
     try {
       const userSnapshot = await getDocs(collection(db, 'users'));
@@ -242,16 +253,14 @@ if (!configured) {
         for (const entry of entries) userList.appendChild(makeUserCard(entry));
       }
 
-      const resetNote = legacyDeletedThisSession > 0
-        ? ` / 旧履歴 ${legacyDeletedThisSession}件を削除済み`
-        : '';
-      setStatus(`管理者としてログイン中：${currentUser.email || currentUser.uid}${resetNote}`, 'ok');
+      setStatus(`管理者としてログイン中：${currentUser.email || currentUser.uid}`, 'ok');
     } catch (error) {
       console.error(error);
       dashboard.classList.add('hidden');
       setStatus('全ユーザーの読み込みに失敗しました。Firestoreルールと管理者登録を確認してください。', 'error');
     } finally {
       refreshBtn.disabled = false;
+      if (resetAllBtn) resetAllBtn.disabled = false;
     }
   }
 
@@ -266,13 +275,6 @@ if (!configured) {
         return;
       }
       dashboard.classList.remove('hidden');
-      try {
-        legacyDeletedThisSession = await purgeLegacyScores();
-      } catch (error) {
-        console.error('Legacy history purge failed', error);
-        legacyDeletedThisSession = 0;
-        setStatus('管理者ログイン成功。ただし旧履歴の削除に失敗しました。最新版のFirestoreルールを公開してください。', 'warn');
-      }
       await loadDashboard();
     } catch (error) {
       console.error(error);
@@ -305,6 +307,32 @@ if (!configured) {
   });
 
   refreshBtn.addEventListener('click', loadDashboard);
+
+  resetAllBtn?.addEventListener('click', async () => {
+    if (!currentUser) return;
+    const ok = window.confirm(
+      '全ユーザーの旧履歴と10プレイ成績をすべて削除します。\n使用プレイ数も0/10に戻り、全員が10 PLAYから再スタートします。\n\nこの操作は元に戻せません。実行しますか？'
+    );
+    if (!ok) return;
+
+    resetAllBtn.disabled = true;
+    refreshBtn.disabled = true;
+    setStatus('全成績をリセット中…', 'warn');
+    try {
+      const result = await resetAllResults();
+      await loadDashboard();
+      setStatus(
+        `全成績をリセットしました。10プレイ記録 ${result.deletedPlays}件 / 旧履歴 ${result.deletedLegacy}件を削除。全アカウント 0/10 PLAY です。`,
+        'ok'
+      );
+    } catch (error) {
+      console.error(error);
+      setStatus('全成績のリセットに失敗しました。Firestoreルールが最新版か確認してください。', 'error');
+    } finally {
+      resetAllBtn.disabled = false;
+      refreshBtn.disabled = false;
+    }
+  });
 
   copyUidBtn.addEventListener('click', async () => {
     try {
