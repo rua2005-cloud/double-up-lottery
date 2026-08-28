@@ -9,16 +9,16 @@ import {
 import {
   getFirestore,
   collection,
-  addDoc,
-  getDocs,
-  query,
-  orderBy,
-  limit,
-  serverTimestamp,
   doc,
-  setDoc
+  getDocs,
+  runTransaction,
+  updateDoc,
+  setDoc,
+  serverTimestamp
 } from 'https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js';
 
+const MAX_PLAYS = 10;
+const INITIAL_SCORE = 1000;
 const root = document.getElementById('accountPanel');
 const statusEl = document.getElementById('accountStatus');
 const historyEl = document.getElementById('scoreHistory');
@@ -27,9 +27,27 @@ const passwordEl = document.getElementById('authPassword');
 const signInBtn = document.getElementById('signInBtn');
 const signUpBtn = document.getElementById('signUpBtn');
 const signOutBtn = document.getElementById('signOutBtn');
+const savedTitleEl = root?.querySelector('.saved-title');
 
 const config = window.FIREBASE_CONFIG || {};
 const configured = Boolean(config.apiKey && config.authDomain && config.projectId && config.appId);
+
+let state = {
+  loggedIn:false,
+  email:'',
+  used:0,
+  remaining:MAX_PLAYS,
+  cumulativeNet:0
+};
+
+function signed(value) {
+  const n = Math.trunc(Number(value) || 0);
+  return `${n > 0 ? '+' : ''}${n.toLocaleString('ja-JP')}`;
+}
+
+function publishState() {
+  window.dispatchEvent(new CustomEvent('lottery-account-updated', { detail:{...state} }));
+}
 
 function setStatus(text, kind='') {
   if (!statusEl) return;
@@ -44,16 +62,16 @@ function friendlyError(error) {
   if (code.includes('weak-password')) return 'パスワードは6文字以上にしてください。';
   if (code.includes('invalid-email')) return 'メールアドレスの形式を確認してください。';
   if (code.includes('too-many-requests')) return '試行回数が多すぎます。少し時間を置いてください。';
-  if (code.includes('permission-denied')) return 'Firestoreの権限設定を確認してください。';
+  if (code.includes('permission-denied')) return 'Firestoreルールが10プレイ制の最新版になっているか確認してください。';
   return '処理に失敗しました。Firebase設定を確認してください。';
 }
 
-function clearHistory(text='ログインすると過去スコアを表示します。') {
+function clearHistory(text='ログインすると10プレイの成績を表示します。') {
   if (historyEl) historyEl.innerHTML = `<span class="account-empty">${text}</span>`;
 }
 
 function formatDate(value) {
-  if (!value) return '保存中';
+  if (!value) return '未終了';
   const date = value.toDate ? value.toDate() : new Date(value);
   if (Number.isNaN(date.getTime())) return '日時不明';
   return new Intl.DateTimeFormat('ja-JP', {
@@ -61,15 +79,20 @@ function formatDate(value) {
   }).format(date);
 }
 
+if (savedTitleEl) savedTitleEl.textContent = '10 PLAY CHALLENGE';
+
 if (!configured) {
   root?.classList.add('not-configured');
-  setStatus('Firebase未接続：接続設定を入れるとログインと履歴保存が有効になります。', 'warn');
+  setStatus('Firebase未接続：このゲームはアカウントログイン必須です。', 'warn');
   [emailEl, passwordEl, signInBtn, signUpBtn, signOutBtn].forEach(el => { if (el) el.disabled = true; });
   clearHistory('Firebase接続待ち');
   window.lotteryAccount = {
     isLoggedIn: () => false,
-    saveScore: async () => ({ saved:false, reason:'not-configured' })
+    getState: () => ({...state}),
+    claimPlay: async () => ({ claimed:false, reason:'not-configured' }),
+    finishPlay: async () => ({ saved:false, reason:'not-configured' })
   };
+  publishState();
 } else {
   const app = initializeApp(config);
   const auth = getAuth(app);
@@ -92,44 +115,121 @@ if (!configured) {
     if (!currentUser || !historyEl) return;
     historyEl.innerHTML = '<span class="account-empty">読み込み中…</span>';
     try {
-      const scoresRef = collection(db, 'users', currentUser.uid, 'scores');
-      const snapshot = await getDocs(query(scoresRef, orderBy('finishedAt', 'desc'), limit(20)));
-      if (snapshot.empty) {
-        clearHistory('まだ保存されたスコアはありません。');
-        return;
-      }
+      const snapshot = await getDocs(collection(db, 'users', currentUser.uid, 'plays'));
+      const plays = snapshot.docs.map(snap => {
+        const d = snap.data();
+        const finished = d.status === 'finished';
+        return {
+          id:Number(snap.id),
+          status:finished ? 'finished' : 'started',
+          score:finished ? Math.max(0, Math.floor(Number(d.score) || 0)) : 0,
+          games:finished ? Math.max(0, Math.floor(Number(d.games) || 0)) : 0,
+          totalPaid:finished ? Math.max(0, Math.floor(Number(d.totalPaid) || 0)) : 0,
+          finishedAt:d.finishedAt || null
+        };
+      }).filter(p => Number.isInteger(p.id) && p.id >= 1 && p.id <= MAX_PLAYS)
+        .sort((a,b) => a.id - b.id);
+
+      const cumulativeNet = plays.reduce((sum,p) => sum + (p.score - INITIAL_SCORE), 0);
+      state = {
+        loggedIn:true,
+        email:currentUser.email || '',
+        used:plays.length,
+        remaining:Math.max(0, MAX_PLAYS - plays.length),
+        cumulativeNet
+      };
+
+      setStatus(
+        `ログイン中：${currentUser.email || 'ユーザー'} / ${state.used}/${MAX_PLAYS} PLAY / 累計 ${signed(cumulativeNet)} COIN`,
+        state.remaining > 0 ? 'ok' : 'warn'
+      );
+
       historyEl.innerHTML = '';
-      snapshot.forEach(docSnap => {
-        const d = docSnap.data();
-        const row = document.createElement('div');
-        row.className = 'score-row';
-        row.innerHTML = `
-          <strong>${Number(d.score || 0).toLocaleString('ja-JP')} COIN</strong>
-          <span>${Number(d.games || 0).toLocaleString('ja-JP')}G</span>
-          <small>${formatDate(d.finishedAt)}</small>
-        `;
-        historyEl.appendChild(row);
-      });
+      if (!plays.length) {
+        clearHistory('まだプレイしていません。残り10 PLAYです。');
+      } else {
+        for (const play of plays) {
+          const row = document.createElement('div');
+          row.className = 'score-row';
+          const net = play.score - INITIAL_SCORE;
+          const title = play.status === 'finished'
+            ? `${play.score.toLocaleString('ja-JP')} COIN`
+            : '0 COIN扱い';
+          const meta = play.status === 'finished'
+            ? `${play.games.toLocaleString('ja-JP')}G / ${signed(net)}`
+            : '途中離脱・未終了 / -1,000';
+          row.innerHTML = `
+            <strong>PLAY ${play.id}　${title}</strong>
+            <span>${meta}</span>
+            <small>${formatDate(play.finishedAt)}</small>
+          `;
+          historyEl.appendChild(row);
+        }
+      }
+      publishState();
+      return plays;
     } catch (error) {
       console.error(error);
       clearHistory(friendlyError(error));
+      publishState();
+      return [];
     }
   }
 
-  async function saveScore(payload) {
-    if (!currentUser) return { saved:false, reason:'not-logged-in' };
+  async function claimPlay() {
+    if (!currentUser) return { claimed:false, reason:'not-logged-in' };
+    if (state.remaining <= 0) return { claimed:false, reason:'limit-reached' };
+    try {
+      const uid = currentUser.uid;
+      const playId = await runTransaction(db, async transaction => {
+        for (let i=1; i<=MAX_PLAYS; i++) {
+          const ref = doc(db, 'users', uid, 'plays', String(i));
+          const snap = await transaction.get(ref);
+          if (!snap.exists()) {
+            transaction.set(ref, {
+              status:'started',
+              score:0,
+              games:0,
+              totalPaid:0,
+              startedAt:serverTimestamp(),
+              finishedAt:null
+            });
+            return String(i);
+          }
+        }
+        return null;
+      });
+
+      if (!playId) {
+        await loadHistory();
+        return { claimed:false, reason:'limit-reached' };
+      }
+
+      await loadHistory();
+      setStatus(`PLAY ${playId}/${MAX_PLAYS} を開始しました。この枠は使用済みです。`, 'ok');
+      return { claimed:true, playId };
+    } catch (error) {
+      console.error(error);
+      setStatus(friendlyError(error), 'error');
+      return { claimed:false, reason:'error' };
+    }
+  }
+
+  async function finishPlay(playId, payload) {
+    if (!currentUser || !playId) return { saved:false, reason:'no-active-play' };
     const score = Math.max(0, Math.floor(Number(payload?.score) || 0));
     const games = Math.max(0, Math.floor(Number(payload?.games) || 0));
     const totalPaid = Math.max(0, Math.floor(Number(payload?.totalPaid) || 0));
     try {
-      await addDoc(collection(db, 'users', currentUser.uid, 'scores'), {
+      await updateDoc(doc(db, 'users', currentUser.uid, 'plays', String(playId)), {
+        status:'finished',
         score,
         games,
         totalPaid,
-        finishedAt: serverTimestamp()
+        finishedAt:serverTimestamp()
       });
-      setStatus(`スコア ${score.toLocaleString('ja-JP')} COIN を保存しました。`, 'ok');
       await loadHistory();
+      setStatus(`PLAY ${playId}：${score.toLocaleString('ja-JP')} COIN で確定しました。`, 'ok');
       return { saved:true };
     } catch (error) {
       console.error(error);
@@ -169,6 +269,10 @@ if (!configured) {
   });
 
   signOutBtn?.addEventListener('click', async () => {
+    if (window.__lotteryPlayStarted && !window.__lotteryGameOver) {
+      const ok = window.confirm('進行中のプレイがあります。ログアウトするとその枠は0 COIN扱いになります。ログアウトしますか？');
+      if (!ok) return;
+    }
     try { await signOut(auth); }
     catch (error) { setStatus(friendlyError(error), 'error'); }
   });
@@ -177,7 +281,6 @@ if (!configured) {
     currentUser = user;
     if (user) {
       root?.classList.add('logged-in');
-      setStatus(`ログイン中：${user.email || 'ユーザー'}`, 'ok');
       if (emailEl) emailEl.value = user.email || '';
       if (emailEl) emailEl.disabled = true;
       if (passwordEl) passwordEl.disabled = true;
@@ -188,19 +291,23 @@ if (!configured) {
       await loadHistory();
     } else {
       root?.classList.remove('logged-in');
-      setStatus('未ログイン：終了スコアを保存するにはログインしてください。');
+      state = { loggedIn:false, email:'', used:0, remaining:MAX_PLAYS, cumulativeNet:0 };
+      setStatus('未ログイン：プレイするにはログインしてください。');
       if (emailEl) emailEl.disabled = false;
       if (passwordEl) passwordEl.disabled = false;
       if (signInBtn) signInBtn.hidden = false;
       if (signUpBtn) signUpBtn.hidden = false;
       if (signOutBtn) signOutBtn.hidden = true;
       clearHistory();
+      publishState();
     }
   });
 
   window.lotteryAccount = {
     isLoggedIn: () => Boolean(currentUser),
-    saveScore,
+    getState: () => ({...state}),
+    claimPlay,
+    finishPlay,
     reloadHistory: loadHistory
   };
 }
