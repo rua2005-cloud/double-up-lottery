@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
+<meta name="theme-color" content="#020617" />
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+<title>LOTTERY AT - RTP 100% PROTOTYPE</title>
+<link rel="stylesheet" href="style.css?v=12" />
+<style>
+  .prototype-note{margin:0 0 12px;text-align:center;color:#94a3b8;font-size:12px}
+  .stats{grid-template-columns:repeat(4,1fr)}
+  .controls{grid-template-columns:1fr}
+  .controls .primary,.controls .reset{grid-column:auto}
+  .mode-panel{margin-bottom:12px;padding:14px 16px;border-radius:16px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.035);display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .mode-panel.at{background:linear-gradient(135deg,rgba(245,158,11,.20),rgba(251,191,36,.08));box-shadow:0 0 24px rgba(245,158,11,.15)}
+  .mode-title{font-size:20px;font-weight:950}
+  .mode-sub{margin-top:3px;color:#94a3b8;font-size:12px;line-height:1.45}
+  .mode-badge{padding:9px 13px;border-radius:999px;background:rgba(255,255,255,.07);font-weight:900;white-space:nowrap}
+  .mode-panel.at .mode-badge{background:rgba(245,158,11,.22);color:#fde68a}
+  .theory{margin-top:12px;padding:10px 12px;border-radius:13px;border:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.025);font-size:12px;color:#94a3b8;line-height:1.7}
+  .theory strong{color:#f8fafc}
+  @media(max-width:760px){
+    .stats{grid-template-columns:repeat(2,1fr)}
+    .game{padding-bottom:118px}
+    .controls{position:fixed;left:max(6px,env(safe-area-inset-left));right:max(6px,env(safe-area-inset-right));bottom:max(6px,env(safe-area-inset-bottom));z-index:8;background:rgba(15,23,42,.95);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:8px}
+    .controls button{min-height:58px;font-size:17px}
+    .mode-title{font-size:17px}
+  }
+</style>
+</head>
+<body>
+<div class="particles" id="particles"></div>
+<main class="game" id="game">
+  <h1>LOTTERY AT</h1>
+  <div class="sub">100コインから、どこまで生き残れるか。</div>
+  <div class="prototype-note">RTP 100.00% BASIC MODEL / PROTOTYPE</div>
+
+  <section class="stats">
+    <div class="stat"><span>所持コイン</span><strong id="bank">100</strong></div>
+    <div class="stat"><span>総ゲーム数</span><strong id="games">0</strong></div>
+    <div class="stat"><span>総払い出し</span><strong id="paid">0</strong></div>
+    <div class="stat"><span>実績機械割</span><strong id="actualRtp">—</strong></div>
+  </section>
+
+  <section class="mode-panel" id="modePanel">
+    <div>
+      <div class="mode-title" id="modeTitle">通常状態</div>
+      <div class="mode-sub" id="modeSub">1ゲーム1コイン。AT当選を目指します。</div>
+    </div>
+    <div class="mode-badge" id="modeBadge">NORMAL</div>
+  </section>
+
+  <section class="stage" id="stage">
+    <div>
+      <div class="ticket-wrap"><div class="ticket" id="ticket">LOTTERY</div></div>
+      <div class="message" id="message">1コインでくじを1回引けます。</div>
+      <div class="countdown" id="countdown"></div>
+    </div>
+  </section>
+
+  <div class="controls">
+    <button class="primary" id="playBtn">1コインでくじを引く</button>
+    <button class="reset" id="resetBtn">最初からやり直す</button>
+  </div>
+
+  <section class="history">
+    <div class="history-title">直近の結果</div>
+    <div class="history-list" id="historyList"><span class="tag">まだ記録なし</span></div>
+  </section>
+
+  <details class="rules">
+    <summary>遊び方・確率を見る</summary>
+    <strong>【基本】</strong><br>
+    ・初期所持コインは <strong>100コイン</strong>。回数上限はありません。<br>
+    ・通常時もAT中も、1ゲームにつき <strong>1コイン</strong>消費します。<br>
+    ・所持コインが0になり、次ゲームを遊べなくなったら終了です。<br><br>
+
+    <strong>【通常時】</strong><br>
+    ・ハズレ：58% / 払い出し0<br>
+    ・返し：20% / 払い出し1<br>
+    ・小当たり：18% / 払い出し2<br>
+    ・AT当選：4% / 払い出し0、その次ゲームからAT<br><br>
+
+    <strong>【AT】</strong><br>
+    ・AT当選時に継続率を内部抽選し、AT終了まで固定します。<br>
+    ・70%継続：60% / 90%継続：30% / 95%継続：10%<br>
+    ・AT中は当たりなら <strong>3コイン払い出し</strong>＋AT継続。ハズレなら払い出し0でAT終了です。<br>
+    ・ATの内部継続率は画面には表示されません。<br><br>
+
+    <strong>【理論値】</strong><br>
+    ・通常時は平均25ゲームでAT当選。通常25ゲームの平均払い出しは14コイン。<br>
+    ・AT1回の平均ゲーム数は7ゲーム、平均払い出しは18コイン。<br>
+    ・平均投入32コインに対して平均払い出し32コインとなるため、長期理論機械割は <strong>100.00%</strong> です。
+  </details>
+
+  <div class="theory"><strong>目的：</strong>まずは選択要素を入れず、機械割100%のままAT振り分けでどれくらい荒く感じるかを確認する試作です。</div>
+</main>
+
+<div class="overlay" id="overlay">
+  <div class="overlay-card">
+    <div class="overlay-title" id="overlayTitle">AT</div>
+    <div class="overlay-sub" id="overlaySub"></div>
+    <div class="overlay-amount" id="overlayAmount"></div>
+    <button class="overlay-close" id="overlayClose">閉じる</button>
+  </div>
+</div>
+
+<script>
+(() => {
+  const INITIAL_BANK = 100;
+  const $ = (id) => document.getElementById(id);
+  const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
+  const bankEl = $('bank');
+  const gamesEl = $('games');
+  const paidEl = $('paid');
+  const actualRtpEl = $('actualRtp');
+  const modePanel = $('modePanel');
+  const modeTitle = $('modeTitle');
+  const modeSub = $('modeSub');
+  const modeBadge = $('modeBadge');
+  const ticket = $('ticket');
+  const message = $('message');
+  const countdown = $('countdown');
+  const stage = $('stage');
+  const game = $('game');
+  const playBtn = $('playBtn');
+  const resetBtn = $('resetBtn');
+  const historyList = $('historyList');
+  const particles = $('particles');
+  const overlay = $('overlay');
+  const overlayTitle = $('overlayTitle');
+  const overlaySub = $('overlaySub');
+  const overlayAmount = $('overlayAmount');
+  const overlayClose = $('overlayClose');
+
+  let bank = INITIAL_BANK;
+  let games = 0;
+  let totalBet = 0;
+  let totalPaid = 0;
+  let atActive = false;
+  let atRate = 0;
+  let atHits = 0;
+  let locked = false;
+  let gameOver = false;
+  let history = [];
+
+  function createParticles() {
+    particles.innerHTML = '';
+    for (let i = 0; i < 24; i++) {
+      const p = document.createElement('span');
+      const size = 3 + Math.random() * 6;
+      p.className = 'particle';
+      p.style.left = `${Math.random() * 100}vw`;
+      p.style.bottom = `${-20 - Math.random() * 60}px`;
+      p.style.width = `${size}px`;
+      p.style.height = `${size}px`;
+      p.style.animationDuration = `${6 + Math.random() * 8}s`;
+      p.style.animationDelay = `${Math.random() * 8}s`;
+      particles.appendChild(p);
+    }
+  }
+
+  function showOverlay(kind, title, sub, amount = '') {
+    overlay.className = `overlay show ${kind}`;
+    overlayTitle.textContent = title;
+    overlaySub.textContent = sub;
+    overlayAmount.textContent = amount;
+  }
+
+  function hideOverlay() {
+    if (!gameOver) overlay.className = 'overlay';
+  }
+
+  function addHistory(text) {
+    history.unshift(text);
+    history = history.slice(0, 8);
+    historyList.innerHTML = '';
+    for (const item of history) {
+      const tag = document.createElement('span');
+      tag.className = 'tag';
+      tag.textContent = item;
+      historyList.appendChild(tag);
+    }
+  }
+
+  function flash(type) {
+    stage.classList.remove('flash-win', 'flash-lose');
+    void stage.offsetWidth;
+    stage.classList.add(type === 'win' ? 'flash-win' : 'flash-lose');
+  }
+
+  function shake() {
+    game.classList.remove('shake-screen');
+    void game.offsetWidth;
+    game.classList.add('shake-screen');
+  }
+
+  function render() {
+    bankEl.textContent = bank.toLocaleString('ja-JP');
+    gamesEl.textContent = games.toLocaleString('ja-JP');
+    paidEl.textContent = totalPaid.toLocaleString('ja-JP');
+    actualRtpEl.textContent = totalBet > 0 ? `${(totalPaid / totalBet * 100).toFixed(1)}%` : '—';
+
+    modePanel.classList.toggle('at', atActive);
+    if (atActive) {
+      modeTitle.textContent = `AT中 (${atHits} HIT)`;
+      modeSub.textContent = '内部継続率は固定。HITなら3コイン、MISSで通常へ。';
+      modeBadge.textContent = 'AT';
+      playBtn.textContent = 'AT：1コインで抽選';
+    } else {
+      modeTitle.textContent = '通常状態';
+      modeSub.textContent = '1ゲーム1コイン。AT当選を目指します。';
+      modeBadge.textContent = 'NORMAL';
+      playBtn.textContent = '1コインでくじを引く';
+    }
+
+    playBtn.disabled = locked || gameOver || bank < 1;
+    resetBtn.disabled = locked;
+  }
+
+  function selectATRate() {
+    const r = Math.random();
+    if (r < 0.60) return 0.70;
+    if (r < 0.90) return 0.90;
+    return 0.95;
+  }
+
+  function startAT() {
+    atActive = true;
+    atRate = selectATRate();
+    atHits = 0;
+  }
+
+  function endAT() {
+    atActive = false;
+    atRate = 0;
+    atHits = 0;
+  }
+
+  function finishGame() {
+    gameOver = true;
+    playBtn.disabled = true;
+    ticket.textContent = 'FINISH';
+    message.textContent = `コインが尽きました。${games.toLocaleString('ja-JP')}ゲーム遊びました。`;
+    overlayClose.textContent = 'もう一度';
+    showOverlay('bad', 'GAME OVER', `総ゲーム数：${games.toLocaleString('ja-JP')}\n総払い出し：${totalPaid.toLocaleString('ja-JP')}コイン\n実績機械割：${totalBet ? (totalPaid / totalBet * 100).toFixed(1) : '0.0'}%`, '0 COIN');
+    render();
+  }
+
+  async function play() {
+    if (locked || gameOver || bank < 1) return;
+    locked = true;
+
+    bank -= 1;
+    games += 1;
+    totalBet += 1;
+    ticket.textContent = '?';
+    message.textContent = atActive ? 'AT抽選中…' : '抽選中…';
+    countdown.textContent = atActive ? 'AT' : 'OPEN';
+    ticket.classList.remove('draw');
+    void ticket.offsetWidth;
+    ticket.classList.add('draw');
+    render();
+
+    await sleep(360);
+    countdown.textContent = '';
+
+    if (atActive) {
+      if (Math.random() < atRate) {
+        bank += 3;
+        totalPaid += 3;
+        atHits += 1;
+        ticket.textContent = '+3';
+        message.textContent = `AT HIT！ 3コイン払い出し。AT継続。`;
+        addHistory(`AT HIT +3 / ${bank} COIN`);
+        flash('win');
+      } else {
+        ticket.textContent = 'END';
+        message.textContent = `AT MISS。${atHits}回当選でAT終了。`;
+        addHistory(`AT END / ${atHits} HIT`);
+        flash('lose');
+        shake();
+        endAT();
+      }
+    } else {
+      const r = Math.random();
+      if (r < 0.58) {
+        ticket.textContent = 'MISS';
+        message.textContent = 'ハズレ。';
+        addHistory(`MISS / ${bank} COIN`);
+        flash('lose');
+      } else if (r < 0.78) {
+        bank += 1;
+        totalPaid += 1;
+        ticket.textContent = '+1';
+        message.textContent = '1コイン払い出し。';
+        addHistory(`+1 / ${bank} COIN`);
+        flash('win');
+      } else if (r < 0.96) {
+        bank += 2;
+        totalPaid += 2;
+        ticket.textContent = '+2';
+        message.textContent = '2コイン払い出し。';
+        addHistory(`+2 / ${bank} COIN`);
+        flash('win');
+      } else {
+        startAT();
+        ticket.textContent = 'AT';
+        message.textContent = 'AT突入！ 次ゲームから固定継続率で抽選。';
+        addHistory(`AT IN / ${bank} COIN`);
+        flash('win');
+        showOverlay('good', 'AT突入', '継続率は70% / 90% / 95%のいずれか。\n内部で決定され、このATが終わるまで固定されます。', 'BONUS TIME');
+      }
+    }
+
+    locked = false;
+    render();
+
+    if (bank < 1) finishGame();
+  }
+
+  function reset() {
+    bank = INITIAL_BANK;
+    games = 0;
+    totalBet = 0;
+    totalPaid = 0;
+    atActive = false;
+    atRate = 0;
+    atHits = 0;
+    locked = false;
+    gameOver = false;
+    history = [];
+    historyList.innerHTML = '<span class="tag">まだ記録なし</span>';
+    ticket.textContent = 'LOTTERY';
+    message.textContent = '1コインでくじを1回引けます。';
+    countdown.textContent = '';
+    overlay.className = 'overlay';
+    overlayClose.textContent = '閉じる';
+    render();
+  }
+
+  playBtn.addEventListener('click', play);
+  resetBtn.addEventListener('click', reset);
+  overlayClose.addEventListener('click', () => gameOver ? reset() : hideOverlay());
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) {
+      if (gameOver) reset();
+      else hideOverlay();
+    }
+  });
+
+  createParticles();
+  render();
+})();
+</script>
+</body>
+</html>
