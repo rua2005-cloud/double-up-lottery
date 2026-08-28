@@ -10,6 +10,19 @@ service cloud.firestore {
         && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
 
+    function validPlayId(playId) {
+      return playId.matches('^([1-9]|10)$');
+    }
+
+    function validPlayNumbers(data) {
+      return data.score is int
+        && data.games is int
+        && data.totalPaid is int
+        && data.score >= 0
+        && data.games >= 0
+        && data.totalPaid >= 0;
+    }
+
     match /admins/{adminId} {
       allow read: if signedIn() && request.auth.uid == adminId;
       allow write: if false;
@@ -23,18 +36,46 @@ service cloud.firestore {
         && request.resource.data.email == request.auth.token.email;
       allow delete: if false;
 
+      // Legacy history. New game code never creates these documents.
+      // Admin may delete them once to wipe all pre-10-play records.
       match /scores/{scoreId} {
         allow read: if signedIn() && (request.auth.uid == userId || isAdmin());
+        allow create, update: if false;
+        allow delete: if isAdmin();
+      }
+
+      // Permanent 10-play challenge: document IDs can only be 1..10.
+      match /plays/{playId} {
+        allow read: if signedIn() && (request.auth.uid == userId || isAdmin());
+
+        // A play slot is consumed before the first AUTO starts.
         allow create: if signedIn()
           && request.auth.uid == userId
-          && request.resource.data.keys().hasOnly(['score', 'games', 'totalPaid', 'finishedAt'])
-          && request.resource.data.score is int
-          && request.resource.data.games is int
-          && request.resource.data.totalPaid is int
-          && request.resource.data.score >= 0
-          && request.resource.data.games >= 0
-          && request.resource.data.totalPaid >= 0;
-        allow update, delete: if false;
+          && validPlayId(playId)
+          && request.resource.data.keys().hasOnly([
+            'status', 'score', 'games', 'totalPaid', 'startedAt', 'finishedAt'
+          ])
+          && request.resource.data.status == 'started'
+          && request.resource.data.score == 0
+          && request.resource.data.games == 0
+          && request.resource.data.totalPaid == 0
+          && request.resource.data.startedAt is timestamp
+          && request.resource.data.finishedAt == null;
+
+        // A consumed slot can be finalized exactly once.
+        allow update: if signedIn()
+          && request.auth.uid == userId
+          && validPlayId(playId)
+          && resource.data.status == 'started'
+          && request.resource.data.keys().hasOnly([
+            'status', 'score', 'games', 'totalPaid', 'startedAt', 'finishedAt'
+          ])
+          && request.resource.data.status == 'finished'
+          && request.resource.data.startedAt == resource.data.startedAt
+          && request.resource.data.finishedAt is timestamp
+          && validPlayNumbers(request.resource.data);
+
+        allow delete: if isAdmin();
       }
     }
   }
