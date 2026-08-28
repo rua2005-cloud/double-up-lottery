@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="theme-color" content="#020617" />
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+<title>LOTTERY AT / ADMIN</title>
+<style>
+  *{box-sizing:border-box}body{margin:0;background:#020617;color:#e2e8f0;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;min-height:100vh}button,input{font:inherit}.wrap{width:min(1100px,calc(100% - 24px));margin:0 auto;padding:28px 0 60px}.top{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:18px}.top h1{margin:0;font-size:24px}.top p{margin:5px 0 0;color:#94a3b8;font-size:12px}.back{color:#cbd5e1;text-decoration:none;border:1px solid rgba(255,255,255,.1);padding:8px 11px;border-radius:10px;font-size:12px}.card{border:1px solid rgba(255,255,255,.09);background:rgba(15,23,42,.78);border-radius:16px;padding:16px;margin-bottom:14px}.auth{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto auto;gap:8px}.auth input{min-width:0;height:42px;border-radius:10px;border:1px solid rgba(255,255,255,.12);background:#020617;color:#f8fafc;padding:0 11px}.btn{height:42px;border-radius:10px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.08);color:#f8fafc;padding:0 14px;font-weight:800;cursor:pointer}.btn.primary{background:#2563eb;border-color:#3b82f6}.btn:disabled{opacity:.45;cursor:not-allowed}.status{margin-top:10px;color:#94a3b8;font-size:12px;line-height:1.6}.status.ok{color:#86efac}.status.warn{color:#fde68a}.status.error{color:#fca5a5}.uidbox{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:10px;padding:9px 10px;background:rgba(255,255,255,.035);border-radius:10px;font-size:11px;color:#94a3b8}.uidbox code{color:#f8fafc;word-break:break-all}.uidbox button{border:0;background:transparent;color:#93c5fd;cursor:pointer}.toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px}.toolbar h2{font-size:17px;margin:0}.summary{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:12px 0 16px}.metric{padding:14px;border:1px solid rgba(255,255,255,.07);border-radius:13px;background:rgba(255,255,255,.025)}.metric span{display:block;color:#94a3b8;font-size:11px}.metric strong{display:block;margin-top:4px;font-size:22px}.users{display:grid;gap:12px}.user{border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:14px;background:rgba(255,255,255,.025)}.userhead{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.email{font-size:15px;font-weight:900;word-break:break-all}.uid{margin-top:3px;color:#64748b;font-size:10px;word-break:break-all}.userstats{display:flex;gap:12px;flex-wrap:wrap;text-align:right}.userstats span{color:#94a3b8;font-size:10px}.userstats strong{display:block;color:#f8fafc;font-size:15px}.scores{margin-top:11px;overflow:auto}.scores table{width:100%;border-collapse:collapse;font-size:12px;min-width:480px}.scores th,.scores td{text-align:left;padding:8px;border-top:1px solid rgba(255,255,255,.06)}.scores th{color:#94a3b8;font-weight:700}.scores td:first-child{font-weight:900}.empty{padding:18px;text-align:center;color:#64748b;font-size:12px}.notice{color:#94a3b8;font-size:12px;line-height:1.7}.hidden{display:none!important}
+  @media(max-width:700px){.wrap{width:min(100% - 14px,1100px);padding-top:12px}.top{align-items:flex-start}.auth{grid-template-columns:1fr 1fr}.auth input{font-size:16px}.auth .btn{grid-column:span 1}.summary{grid-template-columns:1fr}.userhead{display:grid}.userstats{text-align:left}.toolbar{align-items:flex-start}.top h1{font-size:20px}}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <div class="top">
+    <div><h1>LOTTERY AT / ADMIN</h1><p>アカウント別スコア管理</p></div>
+    <a class="back" href="auto100.html">ゲームへ戻る</a>
+  </div>
+
+  <section class="card">
+    <div class="auth">
+      <input id="adminEmail" type="email" autocomplete="email" placeholder="管理者メールアドレス" />
+      <input id="adminPassword" type="password" autocomplete="current-password" placeholder="パスワード" />
+      <button class="btn primary" id="adminSignIn" type="button">ログイン</button>
+      <button class="btn hidden" id="adminSignOut" type="button">ログアウト</button>
+    </div>
+    <div class="status" id="adminStatus">管理者アカウントでログインしてください。</div>
+    <div class="uidbox hidden" id="uidBox">あなたのUID: <code id="currentUid"></code><button id="copyUid" type="button">コピー</button></div>
+  </section>
+
+  <section class="card hidden" id="dashboard">
+    <div class="toolbar"><h2>ALL USERS</h2><button class="btn" id="refreshBtn" type="button">更新</button></div>
+    <div class="summary">
+      <div class="metric"><span>登録ユーザー</span><strong id="userCount">0</strong></div>
+      <div class="metric"><span>総プレイ記録</span><strong id="playCount">0</strong></div>
+      <div class="metric"><span>全体最高スコア</span><strong id="topScore">0</strong></div>
+    </div>
+    <div class="users" id="userList"><div class="empty">読み込み中…</div></div>
+  </section>
+
+  <section class="card notice">
+    このページはFirestoreの <code>admins/{UID}</code> に登録されたアカウントだけが全ユーザーのデータを読める設計です。管理者登録されていないアカウントでログインしても一覧は表示されません。
+  </section>
+</main>
+<script src="firebase-config.js?v=2"></script>
+<script type="module" src="admin.js?v=1"></script>
+</body>
+</html>
