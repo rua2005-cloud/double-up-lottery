@@ -13,7 +13,7 @@
   .prototype-note{margin:0 0 12px;text-align:center;color:#94a3b8;font-size:12px}
   .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:14px}
   .controls{display:grid;grid-template-columns:1fr;gap:9px;margin-top:14px}
-  .controls .primary,.controls .reset{grid-column:auto}
+  .controls .primary{grid-column:auto}
   .mode-panel{margin-bottom:12px;padding:14px 16px;border-radius:16px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.035);display:flex;align-items:center;justify-content:space-between;gap:12px}
   .mode-panel.at{background:linear-gradient(135deg,rgba(245,158,11,.20),rgba(251,191,36,.08));box-shadow:0 0 24px rgba(245,158,11,.15)}
   .mode-title{font-size:20px;font-weight:950}.mode-sub{margin-top:3px;color:#94a3b8;font-size:12px;line-height:1.45}
@@ -66,7 +66,6 @@
 
   <div class="controls">
     <button class="primary" id="autoBtn">AUTO 100G</button>
-    <button class="reset" id="resetBtn">最初からやり直す</button>
   </div>
 
   <section class="history"><div class="history-title">直近の100G</div><div class="history-list" id="historyList"><span class="tag">まだ記録なし</span></div></section>
@@ -76,7 +75,8 @@
     <strong>【操作】</strong><br>
     ・<strong>AUTO 100G</strong>を1回押すと、通常時・AT中を含めて最大100ゲームを高速消化します。<br>
     ・100G目がAT途中なら、AT状態と内部継続率は次のAUTO 100Gへ引き継がれます。<br>
-    ・途中で所持コインが0になった場合は、その時点で終了します。<br><br>
+    ・途中で所持コインが0になった場合は、その時点で終了します。<br>
+    ・終了時の<strong>総ゲーム数が最終スコア</strong>になります。終了後はそのプレイをやり直せません。<br><br>
     <strong>【基本】</strong><br>
     ・初期所持コインは <strong>1,000コイン</strong>。回数上限はありません。<br>
     ・通常時もAT中も1ゲームにつき <strong>1コイン</strong>消費します。<br><br>
@@ -109,7 +109,7 @@
   const bankEl=$('bank'),gamesEl=$('games'),paidEl=$('paid');
   const modePanel=$('modePanel'),modeTitle=$('modeTitle'),modeSub=$('modeSub'),modeBadge=$('modeBadge');
   const ticket=$('ticket'),message=$('message'),payout=$('payout'),stage=$('stage'),game=$('game');
-  const autoBtn=$('autoBtn'),resetBtn=$('resetBtn'),historyList=$('historyList'),particles=$('particles');
+  const autoBtn=$('autoBtn'),historyList=$('historyList'),particles=$('particles');
   const progressBar=$('progressBar'),batchLine=$('batchLine');
   const overlay=$('overlay'),overlayTitle=$('overlayTitle'),overlaySub=$('overlaySub'),overlayAmount=$('overlayAmount'),overlayClose=$('overlayClose');
 
@@ -136,12 +136,20 @@
     if(atActive){modeTitle.textContent=`AT中 (${atHits} HIT)`;modeSub.textContent='継続率は内部固定。100G区切りを跨いでも継続。';modeBadge.textContent='AT'}
     else{modeTitle.textContent='通常状態';modeSub.textContent='AT当選以外はすべてハズレ。';modeBadge.textContent='NORMAL'}
     autoBtn.disabled=locked||gameOver||bank<1;
-    resetBtn.disabled=locked;
     autoBtn.textContent=locked?'AUTO RUNNING…':'AUTO 100G';
   }
 
   function finishGame(){
-    gameOver=true;locked=false;setTicket('FINISH','lose');message.textContent=`コインが尽きました。${games.toLocaleString('ja-JP')}ゲーム遊びました。`;payout.textContent='';batchLine.textContent='GAME OVER';progressBar.style.width='100%';overlayClose.textContent='もう一度';showOverlay('bad','GAME OVER',`総ゲーム数：${games.toLocaleString('ja-JP')}\n総払い出し：${totalPaid.toLocaleString('ja-JP')}コイン`,'0 COIN');render();
+    gameOver=true;
+    locked=false;
+    setTicket('FINISH','lose');
+    message.textContent=`ゲーム終了。FINAL SCORE ${games.toLocaleString('ja-JP')}`;
+    payout.textContent=`SCORE ${games.toLocaleString('ja-JP')}`;
+    batchLine.textContent='GAME OVER';
+    progressBar.style.width='100%';
+    overlayClose.style.display='none';
+    showOverlay('bad','FINAL SCORE',`総払い出し：${totalPaid.toLocaleString('ja-JP')}コイン\nこのプレイは終了しました。`,`${games.toLocaleString('ja-JP')} G`);
+    render();
   }
 
   function playOneFast(batch){
@@ -166,7 +174,10 @@
 
   async function run100(){
     if(locked||gameOver||bank<1)return;
-    locked=true;overlay.className='overlay';overlayClose.textContent='閉じる';
+    locked=true;
+    overlay.className='overlay';
+    overlayClose.style.display='';
+    overlayClose.textContent='閉じる';
     const startBank=bank;
     const batch={played:0,atEntries:0,atHits:0,atEnds:0};
     message.textContent='100ゲーム高速消化中…';payout.textContent='';batchLine.textContent='0 / 100G';progressBar.style.width='0%';setTicket('RUN');render();
@@ -200,15 +211,9 @@
     flash(diff>=0?'win':'lose');
   }
 
-  function reset(){
-    bank=INITIAL_BANK;games=0;totalPaid=0;atActive=false;atRate=0;atHits=0;locked=false;gameOver=false;history=[];
-    historyList.innerHTML='<span class="tag">まだ記録なし</span>';setTicket('LOTTERY');message.textContent='ボタン1回で100ゲームを高速消化します。';payout.textContent='';batchLine.textContent='READY';progressBar.style.width='0%';overlay.className='overlay';overlayClose.textContent='閉じる';render();
-  }
-
   autoBtn.addEventListener('click',run100);
-  resetBtn.addEventListener('click',reset);
-  overlayClose.addEventListener('click',()=>gameOver?reset():hideOverlay());
-  overlay.addEventListener('click',e=>{if(e.target===overlay){if(gameOver)reset();else hideOverlay()}});
+  overlayClose.addEventListener('click',hideOverlay);
+  overlay.addEventListener('click',e=>{if(e.target===overlay)hideOverlay()});
   createParticles();render();
 })();
 </script>
