@@ -1,18 +1,41 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /users/{userId}/scores/{scoreId} {
-      allow read: if request.auth != null && request.auth.uid == userId;
-      allow create: if request.auth != null
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return signedIn()
+        && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    match /admins/{adminId} {
+      allow read: if signedIn() && request.auth.uid == adminId;
+      allow write: if false;
+    }
+
+    match /users/{userId} {
+      allow read: if signedIn() && (request.auth.uid == userId || isAdmin());
+      allow create, update: if signedIn()
         && request.auth.uid == userId
-        && request.resource.data.keys().hasOnly(['score', 'games', 'totalPaid', 'finishedAt'])
-        && request.resource.data.score is int
-        && request.resource.data.games is int
-        && request.resource.data.totalPaid is int
-        && request.resource.data.score >= 0
-        && request.resource.data.games >= 0
-        && request.resource.data.totalPaid >= 0;
-      allow update, delete: if false;
+        && request.resource.data.keys().hasOnly(['email', 'lastSeenAt'])
+        && request.resource.data.email == request.auth.token.email;
+      allow delete: if false;
+
+      match /scores/{scoreId} {
+        allow read: if signedIn() && (request.auth.uid == userId || isAdmin());
+        allow create: if signedIn()
+          && request.auth.uid == userId
+          && request.resource.data.keys().hasOnly(['score', 'games', 'totalPaid', 'finishedAt'])
+          && request.resource.data.score is int
+          && request.resource.data.games is int
+          && request.resource.data.totalPaid is int
+          && request.resource.data.score >= 0
+          && request.resource.data.games >= 0
+          && request.resource.data.totalPaid >= 0;
+        allow update, delete: if false;
+      }
     }
   }
 }
