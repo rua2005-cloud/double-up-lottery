@@ -108,15 +108,15 @@
     ・各プレイの初期所持コインは <strong>1,000コイン</strong>。<br>
     ・通常時もAT中も1ゲームにつき <strong>1コイン</strong>消費します。<br><br>
     <strong>【通常時】</strong><br>
-    ・ハズレ：<strong>48/49（約97.96%）</strong> / 払い出し0<br>
-    ・AT当選：<strong>1/49（約2.04%）</strong> / 払い出し0、その次ゲームからAT<br><br>
+    ・ハズレ：<strong>47/48（約97.92%）</strong> / 払い出し0<br>
+    ・AT当選：<strong>1/48（約2.08%）</strong> / 払い出し0、その次ゲームからAT<br><br>
     <strong>【AT】</strong><br>
     ・AT当選時に継続率を内部抽選し、AT終了まで固定します。<br>
     ・90%継続：60% / 97%継続：30% / 99%継続：10%<br>
     ・AT中はHITなら <strong>3コイン払い出し</strong>＋AT継続。MISSなら0でAT終了です。<br>
     ・ATの内部継続率は非表示です。<br><br>
     <strong>【理論値】</strong><br>
-    ・長期理論機械割は <strong>100.00%</strong> です。AUTO化は抽選をまとめて実行するだけで、確率は変更しません。
+    ・長期理論機械割は <strong>約101.35%</strong> です。AUTO化は抽選をまとめて実行するだけで、確率は変更しません。
   </details>
 
   <div class="theory"><strong>正式成績：</strong>10プレイ終了時の累計収支。プラスになった瞬間だけで逃げる無限試行はできません。</div>
@@ -127,7 +127,7 @@
 <script>
 (() => {
   const INITIAL_BANK = 1000;
-  const NORMAL_AT_P = 1 / 49;
+  const NORMAL_AT_P = 1 / 48;
   const BATCH_SIZE = 100;
   const STEP_MS = 10;
   const $ = id => document.getElementById(id);
