@@ -98,7 +98,17 @@ function makeUserCard(entry) {
   const uid = document.createElement('div');
   uid.className = 'uid';
   uid.textContent = entry.uid;
-  identity.append(email, uid);
+
+  const userActions = document.createElement('div');
+  userActions.className = 'user-actions';
+  const resetUserBtn = document.createElement('button');
+  resetUserBtn.type = 'button';
+  resetUserBtn.className = 'btn danger user-reset';
+  resetUserBtn.textContent = 'このユーザーの成績をリセット';
+  resetUserBtn.dataset.resetUser = entry.uid;
+  resetUserBtn.dataset.resetEmail = entry.email || '';
+  userActions.appendChild(resetUserBtn);
+  identity.append(email, uid, userActions);
 
   const stats = document.createElement('div');
   stats.className = 'userstats';
@@ -181,27 +191,37 @@ if (!configured) {
     }
   }
 
+  async function resetUserResults(uid) {
+    const [legacySnapshot, playSnapshot] = await Promise.all([
+      getDocs(collection(db, 'users', uid, 'scores')),
+      getDocs(collection(db, 'users', uid, 'plays'))
+    ]);
+
+    let deletedLegacy = 0;
+    let deletedPlays = 0;
+    await Promise.all([
+      ...legacySnapshot.docs.map(async scoreDoc => {
+        await deleteDoc(scoreDoc.ref);
+        deletedLegacy++;
+      }),
+      ...playSnapshot.docs.map(async playDoc => {
+        await deleteDoc(playDoc.ref);
+        deletedPlays++;
+      })
+    ]);
+
+    return { deletedLegacy, deletedPlays };
+  }
+
   async function resetAllResults() {
     const userSnapshot = await getDocs(collection(db, 'users'));
     let deletedLegacy = 0;
     let deletedPlays = 0;
 
     for (const userDoc of userSnapshot.docs) {
-      const [legacySnapshot, playSnapshot] = await Promise.all([
-        getDocs(collection(db, 'users', userDoc.id, 'scores')),
-        getDocs(collection(db, 'users', userDoc.id, 'plays'))
-      ]);
-
-      await Promise.all([
-        ...legacySnapshot.docs.map(async scoreDoc => {
-          await deleteDoc(scoreDoc.ref);
-          deletedLegacy++;
-        }),
-        ...playSnapshot.docs.map(async playDoc => {
-          await deleteDoc(playDoc.ref);
-          deletedPlays++;
-        })
-      ]);
+      const result = await resetUserResults(userDoc.id);
+      deletedLegacy += result.deletedLegacy;
+      deletedPlays += result.deletedPlays;
     }
 
     return { deletedLegacy, deletedPlays };
@@ -307,6 +327,38 @@ if (!configured) {
   });
 
   refreshBtn.addEventListener('click', loadDashboard);
+
+  userList.addEventListener('click', async event => {
+    const button = event.target.closest('[data-reset-user]');
+    if (!button || !currentUser) return;
+
+    const uid = button.dataset.resetUser || '';
+    if (!uid) return;
+    const label = button.dataset.resetEmail || uid;
+    const ok = window.confirm(
+      `${label} の成績だけをリセットします。\n旧履歴と10プレイ記録を削除し、0/10 PLAYに戻します。\n\nこの操作は元に戻せません。実行しますか？`
+    );
+    if (!ok) return;
+
+    button.disabled = true;
+    refreshBtn.disabled = true;
+    if (resetAllBtn) resetAllBtn.disabled = true;
+    setStatus(`${label} の成績をリセット中…`, 'warn');
+    try {
+      const result = await resetUserResults(uid);
+      await loadDashboard();
+      setStatus(
+        `${label} をリセットしました。10プレイ記録 ${result.deletedPlays}件 / 旧履歴 ${result.deletedLegacy}件を削除。0/10 PLAYです。`,
+        'ok'
+      );
+    } catch (error) {
+      console.error(error);
+      setStatus('このユーザーのリセットに失敗しました。Firestoreルールが最新版か確認してください。', 'error');
+    } finally {
+      refreshBtn.disabled = false;
+      if (resetAllBtn) resetAllBtn.disabled = false;
+    }
+  });
 
   resetAllBtn?.addEventListener('click', async () => {
     if (!currentUser) return;
