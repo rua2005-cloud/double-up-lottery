@@ -1,0 +1,10 @@
+{
+  "name": "PREDICT RUSH 105",
+  "short_name": "PREDICT105",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#070b12",
+  "theme_color": "#090d14",
+  "description": "予想×ATの高ボラ技術介入型ブラウザゲーム",
+  "icons": []
+}
