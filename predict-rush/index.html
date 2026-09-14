@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#090d14">
   <meta name="color-scheme" content="dark">
-  <meta name="description" content="予想×爆裂AT。通常時は自力でATを狙い、AT中は10Gの100% HIT区間と継続JUDGEを繰り返すブラウザゲーム。">
+  <meta name="description" content="予想×爆裂AT。通常時は自力でATを狙い、AT中は3リールを全部見てLOW/MID/HIGHを当てるブラウザゲーム。">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="styles.css">
@@ -35,7 +35,7 @@
 
     <section class="hud">
       <article class="hud-card"><span>MEDALS</span><strong id="medals">1000</strong></article>
-      <article class="hud-card"><span>AT WIN</span><strong id="atEarned">0</strong></article>
+      <article class="hud-card"><span>AT DIFF</span><strong id="atEarned">0</strong></article>
       <article class="hud-card"><span>AT SET</span><strong id="streak">—</strong></article>
     </section>
 
@@ -52,9 +52,9 @@
       </div>
 
       <section id="atStatus" class="at-status is-hidden">
-        <div class="at-status-head"><span id="atPhaseLabel">100% HIT ZONE</span><strong id="atGameText">1 / 10</strong></div>
+        <div class="at-status-head"><span id="atPhaseLabel">3 REELS OPEN</span><strong id="atGameText">1 / 10</strong></div>
         <div id="atProgress" class="at-progress"></div>
-        <div class="at-status-note" id="atStatusNote">どれを選んでも必ず当たる。1Gごとに+3枚。</div>
+        <div class="at-status-note" id="atStatusNote">3つの数字を見て正解ゾーンを選ぶ。正解で通常と同じ3 / 5 / 8枚。</div>
       </section>
 
       <div class="reel-window">
@@ -86,11 +86,11 @@
     <details class="rules-panel"><summary>ルールを見る</summary><div class="rules-body">
       <p>通常時：各リール1〜9。合計15以下＝LOW、16〜20＝MID、21以上＝HIGH。6枚BETで第1リールだけ公開。</p>
       <p>LOW/MID的中でATゲージ+1、HIGH的中で+2。MISSで0。5ポイントでAT突入。通常配当はLOW 3 / MID 5 / HIGH 8枚。</p>
-      <p>AT：1セット10G。10GはLOW/MID/HIGHのどれを選んでも100%成功し、数字が選択ゾーンに入るよう生成される。1Gごとに+3枚、1セット+30枚。</p>
-      <p>10G終了後はLAST JUDGE。最初の2リールを見てLOW/MID/HIGHを予想。当たれば次の10G、外れればAT終了。</p>
-      <p>現仕様の理論値は最適打ちで約105.3%を想定。</p>
+      <p>AT：1セット10G、各G1枚BET。最初から3リール全部が見えており、合計に対応するLOW/MID/HIGHを選ぶ。正解時の払い出しは通常と同じLOW 3 / MID 5 / HIGH 8枚。不正解でもATは終わらず、そのGだけ払い出し0枚。</p>
+      <p>10G終了後はLAST JUDGE。BETなしで最初の2リールを見てLOW/MID/HIGHを予想。当たれば次の10G、外れればAT終了。</p>
+      <p>現仕様はAT中の正答と通常時の最適打ちを前提に、理論値は概算約109.2%。105%へ戻す調整は未実施。</p>
     </div></details>
-    <footer>Virtual medals only · v2.0</footer>
+    <footer>Virtual medals only · v2.1</footer>
   </main>
 
   <dialog id="settingsDialog"><form method="dialog" class="settings-card">
