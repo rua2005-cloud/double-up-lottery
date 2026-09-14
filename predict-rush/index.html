@@ -22,6 +22,12 @@
     .at-status-note{font-size:10px;color:var(--muted);margin-top:7px}
     .at-status.judge{border-color:#70343c;background:#1f1114}
     .at-status.judge .at-status-head span{color:#ff9aa4}
+    .at-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-top:9px}
+    .at-summary div{background:#0e1118;border:1px solid #3a3425;border-radius:9px;padding:7px 4px;text-align:center;min-width:0}
+    .at-summary span{display:block;font-size:8px;color:var(--muted);white-space:nowrap}
+    .at-summary b{display:block;font-size:12px;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .at-status.judge .at-summary div{border-color:#4f2b31}
+    @media(max-width:360px){.at-summary{grid-template-columns:repeat(2,1fr)}}
   </style>
   <title>PREDICT RUSH 105</title>
 </head>
@@ -35,8 +41,8 @@
 
     <section class="hud">
       <article class="hud-card"><span>MEDALS</span><strong id="medals">1000</strong></article>
-      <article class="hud-card"><span>AT DIFF</span><strong id="atEarned">0</strong></article>
-      <article class="hud-card"><span>AT SET</span><strong id="streak">—</strong></article>
+      <article class="hud-card"><span>AT TOTAL</span><strong id="atEarned">0</strong></article>
+      <article class="hud-card"><span>BONUS</span><strong id="streak">—</strong></article>
     </section>
 
     <section class="gauge-card">
@@ -52,9 +58,15 @@
       </div>
 
       <section id="atStatus" class="at-status is-hidden">
-        <div class="at-status-head"><span id="atPhaseLabel">3 REELS OPEN</span><strong id="atGameText">1 / 10</strong></div>
+        <div class="at-status-head"><span id="atPhaseLabel">BONUS 1</span><strong id="atGameText">1 / 10</strong></div>
         <div id="atProgress" class="at-progress"></div>
-        <div class="at-status-note" id="atStatusNote">3つの数字は全部公開。確率欄の100%を選べば正解。払出は3 / 5 / 7枚。</div>
+        <div class="at-summary">
+          <div><span>CURRENT</span><b id="atBonusNo">BONUS 1</b></div>
+          <div><span>THIS BONUS</span><b id="atBonusGet">+0枚</b></div>
+          <div><span>AT TOTAL</span><b id="atTotalGet">+0枚</b></div>
+          <div><span>CONTINUE</span><b id="atContinueCount">0回</b></div>
+        </div>
+        <div class="at-status-note" id="atStatusNote">10Gで1ボーナス。3つの数字は全部公開。確率欄の100%を選べば正解。</div>
       </section>
 
       <div class="reel-window">
@@ -79,18 +91,18 @@
 
     <section class="stats-panel">
       <div class="section-heading compact"><strong>SESSION</strong><button id="historyToggle" class="text-btn" type="button">履歴を見る</button></div>
-      <div class="mini-stats"><div><span>NORMAL G</span><b id="gamesStat">0</b></div><div><span>NORMAL HIT</span><b id="hitRateStat">—</b></div><div><span>AT</span><b id="atCountStat">0</b></div><div><span>MAX SET</span><b id="maxStreakStat">0</b></div></div>
+      <div class="mini-stats"><div><span>NORMAL G</span><b id="gamesStat">0</b></div><div><span>NORMAL HIT</span><b id="hitRateStat">—</b></div><div><span>AT</span><b id="atCountStat">0</b></div><div><span>MAX BONUS</span><b id="maxStreakStat">0</b></div></div>
       <div id="historyPanel" class="history-panel is-hidden"><div id="historyList"></div></div>
     </section>
 
     <details class="rules-panel"><summary>ルールを見る</summary><div class="rules-body">
       <p>通常時：各リール1〜9。合計15以下＝LOW、16〜20＝MID、21以上＝HIGH。6枚BETで第1リールだけ公開。</p>
       <p>LOW/MID的中でATゲージ+1、HIGH的中で+2。MISSで0。5ポイントでAT突入。通常配当はLOW 3 / MID 5 / HIGH 7枚。</p>
-      <p>AT：1セット10G、各G1枚BET。最初から3リール全部が見えており、確率表示は正解ゾーンだけ100%、他は0%。正解時の払い出しは通常と同じLOW 3 / MID 5 / HIGH 7枚。不正解でもATは終わらず、そのGだけ払い出し0枚。</p>
-      <p>10G終了後はLAST JUDGE。BETなしで最初の2リールを見てLOW/MID/HIGHを予想。当たれば次の10G、外れればAT終了。</p>
+      <p>AT：10Gを1ボーナスとしてカウント。各G1枚BET。最初から3リール全部が見えており、確率表示は正解ゾーンだけ100%、他は0%。正解時の払い出しは通常と同じLOW 3 / MID 5 / HIGH 7枚。</p>
+      <p>10G終了後はLAST JUDGE。BETなしで最初の2リールを見てLOW/MID/HIGHを予想。当たれば次のボーナスへ。AT中は現在のボーナス番号、今回の10G差枚、AT累計差枚、継続回数を表示。</p>
       <p>AT中の正答と通常時の最適打ちを前提に、理論値は約106.27%。</p>
     </div></details>
-    <footer>Virtual medals only · v2.2</footer>
+    <footer>Virtual medals only · v2.3</footer>
   </main>
 
   <dialog id="settingsDialog"><form method="dialog" class="settings-card">
