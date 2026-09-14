@@ -7,6 +7,7 @@ const els={
   gaugeText:$('gaugeText'),gauge:[...document.querySelectorAll('#gauge i')],machine:$('machine'),
   roundTitle:$('roundTitle'),roundRule:$('roundRule'),payTable:$('payTable'),atStatus:$('atStatus'),
   atPhaseLabel:$('atPhaseLabel'),atGameText:$('atGameText'),atProgress:$('atProgress'),atStatusNote:$('atStatusNote'),
+  atBonusNo:$('atBonusNo'),atTotalGet:$('atTotalGet'),atContinueCount:$('atContinueCount'),atBonusGet:$('atBonusGet'),
   reels:[$('r1'),$('r2'),$('r3')],sumLine:$('sumLine'),probabilityPanel:$('probabilityPanel'),
   probTitle:$('probTitle'),probSub:$('probSub'),pLow:$('pLow'),pMid:$('pMid'),pHigh:$('pHigh'),
   choiceArea:$('choiceArea'),startBtn:$('startBtn'),startMain:$('startMain'),startSub:$('startSub'),
@@ -22,7 +23,7 @@ let state=freshState();
 
 function freshState(){
   return{
-    medals:1000,gauge:0,phase:'normal',atEarned:0,atGame:0,atSet:0,waiting:false,
+    medals:1000,gauge:0,phase:'normal',atEarned:0,atGame:0,atSet:0,atSetStart:0,waiting:false,
     values:[null,null,null],history:[],normalGames:0,normalHits:0,atCount:0,maxSet:0,
     settings:{probability:true,sound:true,vibrate:true}
   };
@@ -30,6 +31,7 @@ function freshState(){
 
 const roll=()=>1+Math.floor(Math.random()*9);
 const classify=sum=>sum<=15?'low':sum<=20?'mid':'high';
+const signed=n=>(n>=0?'+':'')+n;
 
 function vibration(pattern){
   if(!state.settings.vibrate)return;
@@ -79,7 +81,6 @@ function showProbability(){
     els.probabilityPanel.classList.add('is-hidden');
     return;
   }
-
   if(state.phase==='at'){
     const sum=state.values.reduce((a,b)=>a+b,0);
     const answer=classify(sum);
@@ -108,9 +109,19 @@ function renderAtProgress(){
   }
 }
 
+function renderAtSummary(){
+  if(!els.atBonusNo)return;
+  if(state.phase==='normal')return;
+  const bonusDiff=state.atEarned-state.atSetStart;
+  els.atBonusNo.textContent='BONUS '+state.atSet;
+  els.atTotalGet.textContent=signed(state.atEarned)+'枚';
+  els.atContinueCount.textContent=Math.max(0,state.atSet-1)+'回';
+  els.atBonusGet.textContent=signed(bonusDiff)+'枚';
+}
+
 function render(){
   els.medals.textContent=state.medals;
-  els.atEarned.textContent=state.phase==='normal'?0:(state.atEarned>=0?'+':'')+state.atEarned;
+  els.atEarned.textContent=state.phase==='normal'?0:signed(state.atEarned);
   els.streak.textContent=state.phase==='normal'?'—':state.atSet;
   els.gaugeText.textContent=state.gauge+' / 5';
   els.gauge.forEach((g,i)=>g.classList.toggle('on',i<state.gauge));
@@ -126,7 +137,7 @@ function render(){
     els.startMain.textContent='6枚でSTART';
     els.startSub.textContent='第1リールを公開';
   }else if(state.phase==='at'){
-    els.modeChip.textContent='BONUS 10G';
+    els.modeChip.textContent='BONUS '+state.atSet;
     els.modeChip.classList.add('at');
     els.machine.classList.add('at');
     els.roundTitle.textContent='PREDICT AT';
@@ -134,27 +145,27 @@ function render(){
     els.payTable.innerHTML='<span>LOW <b>3</b></span><span>MID <b>5</b></span><span>HIGH <b>7</b></span>';
     els.atStatus.classList.remove('is-hidden');
     els.atStatus.classList.remove('judge');
-    els.atPhaseLabel.textContent='3 REELS OPEN';
+    els.atPhaseLabel.textContent='BONUS '+state.atSet;
     els.atGameText.textContent=(state.atGame+1)+' / 10';
-    els.atStatusNote.textContent='3つの数字は全部公開。確率欄の100%を選べば正解。払出は3 / 5 / 7枚。';
-    renderAtProgress();
-    els.startMain.textContent='1枚で AT '+(state.atGame+1)+'G';
+    els.atStatusNote.textContent='10Gで1ボーナス。3つの数字は全部公開。確率欄の100%を選べば正解。';
+    renderAtProgress();renderAtSummary();
+    els.startMain.textContent='1枚で BONUS '+state.atSet+' / '+(state.atGame+1)+'G';
     els.startSub.textContent='3リールを全部公開';
   }else{
     els.modeChip.textContent='LAST JUDGE';
     els.modeChip.classList.add('judge');
     els.machine.classList.add('judge');
     els.roundTitle.textContent='LAST JUDGE';
-    els.roundRule.textContent='SET '+state.atSet+' CONTINUE?';
-    els.payTable.innerHTML='<span>HIT <b>NEXT SET</b></span><span>MISS <b>END</b></span>';
+    els.roundRule.textContent='BONUS '+state.atSet+' CONTINUE?';
+    els.payTable.innerHTML='<span>HIT <b>NEXT BONUS</b></span><span>MISS <b>END</b></span>';
     els.atStatus.classList.remove('is-hidden');
     els.atStatus.classList.add('judge');
-    els.atPhaseLabel.textContent='LAST JUDGE';
+    els.atPhaseLabel.textContent='BONUS '+state.atSet+' COMPLETE';
     els.atGameText.textContent='10 / 10';
-    els.atStatusNote.textContent='2リール公開のガチ予想。当てれば次の10Gへ。';
-    renderAtProgress();
+    els.atStatusNote.textContent='2リール公開のLAST JUDGE。成功で次のボーナスへ。';
+    renderAtProgress();renderAtSummary();
     els.startMain.textContent='LAST JUDGE START';
-    els.startSub.textContent='2リールを公開 / BET 0';
+    els.startSub.textContent='成功で BONUS '+(state.atSet+1)+' / BET 0';
   }
 
   state.values.forEach((v,i)=>{
@@ -173,7 +184,6 @@ function render(){
 
 function startRound(){
   if(state.waiting)return;
-
   if(state.phase==='normal'){
     if(state.medals<6)return;
     state.medals-=6;
@@ -188,14 +198,13 @@ function startRound(){
     state.values=[roll(),roll(),roll()];
     state.values.forEach((_,i)=>animate(i));
     els.sumLine.textContent='3リール公開済み / 確率欄の100%が正解';
-    setMessage('ATは1枚BET。3つの数字と確率表示を見て正解ゾーンを選択。');
+    setMessage('BONUS '+state.atSet+' / '+(state.atGame+1)+'G。正解ゾーンを選択。');
   }else{
     state.values=[roll(),roll(),null];
     animate(0);animate(1);
     els.sumLine.textContent='公開合計 '+(state.values[0]+state.values[1])+' + ?';
-    setMessage('LAST JUDGE。2リールを見てLOW / MID / HIGHを予想。');
+    setMessage('LAST JUDGE。成功でBONUS '+(state.atSet+1)+'へ。');
   }
-
   state.waiting=true;
   showProbability();
   els.choiceArea.classList.remove('is-hidden');
@@ -232,24 +241,21 @@ function choose(pred){
     hit=pred===actual;
     state.atGame++;
     els.sumLine.textContent='TOTAL '+sum+' = '+LABEL[actual];
-
     if(hit){
       reward=PAY[actual];
       state.medals+=reward;
       state.atEarned+=reward;
-      setMessage(LABEL[actual]+' 正解！ 払出 +'+reward+'枚 / このG差枚 +'+(reward-1)+'。','win');
+      setMessage(LABEL[actual]+' 正解！ 払出 +'+reward+'枚 / BONUS '+state.atSet+'。','win');
       vibration([20,18,30]);tone('win');
     }else{
       setMessage('不正解。正解は '+LABEL[actual]+'。払出0枚 / このG差枚 -1。','lose');
       vibration(55);tone('lose');
     }
-
-    addHistory('AT'+state.atSet,LABEL[pred],LABEL[actual],sum,hit,reward);
-
+    addHistory('B'+state.atSet,LABEL[pred],LABEL[actual],sum,hit,reward);
     if(state.atGame>=10){
       state.phase='judge';
-      const d=state.atEarned>=0?'+':'';
-      setMessage('10G消化！ AT差枚 '+d+state.atEarned+'枚。次はLAST JUDGE。','win');
+      const bonusDiff=state.atEarned-state.atSetStart;
+      setMessage('BONUS '+state.atSet+'終了！ 今回 '+signed(bonusDiff)+'枚 / AT累計 '+signed(state.atEarned)+'枚 / 継続 '+Math.max(0,state.atSet-1)+'回。','win');
     }
   }else if(state.phase==='judge'){
     state.values[2]=roll();
@@ -258,61 +264,45 @@ function choose(pred){
     actual=classify(sum);
     hit=pred===actual;
     els.sumLine.textContent='TOTAL '+sum+' = '+LABEL[actual];
-
     if(hit){
       addHistory('JUDGE',LABEL[pred],LABEL[actual],sum,true,0);
       state.atSet++;
       state.maxSet=Math.max(state.maxSet,state.atSet);
       state.atGame=0;
+      state.atSetStart=state.atEarned;
       state.phase='at';
-      setMessage('JUDGE成功！ SET '+state.atSet+'へ。','win');
+      setMessage('JUDGE成功！ '+(state.atSet-1)+'回継続 → BONUS '+state.atSet+'へ。','win');
       vibration([30,25,30,25,70]);tone('at');
     }else{
       addHistory('JUDGE',LABEL[pred],LABEL[actual],sum,false,0);
       const total=state.atEarned;
+      const bonuses=state.atSet;
+      const continues=Math.max(0,bonuses-1);
       state.phase='normal';
-      state.atEarned=0;
-      state.atGame=0;
-      state.atSet=0;
-      setMessage('JUDGE失敗。AT終了 / AT差枚 '+(total>=0?'+':'')+total+'枚。','lose');
+      state.atEarned=0;state.atGame=0;state.atSet=0;state.atSetStart=0;
+      setMessage('JUDGE失敗。AT終了 / '+bonuses+'ボーナス / '+continues+'回継続 / AT累計 '+signed(total)+'枚。','lose');
       vibration(110);tone('lose');
     }
   }else{
-    state.values[1]=roll();
-    state.values[2]=roll();
+    state.values[1]=roll();state.values[2]=roll();
     animate(1);animate(2);
     sum=state.values.reduce((a,b)=>a+b,0);
-    actual=classify(sum);
-    hit=pred===actual;
-    state.normalGames++;
+    actual=classify(sum);hit=pred===actual;state.normalGames++;
     els.sumLine.textContent='TOTAL '+sum+' = '+LABEL[actual];
-
     if(hit){
-      state.normalHits++;
-      reward=PAY[pred];
-      state.medals+=reward;
-      state.gauge+=pred==='high'?2:1;
-
+      state.normalHits++;reward=PAY[pred];state.medals+=reward;state.gauge+=pred==='high'?2:1;
       if(state.gauge>=5){
-        state.gauge=0;
-        state.phase='at';
-        state.atEarned=0;
-        state.atGame=0;
-        state.atSet=1;
-        state.atCount++;
-        state.maxSet=Math.max(state.maxSet,1);
-        setMessage('的中 +'+reward+'枚。GAUGE MAX → PREDICT AT！','win');
+        state.gauge=0;state.phase='at';state.atEarned=0;state.atGame=0;state.atSet=1;state.atSetStart=0;
+        state.atCount++;state.maxSet=Math.max(state.maxSet,1);
+        setMessage('的中 +'+reward+'枚。GAUGE MAX → BONUS 1 START！','win');
         vibration([30,25,30,25,70]);tone('at');
       }else{
         setMessage('的中。+'+reward+'枚 / ゲージ+'+(pred==='high'?2:1)+'。','win');
         vibration(35);tone('win');
       }
     }else{
-      state.gauge=0;
-      setMessage('MISS。'+LABEL[actual]+' / ATゲージ消滅。','lose');
-      vibration(80);tone('lose');
+      state.gauge=0;setMessage('MISS。'+LABEL[actual]+' / ATゲージ消滅。','lose');vibration(80);tone('lose');
     }
-
     addHistory('通常',LABEL[pred],LABEL[actual],sum,hit,reward);
   }
 
@@ -324,29 +314,16 @@ function choose(pred){
 }
 
 function reset(){
-  const keep={...state.settings};
-  state=freshState();
-  state.settings=keep;
-  els.choiceArea.classList.add('is-hidden');
-  els.probabilityPanel.classList.add('is-hidden');
-  els.startBtn.classList.remove('is-hidden');
-  els.sumLine.textContent='STARTで第1リールを公開';
-  setMessage('セッションをリセットしました。');
-  render();
-  els.settingsDialog.close();
+  const keep={...state.settings};state=freshState();state.settings=keep;
+  els.choiceArea.classList.add('is-hidden');els.probabilityPanel.classList.add('is-hidden');els.startBtn.classList.remove('is-hidden');
+  els.sumLine.textContent='STARTで第1リールを公開';setMessage('セッションをリセットしました。');render();els.settingsDialog.close();
 }
 
 els.startBtn.addEventListener('click',startRound);
 document.querySelectorAll('[data-choice]').forEach(b=>b.addEventListener('click',()=>choose(b.dataset.choice)));
-els.historyToggle.addEventListener('click',()=>{
-  const hidden=els.historyPanel.classList.toggle('is-hidden');
-  els.historyToggle.textContent=hidden?'履歴を見る':'履歴を閉じる';
-});
+els.historyToggle.addEventListener('click',()=>{const hidden=els.historyPanel.classList.toggle('is-hidden');els.historyToggle.textContent=hidden?'履歴を見る':'履歴を閉じる'});
 els.settingsBtn.addEventListener('click',()=>els.settingsDialog.showModal());
-els.probToggle.addEventListener('change',()=>{
-  state.settings.probability=els.probToggle.checked;
-  if(state.waiting)showProbability();else els.probabilityPanel.classList.add('is-hidden');
-});
+els.probToggle.addEventListener('change',()=>{state.settings.probability=els.probToggle.checked;if(state.waiting)showProbability();else els.probabilityPanel.classList.add('is-hidden')});
 els.soundToggle.addEventListener('change',()=>state.settings.sound=els.soundToggle.checked);
 els.vibrateToggle.addEventListener('change',()=>state.settings.vibrate=els.vibrateToggle.checked);
 els.resetBtn.addEventListener('click',()=>{if(confirm('メダル・ゲージ・戦績をすべてリセットしますか？'))reset()});
