@@ -7,7 +7,6 @@ const els={
   gaugeText:$('gaugeText'),gauge:[...document.querySelectorAll('#gauge i')],machine:$('machine'),
   roundTitle:$('roundTitle'),roundRule:$('roundRule'),payTable:$('payTable'),atStatus:$('atStatus'),
   atPhaseLabel:$('atPhaseLabel'),atGameText:$('atGameText'),atProgress:$('atProgress'),atStatusNote:$('atStatusNote'),
-  atBonusNo:$('atBonusNo'),atTotalGet:$('atTotalGet'),atContinueCount:$('atContinueCount'),atBonusGet:$('atBonusGet'),
   reels:[$('r1'),$('r2'),$('r3')],sumLine:$('sumLine'),probabilityPanel:$('probabilityPanel'),
   probTitle:$('probTitle'),probSub:$('probSub'),pLow:$('pLow'),pMid:$('pMid'),pHigh:$('pHigh'),
   choiceArea:$('choiceArea'),startBtn:$('startBtn'),startMain:$('startMain'),startSub:$('startSub'),
@@ -23,7 +22,7 @@ let state=freshState();
 
 function freshState(){
   return{
-    medals:1000,gauge:0,phase:'normal',atEarned:0,atGame:0,atSet:0,atSetStart:0,waiting:false,
+    medals:1000,gauge:0,phase:'normal',atEarned:0,atGame:0,atSet:0,waiting:false,
     values:[null,null,null],history:[],normalGames:0,normalHits:0,atCount:0,maxSet:0,
     settings:{probability:true,sound:true,vibrate:true}
   };
@@ -109,16 +108,6 @@ function renderAtProgress(){
   }
 }
 
-function renderAtSummary(){
-  if(!els.atBonusNo)return;
-  if(state.phase==='normal')return;
-  const bonusDiff=state.atEarned-state.atSetStart;
-  els.atBonusNo.textContent='BONUS '+state.atSet;
-  els.atTotalGet.textContent=signed(state.atEarned)+'枚';
-  els.atContinueCount.textContent=Math.max(0,state.atSet-1)+'回';
-  els.atBonusGet.textContent=signed(bonusDiff)+'枚';
-}
-
 function render(){
   els.medals.textContent=state.medals;
   els.atEarned.textContent=state.phase==='normal'?0:signed(state.atEarned);
@@ -148,7 +137,7 @@ function render(){
     els.atPhaseLabel.textContent='BONUS '+state.atSet;
     els.atGameText.textContent=(state.atGame+1)+' / 10';
     els.atStatusNote.textContent='10Gで1ボーナス。3つの数字は全部公開。確率欄の100%を選べば正解。';
-    renderAtProgress();renderAtSummary();
+    renderAtProgress();
     els.startMain.textContent='1枚で BONUS '+state.atSet+' / '+(state.atGame+1)+'G';
     els.startSub.textContent='3リールを全部公開';
   }else{
@@ -163,7 +152,7 @@ function render(){
     els.atPhaseLabel.textContent='BONUS '+state.atSet+' COMPLETE';
     els.atGameText.textContent='10 / 10';
     els.atStatusNote.textContent='2リール公開のLAST JUDGE。成功で次のボーナスへ。';
-    renderAtProgress();renderAtSummary();
+    renderAtProgress();
     els.startMain.textContent='LAST JUDGE START';
     els.startSub.textContent='成功で BONUS '+(state.atSet+1)+' / BET 0';
   }
@@ -254,8 +243,7 @@ function choose(pred){
     addHistory('B'+state.atSet,LABEL[pred],LABEL[actual],sum,hit,reward);
     if(state.atGame>=10){
       state.phase='judge';
-      const bonusDiff=state.atEarned-state.atSetStart;
-      setMessage('BONUS '+state.atSet+'終了！ 今回 '+signed(bonusDiff)+'枚 / AT累計 '+signed(state.atEarned)+'枚 / 継続 '+Math.max(0,state.atSet-1)+'回。','win');
+      setMessage('BONUS '+state.atSet+'終了！ AT累計 '+signed(state.atEarned)+'枚 / 継続 '+Math.max(0,state.atSet-1)+'回。次はLAST JUDGE。','win');
     }
   }else if(state.phase==='judge'){
     state.values[2]=roll();
@@ -269,7 +257,6 @@ function choose(pred){
       state.atSet++;
       state.maxSet=Math.max(state.maxSet,state.atSet);
       state.atGame=0;
-      state.atSetStart=state.atEarned;
       state.phase='at';
       setMessage('JUDGE成功！ '+(state.atSet-1)+'回継続 → BONUS '+state.atSet+'へ。','win');
       vibration([30,25,30,25,70]);tone('at');
@@ -279,7 +266,7 @@ function choose(pred){
       const bonuses=state.atSet;
       const continues=Math.max(0,bonuses-1);
       state.phase='normal';
-      state.atEarned=0;state.atGame=0;state.atSet=0;state.atSetStart=0;
+      state.atEarned=0;state.atGame=0;state.atSet=0;
       setMessage('JUDGE失敗。AT終了 / '+bonuses+'ボーナス / '+continues+'回継続 / AT累計 '+signed(total)+'枚。','lose');
       vibration(110);tone('lose');
     }
@@ -292,7 +279,7 @@ function choose(pred){
     if(hit){
       state.normalHits++;reward=PAY[pred];state.medals+=reward;state.gauge+=pred==='high'?2:1;
       if(state.gauge>=5){
-        state.gauge=0;state.phase='at';state.atEarned=0;state.atGame=0;state.atSet=1;state.atSetStart=0;
+        state.gauge=0;state.phase='at';state.atEarned=0;state.atGame=0;state.atSet=1;
         state.atCount++;state.maxSet=Math.max(state.maxSet,1);
         setMessage('的中 +'+reward+'枚。GAUGE MAX → BONUS 1 START！','win');
         vibration([30,25,30,25,70]);tone('at');
