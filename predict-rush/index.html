@@ -48,13 +48,13 @@
     <section id="machine" class="machine">
       <div class="machine-top">
         <div><p id="roundTitle">NORMAL GAME</p><span id="roundRule">6 BET / 1 REEL OPEN</span></div>
-        <div class="pay-table" id="payTable"><span>LOW <b>3</b></span><span>MID <b>5</b></span><span>HIGH <b>8</b></span></div>
+        <div class="pay-table" id="payTable"><span>LOW <b>3</b></span><span>MID <b>5</b></span><span>HIGH <b>7</b></span></div>
       </div>
 
       <section id="atStatus" class="at-status is-hidden">
         <div class="at-status-head"><span id="atPhaseLabel">3 REELS OPEN</span><strong id="atGameText">1 / 10</strong></div>
         <div id="atProgress" class="at-progress"></div>
-        <div class="at-status-note" id="atStatusNote">3つの数字を見て正解ゾーンを選ぶ。正解で通常と同じ3 / 5 / 8枚。</div>
+        <div class="at-status-note" id="atStatusNote">3つの数字は全部公開。確率欄の100%を選べば正解。払出は3 / 5 / 7枚。</div>
       </section>
 
       <div class="reel-window">
@@ -85,17 +85,17 @@
 
     <details class="rules-panel"><summary>ルールを見る</summary><div class="rules-body">
       <p>通常時：各リール1〜9。合計15以下＝LOW、16〜20＝MID、21以上＝HIGH。6枚BETで第1リールだけ公開。</p>
-      <p>LOW/MID的中でATゲージ+1、HIGH的中で+2。MISSで0。5ポイントでAT突入。通常配当はLOW 3 / MID 5 / HIGH 8枚。</p>
-      <p>AT：1セット10G、各G1枚BET。最初から3リール全部が見えており、合計に対応するLOW/MID/HIGHを選ぶ。正解時の払い出しは通常と同じLOW 3 / MID 5 / HIGH 8枚。不正解でもATは終わらず、そのGだけ払い出し0枚。</p>
+      <p>LOW/MID的中でATゲージ+1、HIGH的中で+2。MISSで0。5ポイントでAT突入。通常配当はLOW 3 / MID 5 / HIGH 7枚。</p>
+      <p>AT：1セット10G、各G1枚BET。最初から3リール全部が見えており、確率表示は正解ゾーンだけ100%、他は0%。正解時の払い出しは通常と同じLOW 3 / MID 5 / HIGH 7枚。不正解でもATは終わらず、そのGだけ払い出し0枚。</p>
       <p>10G終了後はLAST JUDGE。BETなしで最初の2リールを見てLOW/MID/HIGHを予想。当たれば次の10G、外れればAT終了。</p>
-      <p>現仕様はAT中の正答と通常時の最適打ちを前提に、理論値は概算約109.2%。105%へ戻す調整は未実施。</p>
+      <p>AT中の正答と通常時の最適打ちを前提に、理論値は約106.27%。</p>
     </div></details>
-    <footer>Virtual medals only · v2.1</footer>
+    <footer>Virtual medals only · v2.2</footer>
   </main>
 
   <dialog id="settingsDialog"><form method="dialog" class="settings-card">
     <div class="settings-title"><strong>SETTINGS</strong><button class="icon-btn" value="close" aria-label="閉じる">×</button></div>
-    <label class="setting-row"><span><b>確率表示</b><small>通常時とLAST JUDGEの確率を表示</small></span><input id="probToggle" type="checkbox" checked></label>
+    <label class="setting-row"><span><b>確率表示</b><small>通常時・AT・LAST JUDGEの確率を表示</small></span><input id="probToggle" type="checkbox" checked></label>
     <label class="setting-row"><span><b>効果音</b><small>簡易サウンド</small></span><input id="soundToggle" type="checkbox" checked></label>
     <label class="setting-row"><span><b>振動</b><small>対応端末で振動</small></span><input id="vibrateToggle" type="checkbox" checked></label>
     <button id="resetBtn" type="button" class="danger-btn">セッションをリセット</button>
