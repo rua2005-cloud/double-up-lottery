@@ -5,10 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#090d14">
   <meta name="color-scheme" content="dark">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
   <meta name="description" content="予想×爆裂AT。通常時は自力でATを狙い、AT中は3リールを全部見てLOW/MID/HIGHを当てるブラウザゲーム。">
-  <link rel="manifest" href="manifest.webmanifest">
-  <link rel="icon" href="icon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="styles.css">
+  <link rel="manifest" href="manifest.webmanifest?v=2.5">
+  <link rel="icon" href="icon.svg?v=2.5" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css?v=2.5">
   <style>
     .mode-chip.judge{color:#ff9aa4;border-color:#70343c;background:#251316}
     .machine.judge{border-color:#70343c;box-shadow:0 18px 60px rgba(255,111,125,.08)}
@@ -90,7 +93,7 @@
       <p>10G終了後はLAST JUDGE。BETなしで最初の2リールを見てLOW/MID/HIGHを予想。当たれば次のボーナスへ。AT中は上部HUDで現在のボーナス番号とAT累計差枚を確認できる。</p>
       <p>AT中の正答と通常時の最適打ちを前提に、理論値は約106.27%。</p>
     </div></details>
-    <footer>Virtual medals only · v2.4</footer>
+    <footer>Virtual medals only · v2.5</footer>
   </main>
 
   <dialog id="settingsDialog"><form method="dialog" class="settings-card">
@@ -100,6 +103,6 @@
     <label class="setting-row"><span><b>振動</b><small>対応端末で振動</small></span><input id="vibrateToggle" type="checkbox" checked></label>
     <button id="resetBtn" type="button" class="danger-btn">セッションをリセット</button>
   </form></dialog>
-  <script src="game.js"></script>
+  <script src="game.js?v=2.5"></script>
 </body>
 </html>
