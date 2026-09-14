@@ -5,187 +5,101 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#090d14">
   <meta name="color-scheme" content="dark">
-  <meta name="description" content="数字を予想してATを狙う、高ボラ技術介入型ブラウザゲーム。">
+  <meta name="description" content="予想×爆裂AT。通常時は自力でATを狙い、AT中は10Gの100% HIT区間と継続JUDGEを繰り返すブラウザゲーム。">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="styles.css">
+  <style>
+    .mode-chip.judge{color:#ff9aa4;border-color:#70343c;background:#251316}
+    .machine.judge{border-color:#70343c;box-shadow:0 18px 60px rgba(255,111,125,.08)}
+    .at-status{margin-top:12px;border:1px solid #5d4a23;background:#18150d;border-radius:13px;padding:10px}
+    .at-status-head{display:flex;justify-content:space-between;align-items:center}
+    .at-status-head span{font-size:10px;font-weight:900;color:var(--gold)}
+    .at-status-head strong{font-size:13px}
+    .at-progress{display:grid;grid-template-columns:repeat(10,1fr);gap:4px;margin-top:8px}
+    .at-progress i{height:8px;border-radius:999px;background:#2a2b31;border:1px solid #45464d}
+    .at-progress i.on{background:var(--gold);border-color:transparent}
+    .at-status-note{font-size:10px;color:var(--muted);margin-top:7px}
+    .at-status.judge{border-color:#70343c;background:#1f1114}
+    .at-status.judge .at-status-head span{color:#ff9aa4}
+  </style>
   <title>PREDICT RUSH 105</title>
 </head>
 <body>
-  <div class="bg-orb orb-a"></div>
-  <div class="bg-orb orb-b"></div>
-
+  <div class="bg-orb orb-a"></div><div class="bg-orb orb-b"></div>
   <main class="app-shell">
     <header class="topbar">
-      <div>
-        <p class="eyebrow">PREDICTION × SLOT</p>
-        <h1>PREDICT RUSH <span>105</span></h1>
-      </div>
+      <div><p class="eyebrow">PREDICTION × SLOT</p><h1>PREDICT RUSH <span>105</span></h1></div>
       <button id="settingsBtn" class="icon-btn" type="button" aria-label="設定を開く">⚙</button>
     </header>
 
-    <section class="hud" aria-label="ゲーム状況">
-      <article class="hud-card">
-        <span>MEDALS</span>
-        <strong id="medals">1000</strong>
-      </article>
-      <article class="hud-card">
-        <span>AT WIN</span>
-        <strong id="atEarned">0</strong>
-      </article>
-      <article class="hud-card">
-        <span>STREAK</span>
-        <strong id="streak">—</strong>
-      </article>
+    <section class="hud">
+      <article class="hud-card"><span>MEDALS</span><strong id="medals">1000</strong></article>
+      <article class="hud-card"><span>AT WIN</span><strong id="atEarned">0</strong></article>
+      <article class="hud-card"><span>AT SET</span><strong id="streak">—</strong></article>
     </section>
 
     <section class="gauge-card">
-      <div class="section-heading">
-        <div>
-          <span id="modeChip" class="mode-chip">NORMAL</span>
-          <strong>AT GAUGE</strong>
-        </div>
-        <span id="gaugeText">0 / 5</span>
-      </div>
-      <div id="gauge" class="gauge" aria-label="ATゲージ">
-        <i></i><i></i><i></i><i></i><i></i>
-      </div>
-      <p id="gaugeHelp">LOW / MID +1　HIGH +2　MISSで0</p>
+      <div class="section-heading"><div><span id="modeChip" class="mode-chip">NORMAL</span><strong>AT GAUGE</strong></div><span id="gaugeText">0 / 5</span></div>
+      <div id="gauge" class="gauge"><i></i><i></i><i></i><i></i><i></i></div>
+      <p>LOW / MID +1　HIGH +2　MISSで0</p>
     </section>
 
     <section id="machine" class="machine">
       <div class="machine-top">
-        <div>
-          <p id="roundTitle">NORMAL GAME</p>
-          <span id="roundRule">6 BET / 1 REEL OPEN</span>
-        </div>
-        <div class="pay-table" id="payTable">
-          <span>LOW <b>3</b></span>
-          <span>MID <b>5</b></span>
-          <span>HIGH <b>9</b></span>
-        </div>
+        <div><p id="roundTitle">NORMAL GAME</p><span id="roundRule">6 BET / 1 REEL OPEN</span></div>
+        <div class="pay-table" id="payTable"><span>LOW <b>3</b></span><span>MID <b>5</b></span><span>HIGH <b>8</b></span></div>
       </div>
 
-      <div class="reel-window" aria-label="数字リール">
-        <div class="reel" id="r1"><span>?</span></div>
-        <div class="reel" id="r2"><span>?</span></div>
-        <div class="reel" id="r3"><span>?</span></div>
-      </div>
+      <section id="atStatus" class="at-status is-hidden">
+        <div class="at-status-head"><span id="atPhaseLabel">100% HIT ZONE</span><strong id="atGameText">1 / 10</strong></div>
+        <div id="atProgress" class="at-progress"></div>
+        <div class="at-status-note" id="atStatusNote">どれを選んでも必ず当たる。1Gごとに+3枚。</div>
+      </section>
 
+      <div class="reel-window">
+        <div class="reel" id="r1"><span>?</span></div><div class="reel" id="r2"><span>?</span></div><div class="reel" id="r3"><span>?</span></div>
+      </div>
       <div id="sumLine" class="sum-line">STARTで第1リールを公開</div>
 
       <div id="probabilityPanel" class="probability-panel is-hidden">
-        <div class="prob-head">
-          <span>HIT PROBABILITY</span>
-          <small>公開情報から算出</small>
-        </div>
-        <div class="prob-grid">
-          <article>
-            <span>LOW</span>
-            <strong id="pLow">—</strong>
-          </article>
-          <article>
-            <span>MID</span>
-            <strong id="pMid">—</strong>
-          </article>
-          <article>
-            <span>HIGH</span>
-            <strong id="pHigh">—</strong>
-          </article>
-        </div>
+        <div class="prob-head"><span id="probTitle">HIT PROBABILITY</span><small id="probSub">公開情報から算出</small></div>
+        <div class="prob-grid"><article><span>LOW</span><strong id="pLow">—</strong></article><article><span>MID</span><strong id="pMid">—</strong></article><article><span>HIGH</span><strong id="pHigh">—</strong></article></div>
       </div>
 
       <div id="choiceArea" class="choice-area is-hidden">
-        <button type="button" class="choice choice-low" data-choice="low">
-          <span>LOW</span><small>合計15以下</small>
-        </button>
-        <button type="button" class="choice choice-mid" data-choice="mid">
-          <span>MID</span><small>合計16〜20</small>
-        </button>
-        <button type="button" class="choice choice-high" data-choice="high">
-          <span>HIGH</span><small>合計21以上</small>
-        </button>
+        <button type="button" class="choice choice-low" data-choice="low"><span>LOW</span><small>合計15以下</small></button>
+        <button type="button" class="choice choice-mid" data-choice="mid"><span>MID</span><small>合計16〜20</small></button>
+        <button type="button" class="choice choice-high" data-choice="high"><span>HIGH</span><small>合計21以上</small></button>
       </div>
 
-      <button id="startBtn" type="button" class="start-btn">
-        <span id="startMain">6枚でSTART</span>
-        <small id="startSub">第1リールを公開</small>
-      </button>
-
-      <div id="message" class="message" aria-live="polite">
-        通常時は6枚BET。ATゲージ5到達で、BET不要のPREDICT ATへ。
-      </div>
-
-      <section id="atRewardPanel" class="at-reward-panel is-hidden">
-        <div class="reward-head">
-          <span>AT STREAK REWARD</span>
-          <strong id="nextReward">NEXT +18</strong>
-        </div>
-        <div class="reward-ladder">
-          <div data-step="1"><span>1</span><b>+18</b></div>
-          <div data-step="2"><span>2</span><b>+18</b></div>
-          <div data-step="3"><span>3</span><b>+37</b></div>
-          <div data-step="4"><span>4</span><b>+55</b></div>
-          <div data-step="5"><span>5+</span><b>+92</b></div>
-        </div>
-      </section>
+      <button id="startBtn" type="button" class="start-btn"><span id="startMain">6枚でSTART</span><small id="startSub">第1リールを公開</small></button>
+      <div id="message" class="message" aria-live="polite">通常時は6枚BET。ATゲージ5到達でPREDICT ATへ。</div>
     </section>
 
     <section class="stats-panel">
-      <div class="section-heading compact">
-        <strong>SESSION</strong>
-        <button id="historyToggle" class="text-btn" type="button">履歴を見る</button>
-      </div>
-      <div class="mini-stats">
-        <div><span>GAMES</span><b id="gamesStat">0</b></div>
-        <div><span>HIT RATE</span><b id="hitRateStat">—</b></div>
-        <div><span>AT</span><b id="atCountStat">0</b></div>
-        <div><span>MAX STREAK</span><b id="maxStreakStat">0</b></div>
-      </div>
-      <div id="historyPanel" class="history-panel is-hidden">
-        <div id="historyList"></div>
-      </div>
+      <div class="section-heading compact"><strong>SESSION</strong><button id="historyToggle" class="text-btn" type="button">履歴を見る</button></div>
+      <div class="mini-stats"><div><span>NORMAL G</span><b id="gamesStat">0</b></div><div><span>NORMAL HIT</span><b id="hitRateStat">—</b></div><div><span>AT</span><b id="atCountStat">0</b></div><div><span>MAX SET</span><b id="maxStreakStat">0</b></div></div>
+      <div id="historyPanel" class="history-panel is-hidden"><div id="historyList"></div></div>
     </section>
 
-    <details class="rules-panel">
-      <summary>ルールを見る</summary>
-      <div class="rules-body">
-        <p>各リールは1〜9を独立・同確率で抽選。合計15以下＝LOW、16〜20＝MID、21以上＝HIGH。</p>
-        <p>通常時は6枚BET。第1リールだけ公開され、LOW/MID的中でATゲージ+1、HIGH的中で+2。MISSでゲージ0。5ポイント到達でAT突入。</p>
-        <p>ATはBET 0枚で第1・第2リールが公開。的中報酬は18 → 18 → 37 → 55 → 92枚。5連目以降は1回92枚。MISSで即終了。</p>
-        <p>設計上、単純な的中率優先は約95%、ゲージ価値まで含めた最適打ちは約105%を狙った仕様。</p>
-      </div>
-    </details>
-
-    <footer>Virtual medals only · v1.0</footer>
+    <details class="rules-panel"><summary>ルールを見る</summary><div class="rules-body">
+      <p>通常時：各リール1〜9。合計15以下＝LOW、16〜20＝MID、21以上＝HIGH。6枚BETで第1リールだけ公開。</p>
+      <p>LOW/MID的中でATゲージ+1、HIGH的中で+2。MISSで0。5ポイントでAT突入。通常配当はLOW 3 / MID 5 / HIGH 8枚。</p>
+      <p>AT：1セット10G。10GはLOW/MID/HIGHのどれを選んでも100%成功し、数字が選択ゾーンに入るよう生成される。1Gごとに+3枚、1セット+30枚。</p>
+      <p>10G終了後はLAST JUDGE。最初の2リールを見てLOW/MID/HIGHを予想。当たれば次の10G、外れればAT終了。</p>
+      <p>現仕様の理論値は最適打ちで約105.3%を想定。</p>
+    </div></details>
+    <footer>Virtual medals only · v2.0</footer>
   </main>
 
-  <dialog id="settingsDialog">
-    <form method="dialog" class="settings-card">
-      <div class="settings-title">
-        <strong>SETTINGS</strong>
-        <button class="icon-btn" value="close" aria-label="設定を閉じる">×</button>
-      </div>
-
-      <label class="setting-row">
-        <span><b>確率表示</b><small>公開情報からLOW/MID/HIGHの的中率を表示</small></span>
-        <input id="probToggle" type="checkbox" checked>
-      </label>
-
-      <label class="setting-row">
-        <span><b>効果音</b><small>START・的中・AT突入時の簡易サウンド</small></span>
-        <input id="soundToggle" type="checkbox" checked>
-      </label>
-
-      <label class="setting-row">
-        <span><b>振動</b><small>対応スマホでタップ・結果時に振動</small></span>
-        <input id="vibrateToggle" type="checkbox" checked>
-      </label>
-
-      <button id="resetBtn" type="button" class="danger-btn">セッションをリセット</button>
-    </form>
-  </dialog>
-
+  <dialog id="settingsDialog"><form method="dialog" class="settings-card">
+    <div class="settings-title"><strong>SETTINGS</strong><button class="icon-btn" value="close" aria-label="閉じる">×</button></div>
+    <label class="setting-row"><span><b>確率表示</b><small>通常時とLAST JUDGEの確率を表示</small></span><input id="probToggle" type="checkbox" checked></label>
+    <label class="setting-row"><span><b>効果音</b><small>簡易サウンド</small></span><input id="soundToggle" type="checkbox" checked></label>
+    <label class="setting-row"><span><b>振動</b><small>対応端末で振動</small></span><input id="vibrateToggle" type="checkbox" checked></label>
+    <button id="resetBtn" type="button" class="danger-btn">セッションをリセット</button>
+  </form></dialog>
   <script src="game.js"></script>
 </body>
 </html>
