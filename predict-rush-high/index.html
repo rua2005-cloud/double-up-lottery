@@ -100,7 +100,6 @@
         <div class="detail-title">SLOT DATA</div>
         <div class="detail-stats">
           <div class="detail-stat"><span>AT初当たり</span><b id="firstHitStat">—</b></div>
-          <div class="detail-stat"><span>HIGH RUSH昇格</span><b id="highRushCountStat">0</b></div>
           <div class="detail-stat"><span>現在ハマり</span><b id="currentDroughtStat">0G</b></div>
           <div class="detail-stat"><span>最大ハマり</span><b id="maxDroughtStat">0G</b></div>
           <div class="detail-stat"><span>TOTAL BONUS</span><b id="totalBonusStat">0</b></div>
@@ -112,6 +111,14 @@
           <div class="detail-stat"><span>総払出</span><b id="totalPayoutStat">0枚</b></div>
           <div class="detail-stat"><span>TOTAL差枚</span><b id="netStat">±0枚</b></div>
           <div class="detail-stat"><span>実戦機械割</span><b id="rtpStat">—</b></div>
+        </div>
+        <div class="detail-title">HIGH RUSH DATA</div>
+        <div class="detail-stats">
+          <div class="detail-stat"><span>HIGH RUSH昇格</span><b id="highRushCountStat">0</b></div>
+          <div class="detail-stat"><span>HR平均BONUS</span><b id="highRushAvgBonusStat">—</b></div>
+          <div class="detail-stat"><span>HR最大BONUS</span><b id="highRushMaxBonusStat">—</b></div>
+          <div class="detail-stat"><span>HR平均獲得</span><b id="highRushAvgGainStat">—</b></div>
+          <div class="detail-stat"><span>HR最大獲得</span><b id="highRushMaxGainStat">—</b></div>
         </div>
         <div class="detail-title">RECENT HISTORY</div>
         <div id="historyList"></div>
@@ -126,7 +133,7 @@
       <p><strong>HIGH RUSH</strong>：昇格した次BONUSをHIGH RUSH BONUS 1として専用カウントを開始。予想ルールは通常ATと同じ。HIGH RUSH BONUS 1〜5は全配当3倍（LOW 9 / MID 15 / HIGH 21）、6〜10は6倍（18 / 30 / 42）、11以降は10倍（30 / 50 / 70）。</p>
       <p>HIGH RUSH中のBATTLE JUDGE：15%で確定継続が発生。その場合は予想不要で次のHIGH RUSH BONUSへ。通常JUDGEに成功した場合もHIGH RUSHはAT終了まで継続します。</p>
     </div></details>
-    <footer>Virtual medals only · HIGH RUSH v1.2</footer>
+    <footer>Virtual medals only · HIGH RUSH v1.3</footer>
   </main>
 
   <dialog id="settingsDialog"><form method="dialog" class="settings-card">
@@ -136,6 +143,6 @@
     <label class="setting-row"><span><b>振動</b><small>対応端末で振動</small></span><input id="vibrateToggle" type="checkbox" checked></label>
     <button id="resetBtn" type="button" class="danger-btn">セッションをリセット</button>
   </form></dialog>
-  <script src="game.js?v=1.2"></script>
+  <script src="game.js?v=1.3"></script>
 </body>
 </html>
