@@ -37,8 +37,6 @@
     .detail-stat{padding:9px 7px;border:1px solid var(--line);border-radius:10px;background:#0c131f;text-align:center;min-width:0}
     .detail-stat span{display:block;font-size:8px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     .detail-stat b{display:block;margin-top:3px;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .rush-info{margin-top:10px;padding:10px;border:1px solid #66551c;background:#1a170b;border-radius:12px;font-size:11px;line-height:1.6;color:#d6c97d}
-    .rush-info strong{color:#ffe36f}
     @media(max-width:520px){.detail-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
   </style>
   <title>PREDICT RUSH 105 - HIGH RUSH</title>
@@ -95,8 +93,6 @@
       <div id="message" class="message" aria-live="polite">通常時は8枚BET。ATゲージ5到達でPREDICT ATへ。</div>
     </section>
 
-    <div class="rush-info"><strong>HIGH RUSH</strong>：AT初当たりの10%。BATTLE JUDGE以外はHIGH確定。BONUS 1〜5はHIGH払出2倍、6〜10は3倍、11以降は5倍。各BATTLE JUDGEは15%で確定継続。</div>
-
     <section class="stats-panel">
       <div class="section-heading compact"><strong>SESSION</strong><button id="historyToggle" class="text-btn" type="button">詳細を見る</button></div>
       <div class="mini-stats"><div><span>NORMAL G</span><b id="gamesStat">0</b></div><div><span>NORMAL HIT</span><b id="hitRateStat">—</b></div><div><span>AT</span><b id="atCountStat">0</b></div><div><span>MAX BONUS</span><b id="maxStreakStat">0</b></div></div>
@@ -126,7 +122,7 @@
       <p>通常時：各リール1〜9。合計15以下＝LOW、16〜20＝MID、21以上＝HIGH。8枚BETで第1リールだけ公開。</p>
       <p>LOW/MID的中でATゲージ+1、HIGH的中で+2。MISSで0。5ポイントでAT突入。通常配当はLOW 3 / MID 5 / HIGH 7枚。</p>
       <p>通常AT：10Gを1ボーナスとしてカウント。各G1枚BET。3リール全部公開、正解時はLOW 3 / MID 5 / HIGH 7枚。</p>
-      <p>HIGH RUSH：AT突入時10%で選択。BATTLE JUDGE以外は必ずHIGH。BONUS 1〜5はHIGH14枚、6〜10は21枚、11以降は35枚。</p>
+      <p><strong>HIGH RUSH</strong>：AT初当たりの10%。BATTLE JUDGE以外はHIGH確定。BONUS 1〜5はHIGH払出2倍（14枚）、6〜10は3倍（21枚）、11以降は5倍（35枚）。</p>
       <p>BATTLE JUDGE：BETなしで最初の2リールを見てLOW/MID/HIGHを予想。HIGH RUSH中のみ15%で確定継続が発生し、その場合は予想不要で次BONUSへ。</p>
     </div></details>
     <footer>Virtual medals only · HIGH RUSH v1.0</footer>
