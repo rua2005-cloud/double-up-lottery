@@ -22,9 +22,9 @@ const els={
   probToggle:$('probToggle'),soundToggle:$('soundToggle'),vibrateToggle:$('vibrateToggle'),resetBtn:$('resetBtn')
 };
 
-const PAY={low:3,mid:5,high:7};
+const PAY={low:3,mid:5,high:9};
 const LABEL={low:'LOW',mid:'MID',high:'HIGH'};
-const NORMAL_BET=8;
+const NORMAL_BET=9;
 const AT_BET=1;
 const HIGH_RUSH_UP_RATE=.048;
 const GUARANTEE_RATE=.15;
@@ -166,7 +166,7 @@ function render(){
     els.modeChip.textContent='NORMAL';
     els.roundTitle.textContent='NORMAL GAME';
     els.roundRule.textContent=NORMAL_BET+' BET / 1 REEL OPEN';
-    els.payTable.innerHTML='<span>LOW <b>3</b></span><span>MID <b>5</b></span><span>HIGH <b>7</b></span>';
+    els.payTable.innerHTML='<span>LOW <b>3</b></span><span>MID <b>5</b></span><span>HIGH <b>9</b></span>';
     els.startMain.textContent=NORMAL_BET+'枚でSTART';
     els.startSub.textContent='第1リールを公開';
   }else if(state.phase==='at'){
@@ -194,7 +194,7 @@ function render(){
       els.machine.classList.add('at');
       els.roundTitle.textContent='PREDICT AT';
       els.roundRule.textContent='1 BET / 3 REELS OPEN';
-      els.payTable.innerHTML='<span>LOW <b>3</b></span><span>MID <b>5</b></span><span>HIGH <b>7</b></span>';
+      els.payTable.innerHTML='<span>LOW <b>3</b></span><span>MID <b>5</b></span><span>HIGH <b>9</b></span>';
       els.atStatusNote.textContent='10Gで1ボーナス。BATTLE JUDGE成功時に4.8%でHIGH RUSH昇格。';
       els.startMain.textContent='1枚で BONUS '+state.atSet+' / '+(state.atGame+1)+'G';
       els.startSub.textContent='3リールを全部公開';
