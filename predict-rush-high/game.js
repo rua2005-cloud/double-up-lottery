@@ -24,14 +24,14 @@ const PAY={low:3,mid:5,high:7};
 const LABEL={low:'LOW',mid:'MID',high:'HIGH'};
 const NORMAL_BET=8;
 const AT_BET=1;
-const HIGH_RUSH_RATE=.10;
+const HIGH_RUSH_UP_RATE=.048;
 const GUARANTEE_RATE=.15;
 let state=freshState();
 
 function freshState(){
   return{
     medals:1000,gauge:0,phase:'normal',atEarned:0,atGame:0,atSet:0,waiting:false,
-    highRush:false,guaranteedJudge:false,values:[null,null,null],history:[],
+    highRush:false,highRushSet:0,guaranteedJudge:false,values:[null,null,null],history:[],
     normalGames:0,normalHits:0,atCount:0,highRushCount:0,maxSet:0,currentDrought:0,maxDrought:0,
     totalBonus:0,totalBet:0,totalPayout:0,completedAtCount:0,totalAtGain:0,maxAtGain:0,
     judgeAttempts:0,judgeHits:0,settings:{probability:true,sound:true,vibrate:true}
@@ -100,7 +100,7 @@ function showProbability(){
   if(state.phase==='at'){
     const sum=state.values.reduce((a,b)=>a+b,0);
     const answer=classify(sum);
-    els.probTitle.textContent=state.highRush?'HIGH RUSH ×'+highMultiplier(state.atSet):'HIT PROBABILITY';
+    els.probTitle.textContent=state.highRush?'HIGH RUSH ×'+highMultiplier(state.highRushSet):'HIT PROBABILITY';
     els.probSub.textContent='3リール公開済み・正解は確定';
     els.pLow.textContent=answer==='low'?'100%':'0%';
     els.pMid.textContent=answer==='mid'?'100%':'0%';
@@ -164,12 +164,12 @@ function render(){
     els.startSub.textContent='第1リールを公開';
   }else if(state.phase==='at'){
     els.atStatus.classList.remove('is-hidden');
-    els.atPhaseLabel.textContent=(state.highRush?'HIGH RUSH ':'')+'BONUS '+state.atSet;
     els.atGameText.textContent=(state.atGame+1)+' / 10';
     renderAtProgress();
     if(state.highRush){
-      const m=highMultiplier(state.atSet);
+      const m=highMultiplier(state.highRushSet);
       const low=PAY.low*m,mid=PAY.mid*m,high=PAY.high*m;
+      els.atPhaseLabel.textContent='HIGH RUSH BONUS '+state.highRushSet;
       els.modeChip.textContent='HIGH RUSH ×'+m;
       els.modeChip.classList.add('high');
       els.machine.classList.add('high');
@@ -177,17 +177,18 @@ function render(){
       els.roundTitle.textContent='HIGH RUSH';
       els.roundRule.textContent='1 BET / 3 REELS OPEN / ×'+m;
       els.payTable.innerHTML='<span>LOW <b>'+low+'</b></span><span>MID <b>'+mid+'</b></span><span>HIGH <b>'+high+'</b></span>';
-      els.atStatusNote.textContent='予想ルールは通常ATと同じ。現在は全ゾーン払出×'+m+'。';
+      els.atStatusNote.textContent='予想ルールは通常ATと同じ。HIGH RUSH BONUS '+state.highRushSet+'は全ゾーン払出×'+m+'。';
       els.startMain.textContent='1枚で HIGH RUSH / '+(state.atGame+1)+'G';
       els.startSub.textContent='3リール公開・配当×'+m;
     }else{
+      els.atPhaseLabel.textContent='BONUS '+state.atSet;
       els.modeChip.textContent='BONUS '+state.atSet;
       els.modeChip.classList.add('at');
       els.machine.classList.add('at');
       els.roundTitle.textContent='PREDICT AT';
       els.roundRule.textContent='1 BET / 3 REELS OPEN';
       els.payTable.innerHTML='<span>LOW <b>3</b></span><span>MID <b>5</b></span><span>HIGH <b>7</b></span>';
-      els.atStatusNote.textContent='10Gで1ボーナス。3つの数字は全部公開。確率欄の100%を選べば正解。';
+      els.atStatusNote.textContent='10Gで1ボーナス。BATTLE JUDGE成功時に4.8%でHIGH RUSH昇格。';
       els.startMain.textContent='1枚で BONUS '+state.atSet+' / '+(state.atGame+1)+'G';
       els.startSub.textContent='3リールを全部公開';
     }
@@ -200,12 +201,12 @@ function render(){
     els.payTable.innerHTML='<span>RESULT <b>CONTINUE</b></span>';
     els.atStatus.classList.remove('is-hidden');
     els.atStatus.classList.add('guaranteed');
-    els.atPhaseLabel.textContent='BONUS '+state.atSet+' COMPLETE';
+    els.atPhaseLabel.textContent='HIGH RUSH BONUS '+state.highRushSet+' COMPLETE';
     els.atGameText.textContent='GUARANTEED';
-    els.atStatusNote.textContent='確定継続を獲得。予想なしで次のBONUSへ進みます。';
+    els.atStatusNote.textContent='確定継続を獲得。予想なしで次のHIGH RUSH BONUSへ進みます。';
     renderAtProgress();
     els.startMain.textContent='確定継続';
-    els.startSub.textContent='タップで BONUS '+(state.atSet+1)+'へ';
+    els.startSub.textContent='タップで HIGH RUSH BONUS '+(state.highRushSet+1)+'へ';
   }else{
     els.modeChip.textContent='BATTLE JUDGE';
     els.modeChip.classList.add('judge');
@@ -215,9 +216,9 @@ function render(){
     els.payTable.innerHTML='<span>HIT <b>NEXT BONUS</b></span><span>MISS <b>END</b></span>';
     els.atStatus.classList.remove('is-hidden');
     els.atStatus.classList.add('judge');
-    els.atPhaseLabel.textContent='BONUS '+state.atSet+' COMPLETE';
+    els.atPhaseLabel.textContent=state.highRush?'HIGH RUSH BONUS '+state.highRushSet+' COMPLETE':'BONUS '+state.atSet+' COMPLETE';
     els.atGameText.textContent='10 / 10';
-    els.atStatusNote.textContent=state.highRush?'HIGH RUSH継続を賭けたBATTLE JUDGE。':'2リール公開のBATTLE JUDGE。成功で次のボーナスへ。';
+    els.atStatusNote.textContent=state.highRush?'HIGH RUSH継続を賭けたBATTLE JUDGE。':'成功で次BONUSへ。さらに4.8%でHIGH RUSHへ昇格。';
     renderAtProgress();
     els.startMain.textContent='BATTLE JUDGE START';
     els.startSub.textContent='成功で BONUS '+(state.atSet+1)+' / BET 0';
@@ -240,9 +241,9 @@ function render(){
 function resolveGuaranteedJudge(){
   state.judgeAttempts++;state.judgeHits++;
   addHistory('確定JUDGE','ASSIST','CONTINUE','—',true,0);
-  state.atSet++;state.totalBonus++;state.maxSet=Math.max(state.maxSet,state.atSet);
+  state.atSet++;state.highRushSet++;state.totalBonus++;state.maxSet=Math.max(state.maxSet,state.atSet);
   state.atGame=0;state.guaranteedJudge=false;state.phase='at';state.values=[null,null,null];
-  setMessage('確定継続！ BONUS '+state.atSet+'へ。','win');
+  setMessage('確定継続！ HIGH RUSH BONUS '+state.highRushSet+'へ。','win');
   vibration([25,20,25,20,80]);tone('rush');
   render();
 }
@@ -261,7 +262,8 @@ function startRound(){
     state.values=[roll(),roll(),roll()];
     state.values.forEach((_,i)=>animate(i));
     els.sumLine.textContent='3リール公開済み / 確率欄の100%が正解';
-    setMessage((state.highRush?'HIGH RUSH ':'BONUS ')+state.atSet+' / '+(state.atGame+1)+'G。正解ゾーンを選択。');
+    const bonusLabel=state.highRush?'HIGH RUSH BONUS '+state.highRushSet:'BONUS '+state.atSet;
+    setMessage(bonusLabel+' / '+(state.atGame+1)+'G。正解ゾーンを選択。');
   }else if(state.guaranteedJudge){
     resolveGuaranteedJudge();return;
   }else{
@@ -291,8 +293,8 @@ function renderHistory(){
 function finishAt(){
   const total=state.atEarned,bonuses=state.atSet,continues=Math.max(0,bonuses-1),wasHigh=state.highRush;
   state.completedAtCount++;state.totalAtGain+=total;state.maxAtGain=Math.max(state.maxAtGain,total);
-  state.phase='normal';state.atEarned=0;state.atGame=0;state.atSet=0;state.highRush=false;state.guaranteedJudge=false;state.values=[null,null,null];
-  setMessage((wasHigh?'HIGH RUSH':'AT')+'終了 / '+bonuses+'ボーナス / '+continues+'回継続 / AT累計 '+signed(total)+'枚。','lose');
+  state.phase='normal';state.atEarned=0;state.atGame=0;state.atSet=0;state.highRush=false;state.highRushSet=0;state.guaranteedJudge=false;state.values=[null,null,null];
+  setMessage((wasHigh?'HIGH RUSH経由AT':'AT')+'終了 / '+bonuses+'ボーナス / '+continues+'回継続 / AT累計 '+signed(total)+'枚。','lose');
   vibration(110);tone('lose');
 }
 
@@ -304,7 +306,7 @@ function choose(pred){
     sum=state.values.reduce((a,b)=>a+b,0);actual=classify(sum);hit=pred===actual;state.atGame++;
     els.sumLine.textContent='TOTAL '+sum+' = '+LABEL[actual];
     if(hit){
-      const mult=state.highRush?highMultiplier(state.atSet):1;
+      const mult=state.highRush?highMultiplier(state.highRushSet):1;
       reward=PAY[actual]*mult;
       state.medals+=reward;state.totalPayout+=reward;state.atEarned+=reward;
       setMessage((state.highRush?'HIGH RUSH ×'+mult+' / ':'')+LABEL[actual]+' 正解！ 払出 +'+reward+'枚。','win');
@@ -312,7 +314,7 @@ function choose(pred){
     }else{
       setMessage('不正解。正解は '+LABEL[actual]+'。払出0枚 / このG差枚 -1。','lose');vibration(55);tone('lose');
     }
-    addHistory((state.highRush?'HR':'B')+state.atSet,LABEL[pred],LABEL[actual],sum,hit,reward);
+    addHistory((state.highRush?'HR'+state.highRushSet:'B'+state.atSet),LABEL[pred],LABEL[actual],sum,hit,reward);
     if(state.atGame>=10){
       state.phase='judge';state.guaranteedJudge=state.highRush&&Math.random()<GUARANTEE_RATE;
       setMessage('BONUS '+state.atSet+'終了！ AT累計 '+signed(state.atEarned)+'枚。次は'+(state.guaranteedJudge?'確定継続JUDGE！':'BATTLE JUDGE。'),state.guaranteedJudge?'win':'');
@@ -325,7 +327,18 @@ function choose(pred){
     if(hit){
       addHistory('JUDGE',LABEL[pred],LABEL[actual],sum,true,0);
       state.atSet++;state.totalBonus++;state.maxSet=Math.max(state.maxSet,state.atSet);state.atGame=0;state.phase='at';
-      setMessage('BATTLE JUDGE成功！ BONUS '+state.atSet+'へ。','win');vibration([30,25,30,25,70]);tone(state.highRush?'rush':'at');
+      if(state.highRush){
+        state.highRushSet++;
+        setMessage('BATTLE JUDGE成功！ HIGH RUSH BONUS '+state.highRushSet+'へ。','win');
+        vibration([30,25,30,25,70]);tone('rush');
+      }else if(Math.random()<HIGH_RUSH_UP_RATE){
+        state.highRush=true;state.highRushSet=1;state.highRushCount++;
+        setMessage('BATTLE JUDGE成功！ HIGH RUSH昇格！ BONUS 1 START！','win');
+        vibration([30,20,30,20,100]);tone('rush');
+      }else{
+        setMessage('BATTLE JUDGE成功！ BONUS '+state.atSet+'へ。','win');
+        vibration([30,25,30,25,70]);tone('at');
+      }
     }else{
       addHistory('JUDGE',LABEL[pred],LABEL[actual],sum,false,0);finishAt();
     }
@@ -337,10 +350,9 @@ function choose(pred){
     if(hit){
       state.normalHits++;reward=PAY[pred];state.medals+=reward;state.totalPayout+=reward;state.gauge+=pred==='high'?2:1;
       if(state.gauge>=5){
-        state.gauge=0;state.phase='at';state.atEarned=0;state.atGame=0;state.atSet=1;state.guaranteedJudge=false;
-        state.highRush=Math.random()<HIGH_RUSH_RATE;state.atCount++;state.totalBonus++;state.maxSet=Math.max(state.maxSet,1);state.currentDrought=0;
-        if(state.highRush){state.highRushCount++;setMessage('的中 +'+reward+'枚。GAUGE MAX → HIGH RUSH突入！','win');vibration([30,20,30,20,100]);tone('rush')}
-        else{setMessage('的中 +'+reward+'枚。GAUGE MAX → BONUS 1 START！','win');vibration([30,25,30,25,70]);tone('at')}
+        state.gauge=0;state.phase='at';state.atEarned=0;state.atGame=0;state.atSet=1;state.highRush=false;state.highRushSet=0;state.guaranteedJudge=false;
+        state.atCount++;state.totalBonus++;state.maxSet=Math.max(state.maxSet,1);state.currentDrought=0;
+        setMessage('的中 +'+reward+'枚。GAUGE MAX → BONUS 1 START！','win');vibration([30,25,30,25,70]);tone('at');
       }else{
         setMessage('的中。+'+reward+'枚 / ゲージ+'+(pred==='high'?2:1)+'。','win');vibration(35);tone('win');
       }
