@@ -13,6 +13,8 @@ const els={
   message:$('message'),gamesStat:$('gamesStat'),hitRateStat:$('hitRateStat'),atCountStat:$('atCountStat'),
   maxStreakStat:$('maxStreakStat'),historyToggle:$('historyToggle'),historyPanel:$('historyPanel'),
   historyList:$('historyList'),firstHitStat:$('firstHitStat'),highRushCountStat:$('highRushCountStat'),
+  highRushAvgBonusStat:$('highRushAvgBonusStat'),highRushMaxBonusStat:$('highRushMaxBonusStat'),
+  highRushAvgGainStat:$('highRushAvgGainStat'),highRushMaxGainStat:$('highRushMaxGainStat'),
   currentDroughtStat:$('currentDroughtStat'),maxDroughtStat:$('maxDroughtStat'),totalBonusStat:$('totalBonusStat'),
   avgBonusStat:$('avgBonusStat'),judgeRateStat:$('judgeRateStat'),avgAtGainStat:$('avgAtGainStat'),
   maxAtGainStat:$('maxAtGainStat'),totalBetStat:$('totalBetStat'),totalPayoutStat:$('totalPayoutStat'),
@@ -31,9 +33,10 @@ let state=freshState();
 function freshState(){
   return{
     medals:1000,gauge:0,phase:'normal',atEarned:0,atGame:0,atSet:0,waiting:false,
-    highRush:false,highRushSet:0,guaranteedJudge:false,values:[null,null,null],history:[],
+    highRush:false,highRushSet:0,highRushEarned:0,guaranteedJudge:false,values:[null,null,null],history:[],
     normalGames:0,normalHits:0,atCount:0,highRushCount:0,maxSet:0,currentDrought:0,maxDrought:0,
     totalBonus:0,totalBet:0,totalPayout:0,completedAtCount:0,totalAtGain:0,maxAtGain:0,
+    completedHighRushCount:0,totalHighRushBonus:0,maxHighRushBonus:0,totalHighRushGain:0,maxHighRushGain:0,
     judgeAttempts:0,judgeHits:0,settings:{probability:true,sound:true,vibrate:true}
   };
 }
@@ -132,6 +135,10 @@ function renderAtProgress(){
 function renderDetailedStats(){
   els.firstHitStat.textContent=state.atCount?'1/'+(state.normalGames/state.atCount).toFixed(1):'—';
   els.highRushCountStat.textContent=state.highRushCount;
+  els.highRushAvgBonusStat.textContent=state.completedHighRushCount?(state.totalHighRushBonus/state.completedHighRushCount).toFixed(2):'—';
+  els.highRushMaxBonusStat.textContent=state.completedHighRushCount?state.maxHighRushBonus:'—';
+  els.highRushAvgGainStat.textContent=state.completedHighRushCount?signedFixed(state.totalHighRushGain/state.completedHighRushCount,1)+'枚':'—';
+  els.highRushMaxGainStat.textContent=state.completedHighRushCount?signed(state.maxHighRushGain)+'枚':'—';
   els.currentDroughtStat.textContent=state.currentDrought+'G';
   els.maxDroughtStat.textContent=state.maxDrought+'G';
   els.totalBonusStat.textContent=state.totalBonus;
@@ -259,6 +266,7 @@ function startRound(){
   }else if(state.phase==='at'){
     if(state.medals<AT_BET)return;
     state.medals-=AT_BET;state.totalBet+=AT_BET;state.atEarned-=AT_BET;
+    if(state.highRush)state.highRushEarned-=AT_BET;
     state.values=[roll(),roll(),roll()];
     state.values.forEach((_,i)=>animate(i));
     els.sumLine.textContent='3リール公開済み / 確率欄の100%が正解';
@@ -292,8 +300,15 @@ function renderHistory(){
 
 function finishAt(){
   const total=state.atEarned,bonuses=state.atSet,continues=Math.max(0,bonuses-1),wasHigh=state.highRush;
+  const highRushBonuses=state.highRushSet,highRushGain=state.highRushEarned;
   state.completedAtCount++;state.totalAtGain+=total;state.maxAtGain=Math.max(state.maxAtGain,total);
-  state.phase='normal';state.atEarned=0;state.atGame=0;state.atSet=0;state.highRush=false;state.highRushSet=0;state.guaranteedJudge=false;state.values=[null,null,null];
+  if(wasHigh){
+    state.completedHighRushCount++;state.totalHighRushBonus+=highRushBonuses;
+    state.maxHighRushBonus=Math.max(state.maxHighRushBonus,highRushBonuses);
+    state.totalHighRushGain+=highRushGain;
+    state.maxHighRushGain=state.completedHighRushCount===1?highRushGain:Math.max(state.maxHighRushGain,highRushGain);
+  }
+  state.phase='normal';state.atEarned=0;state.atGame=0;state.atSet=0;state.highRush=false;state.highRushSet=0;state.highRushEarned=0;state.guaranteedJudge=false;state.values=[null,null,null];
   setMessage((wasHigh?'HIGH RUSH経由AT':'AT')+'終了 / '+bonuses+'ボーナス / '+continues+'回継続 / AT累計 '+signed(total)+'枚。','lose');
   vibration(110);tone('lose');
 }
@@ -309,6 +324,7 @@ function choose(pred){
       const mult=state.highRush?highMultiplier(state.highRushSet):1;
       reward=PAY[actual]*mult;
       state.medals+=reward;state.totalPayout+=reward;state.atEarned+=reward;
+      if(state.highRush)state.highRushEarned+=reward;
       setMessage((state.highRush?'HIGH RUSH ×'+mult+' / ':'')+LABEL[actual]+' 正解！ 払出 +'+reward+'枚。','win');
       vibration([20,18,30]);tone(state.highRush?'rush':'win');
     }else{
@@ -332,7 +348,7 @@ function choose(pred){
         setMessage('BATTLE JUDGE成功！ HIGH RUSH BONUS '+state.highRushSet+'へ。','win');
         vibration([30,25,30,25,70]);tone('rush');
       }else if(Math.random()<HIGH_RUSH_UP_RATE){
-        state.highRush=true;state.highRushSet=1;state.highRushCount++;
+        state.highRush=true;state.highRushSet=1;state.highRushEarned=0;state.highRushCount++;
         setMessage('BATTLE JUDGE成功！ HIGH RUSH昇格！ BONUS 1 START！','win');
         vibration([30,20,30,20,100]);tone('rush');
       }else{
@@ -350,7 +366,7 @@ function choose(pred){
     if(hit){
       state.normalHits++;reward=PAY[pred];state.medals+=reward;state.totalPayout+=reward;state.gauge+=pred==='high'?2:1;
       if(state.gauge>=5){
-        state.gauge=0;state.phase='at';state.atEarned=0;state.atGame=0;state.atSet=1;state.highRush=false;state.highRushSet=0;state.guaranteedJudge=false;
+        state.gauge=0;state.phase='at';state.atEarned=0;state.atGame=0;state.atSet=1;state.highRush=false;state.highRushSet=0;state.highRushEarned=0;state.guaranteedJudge=false;
         state.atCount++;state.totalBonus++;state.maxSet=Math.max(state.maxSet,1);state.currentDrought=0;
         setMessage('的中 +'+reward+'枚。GAUGE MAX → BONUS 1 START！','win');vibration([30,25,30,25,70]);tone('at');
       }else{
