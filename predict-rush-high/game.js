@@ -47,15 +47,9 @@ const signedFixed=(n,d=1)=>{
 };
 
 function highMultiplier(set){
-  if(set<=5)return 2;
-  if(set<=10)return 3;
-  return 5;
-}
-
-function highTriple(){
-  let v;
-  do{v=[roll(),roll(),roll()]}while(v[0]+v[1]+v[2]<21);
-  return v;
+  if(set<=5)return 3;
+  if(set<=10)return 6;
+  return 10;
 }
 
 function vibration(pattern){
@@ -106,8 +100,8 @@ function showProbability(){
   if(state.phase==='at'){
     const sum=state.values.reduce((a,b)=>a+b,0);
     const answer=classify(sum);
-    els.probTitle.textContent=state.highRush?'HIGH RUSH LOCK':'HIT PROBABILITY';
-    els.probSub.textContent=state.highRush?'HIGH確定':'3リール公開済み・正解は確定';
+    els.probTitle.textContent=state.highRush?'HIGH RUSH ×'+highMultiplier(state.atSet):'HIT PROBABILITY';
+    els.probSub.textContent='3リール公開済み・正解は確定';
     els.pLow.textContent=answer==='low'?'100%':'0%';
     els.pMid.textContent=answer==='mid'?'100%':'0%';
     els.pHigh.textContent=answer==='high'?'100%':'0%';
@@ -174,17 +168,18 @@ function render(){
     els.atGameText.textContent=(state.atGame+1)+' / 10';
     renderAtProgress();
     if(state.highRush){
-      const m=highMultiplier(state.atSet),pay=PAY.high*m;
+      const m=highMultiplier(state.atSet);
+      const low=PAY.low*m,mid=PAY.mid*m,high=PAY.high*m;
       els.modeChip.textContent='HIGH RUSH ×'+m;
       els.modeChip.classList.add('high');
       els.machine.classList.add('high');
       els.atStatus.classList.add('high');
       els.roundTitle.textContent='HIGH RUSH';
-      els.roundRule.textContent='1 BET / HIGH LOCK / ×'+m;
-      els.payTable.innerHTML='<span>HIGH <b>'+pay+'</b></span><span>倍率 <b>×'+m+'</b></span>';
-      els.atStatusNote.textContent='BATTLE JUDGE以外はHIGH確定。現在のHIGH払出は'+pay+'枚。';
+      els.roundRule.textContent='1 BET / 3 REELS OPEN / ×'+m;
+      els.payTable.innerHTML='<span>LOW <b>'+low+'</b></span><span>MID <b>'+mid+'</b></span><span>HIGH <b>'+high+'</b></span>';
+      els.atStatusNote.textContent='予想ルールは通常ATと同じ。現在は全ゾーン払出×'+m+'。';
       els.startMain.textContent='1枚で HIGH RUSH / '+(state.atGame+1)+'G';
-      els.startSub.textContent='HIGH確定・払出'+pay+'枚';
+      els.startSub.textContent='3リール公開・配当×'+m;
     }else{
       els.modeChip.textContent='BONUS '+state.atSet;
       els.modeChip.classList.add('at');
@@ -222,7 +217,7 @@ function render(){
     els.atStatus.classList.add('judge');
     els.atPhaseLabel.textContent='BONUS '+state.atSet+' COMPLETE';
     els.atGameText.textContent='10 / 10';
-    els.atStatusNote.textContent=state.highRush?'通常BATTLE JUDGE。ここはHIGH固定ではありません。':'2リール公開のBATTLE JUDGE。成功で次のボーナスへ。';
+    els.atStatusNote.textContent=state.highRush?'HIGH RUSH継続を賭けたBATTLE JUDGE。':'2リール公開のBATTLE JUDGE。成功で次のボーナスへ。';
     renderAtProgress();
     els.startMain.textContent='BATTLE JUDGE START';
     els.startSub.textContent='成功で BONUS '+(state.atSet+1)+' / BET 0';
@@ -263,9 +258,9 @@ function startRound(){
   }else if(state.phase==='at'){
     if(state.medals<AT_BET)return;
     state.medals-=AT_BET;state.totalBet+=AT_BET;state.atEarned-=AT_BET;
-    state.values=state.highRush?highTriple():[roll(),roll(),roll()];
+    state.values=[roll(),roll(),roll()];
     state.values.forEach((_,i)=>animate(i));
-    els.sumLine.textContent=state.highRush?'HIGH LOCK / 3リール公開済み':'3リール公開済み / 確率欄の100%が正解';
+    els.sumLine.textContent='3リール公開済み / 確率欄の100%が正解';
     setMessage((state.highRush?'HIGH RUSH ':'BONUS ')+state.atSet+' / '+(state.atGame+1)+'G。正解ゾーンを選択。');
   }else if(state.guaranteedJudge){
     resolveGuaranteedJudge();return;
@@ -309,7 +304,7 @@ function choose(pred){
     sum=state.values.reduce((a,b)=>a+b,0);actual=classify(sum);hit=pred===actual;state.atGame++;
     els.sumLine.textContent='TOTAL '+sum+' = '+LABEL[actual];
     if(hit){
-      const mult=state.highRush&&actual==='high'?highMultiplier(state.atSet):1;
+      const mult=state.highRush?highMultiplier(state.atSet):1;
       reward=PAY[actual]*mult;
       state.medals+=reward;state.totalPayout+=reward;state.atEarned+=reward;
       setMessage((state.highRush?'HIGH RUSH ×'+mult+' / ':'')+LABEL[actual]+' 正解！ 払出 +'+reward+'枚。','win');
