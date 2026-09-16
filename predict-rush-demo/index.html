@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#030914">
+  <meta name="color-scheme" content="dark">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta name="description" content="PREDICT RUSH 105 近未来予測端末 UI DEMO">
+  <title>PREDICT RUSH 105 — TERMINAL DEMO</title>
+  <link rel="stylesheet" href="styles.css?v=1">
+</head>
+<body>
+  <div class="world-grid" aria-hidden="true"></div>
+  <div class="aurora a1" aria-hidden="true"></div>
+  <div class="aurora a2" aria-hidden="true"></div>
+
+  <div id="boot" class="boot-screen">
+    <div class="boot-ring"><i></i><i></i><i></i></div>
+    <p class="micro">PREDICTION CORE / DEMO BUILD 01</p>
+    <h1>PREDICT RUSH <em>105</em></h1>
+    <p class="boot-copy">未来は、まだ確定していない。</p>
+    <button id="enterBtn" class="enter-btn" type="button"><span>ENTER SYSTEM</span><small>予測端末を起動</small></button>
+    <p class="boot-foot">TAP TO INITIALIZE FORECAST TERMINAL</p>
+  </div>
+
+  <main id="app" class="terminal is-locked">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark"><i></i><i></i><i></i></div>
+        <div><p>PREDICTION TERMINAL</p><h2>PREDICT RUSH <b>105</b></h2></div>
+      </div>
+      <div class="online"><i></i><span>SYSTEM ONLINE</span></div>
+    </header>
+
+    <section class="hud-row">
+      <article class="hud-card"><span>MEDALS</span><strong id="medals">1000</strong><small>VIRTUAL CREDIT</small></article>
+      <article class="hud-card"><span>AT TOTAL</span><strong id="atTotal">0</strong><small>SESSION GAIN</small></article>
+      <article class="hud-card"><span>BONUS</span><strong id="bonusNo">—</strong><small>CURRENT SET</small></article>
+    </section>
+
+    <section id="stage" class="stage normal">
+      <div class="stage-head">
+        <div>
+          <p id="modeEyebrow">ANALYSIS MODE</p>
+          <h3 id="modeTitle">NORMAL</h3>
+          <span id="modeRule">6 BET / 1 REEL OPEN</span>
+        </div>
+        <div id="riskBadge" class="risk-badge"><span>FORECAST</span><b>LIVE</b></div>
+      </div>
+
+      <div class="gauge-wrap">
+        <div class="gauge-label"><span>AT LINK</span><b id="gaugeText">0 / 5</b></div>
+        <div id="gauge" class="gauge"><i></i><i></i><i></i><i></i><i></i></div>
+        <p>LOW / MID +1　HIGH +2　MISS → RESET</p>
+      </div>
+
+      <div class="scan-zone">
+        <div class="scan-beam" aria-hidden="true"></div>
+        <div class="reels">
+          <div class="reel" id="r1"><small>01</small><strong>?</strong><i></i></div>
+          <div class="reel" id="r2"><small>02</small><strong>?</strong><i></i></div>
+          <div class="reel" id="r3"><small>03</small><strong>?</strong><i></i></div>
+        </div>
+        <div id="sumLine" class="sum-line"><span>READY</span> STARTで第1データを取得</div>
+      </div>
+
+      <section id="probPanel" class="prob-panel is-hidden">
+        <div class="panel-head"><span id="probLabel">PREDICTION MATRIX</span><small id="probNote">公開情報から算出</small></div>
+        <div class="prob-grid">
+          <article data-zone="low"><span>LOW</span><strong id="pLow">—</strong><i></i></article>
+          <article data-zone="mid"><span>MID</span><strong id="pMid">—</strong><i></i></article>
+          <article data-zone="high"><span>HIGH</span><strong id="pHigh">—</strong><i></i></article>
+        </div>
+      </section>
+
+      <div id="certainty" class="certainty is-hidden"><span>CERTAINTY LOCK</span><strong>100%</strong><small>未来分岐を確定検出</small></div>
+
+      <div id="choiceArea" class="choices is-hidden">
+        <button class="choice low" type="button" data-choice="low"><span>LOW</span><small>合計 15以下</small><i></i></button>
+        <button class="choice mid" type="button" data-choice="mid"><span>MID</span><small>合計 16–20</small><i></i></button>
+        <button class="choice high" type="button" data-choice="high"><span>HIGH</span><small>合計 21以上</small><i></i></button>
+      </div>
+
+      <button id="startBtn" class="start-btn" type="button"><span id="startMain">6枚で SCAN</span><small id="startSub">第1リールを公開</small></button>
+
+      <div id="result" class="result-box">
+        <div class="pulse-dot"></div>
+        <div><span id="resultTag">SYSTEM</span><p id="resultText">予測端末は待機中です。</p></div>
+      </div>
+
+      <section id="atStrip" class="at-strip is-hidden">
+        <div class="at-strip-head"><span id="atStripTitle">BONUS 1</span><b id="atGame">1 / 10</b></div>
+        <div id="atProgress" class="at-progress"></div>
+      </section>
+    </section>
+
+    <section class="session-panel">
+      <div class="session-head"><div><span>SESSION TRACE</span><b>実戦ログ</b></div><button id="resetBtn" type="button">RESET</button></div>
+      <div class="session-grid">
+        <article><span>NORMAL G</span><b id="normalGames">0</b></article>
+        <article><span>HIT</span><b id="hitRate">—</b></article>
+        <article><span>AT</span><b id="atCount">0</b></article>
+        <article><span>MAX BONUS</span><b id="maxBonus">0</b></article>
+      </div>
+      <p class="demo-note">UI DEMO — 元のPREDICT RUSHには未反映。ゲームルールのみ同一。</p>
+    </section>
+
+    <footer><span>FORECAST ENGINE 105</span><i></i><span>NEURAL LINK STABLE</span></footer>
+  </main>
+
+  <div id="flash" class="screen-flash" aria-hidden="true"></div>
+  <script src="game.js?v=1"></script>
+</body>
+</html>
