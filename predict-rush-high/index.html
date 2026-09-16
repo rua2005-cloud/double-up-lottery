@@ -8,7 +8,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <meta name="description" content="PREDICT RUSH 105派生版。通常8BET、ATの10%でHIGH RUSH。予想ゲームはそのまま、継続するほど全ゾーン配当倍率が上がるブラウザゲーム。">
+  <meta name="description" content="PREDICT RUSH 105派生版。通常8BET。通常ATのBATTLE JUDGE成功時にHIGH RUSH昇格抽選。上位ATでは継続するほど全ゾーン配当倍率が上がるブラウザゲーム。">
   <link rel="icon" href="../predict-rush/icon.svg?v=2.6" type="image/svg+xml">
   <link rel="stylesheet" href="../predict-rush/styles.css?v=2.6">
   <style>
@@ -100,7 +100,7 @@
         <div class="detail-title">SLOT DATA</div>
         <div class="detail-stats">
           <div class="detail-stat"><span>AT初当たり</span><b id="firstHitStat">—</b></div>
-          <div class="detail-stat"><span>HIGH RUSH</span><b id="highRushCountStat">0</b></div>
+          <div class="detail-stat"><span>HIGH RUSH昇格</span><b id="highRushCountStat">0</b></div>
           <div class="detail-stat"><span>現在ハマり</span><b id="currentDroughtStat">0G</b></div>
           <div class="detail-stat"><span>最大ハマり</span><b id="maxDroughtStat">0G</b></div>
           <div class="detail-stat"><span>TOTAL BONUS</span><b id="totalBonusStat">0</b></div>
@@ -122,10 +122,11 @@
       <p>通常時：各リール1〜9。合計15以下＝LOW、16〜20＝MID、21以上＝HIGH。8枚BETで第1リールだけ公開。</p>
       <p>LOW/MID的中でATゲージ+1、HIGH的中で+2。MISSで0。5ポイントでAT突入。通常配当はLOW 3 / MID 5 / HIGH 7枚。</p>
       <p>通常AT：10Gを1ボーナスとしてカウント。各G1枚BET。3リール全部公開、正解時はLOW 3 / MID 5 / HIGH 7枚。</p>
-      <p><strong>HIGH RUSH</strong>：AT突入時10%で選択。予想ルールは通常ATと同じでLOW/MID/HIGHすべて出現。BONUS 1〜5は全配当3倍（LOW 9 / MID 15 / HIGH 21）、6〜10は6倍（18 / 30 / 42）、11以降は10倍（30 / 50 / 70）。</p>
-      <p>BATTLE JUDGE：BETなしで最初の2リールを見てLOW/MID/HIGHを予想。HIGH RUSH中のみ15%で確定継続が発生し、その場合は予想不要で次BONUSへ。</p>
+      <p>BATTLE JUDGE：BETなしで最初の2リールを見てLOW/MID/HIGHを予想。通常ATではJUDGE成功後、次BONUSへ進む際に4.8%でHIGH RUSHへ昇格。AT初当たり時の直撃HIGH RUSHはありません。</p>
+      <p><strong>HIGH RUSH</strong>：昇格した次BONUSをHIGH RUSH BONUS 1として専用カウントを開始。予想ルールは通常ATと同じ。HIGH RUSH BONUS 1〜5は全配当3倍（LOW 9 / MID 15 / HIGH 21）、6〜10は6倍（18 / 30 / 42）、11以降は10倍（30 / 50 / 70）。</p>
+      <p>HIGH RUSH中のBATTLE JUDGE：15%で確定継続が発生。その場合は予想不要で次のHIGH RUSH BONUSへ。通常JUDGEに成功した場合もHIGH RUSHはAT終了まで継続します。</p>
     </div></details>
-    <footer>Virtual medals only · HIGH RUSH v1.1</footer>
+    <footer>Virtual medals only · HIGH RUSH v1.2</footer>
   </main>
 
   <dialog id="settingsDialog"><form method="dialog" class="settings-card">
@@ -135,6 +136,6 @@
     <label class="setting-row"><span><b>振動</b><small>対応端末で振動</small></span><input id="vibrateToggle" type="checkbox" checked></label>
     <button id="resetBtn" type="button" class="danger-btn">セッションをリセット</button>
   </form></dialog>
-  <script src="game.js?v=1.1"></script>
+  <script src="game.js?v=1.2"></script>
 </body>
 </html>
