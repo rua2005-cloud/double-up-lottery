@@ -219,7 +219,7 @@ function render(){
     els.atStatus.classList.add('boost');
     els.atPhaseLabel.textContent='HIGH RUSH RATE UP';
     els.atGameText.textContent='74% → 85%';
-    els.atStatusNote.textContent='LOW / MID / HIGHを予想。成功でHIGH RUSH終了まで継続期待度85%。失敗しても次BONUSへ。';
+    els.atStatusNote.textContent='継続はすでに確定済み。LOW / MID / HIGHを予想し、成功でHIGH RUSH終了まで継続期待度85%。失敗しても次BONUSへ。';
     els.startMain.textContent='RATE UP CHANCE START';
     els.startSub.textContent='成功で85% MODE / BET 0';
   }else if(state.guaranteedJudge){
@@ -234,10 +234,10 @@ function render(){
     els.atStatus.classList.add('guaranteed');
     els.atPhaseLabel.textContent='HIGH RUSH BONUS '+state.highRushSet+' COMPLETE';
     els.atGameText.textContent='10 / 10';
-    els.atStatusNote.textContent='確定継続を獲得。予想なしで次のHIGH RUSH BONUSへ進みます。'+(state.highRushBoosted?' 85% MODE中。':'');
+    els.atStatusNote.textContent=state.highRushBoosted?'確定継続。85% MODEのまま次BONUSへ。':'確定継続。次BONUSは確定し、さらに10%でRATE UP CHANCEを抽選。';
     renderAtProgress();
     els.startMain.textContent='確定継続';
-    els.startSub.textContent='タップで HIGH RUSH BONUS '+(state.highRushSet+1)+'へ';
+    els.startSub.textContent=state.highRushBoosted?'タップで次BONUSへ':'タップで継続 / 10% RATE UP抽選';
   }else{
     els.modeChip.textContent='BATTLE JUDGE';
     els.modeChip.classList.add('judge');
@@ -249,7 +249,7 @@ function render(){
     els.atStatus.classList.add('judge');
     els.atPhaseLabel.textContent=state.highRush?'HIGH RUSH BONUS '+state.highRushSet+' COMPLETE':'BONUS '+state.atSet+' COMPLETE';
     els.atGameText.textContent='10 / 10';
-    els.atStatusNote.textContent=state.highRush?(state.highRushBoosted?'85% MODE / HIGH RUSH継続を賭けたBATTLE JUDGE。':'HIGH RUSH継続を賭けたBATTLE JUDGE。成功後10%でRATE UP CHANCE。'):'成功で次BONUSへ。さらに3.71%でHIGH RUSHへ昇格。';
+    els.atStatusNote.textContent=state.highRush?(state.highRushBoosted?'85% MODE / HIGH RUSH継続を賭けたBATTLE JUDGE。':'BATTLE JUDGE成功で継続確定。その後10%でRATE UP CHANCE。'):'成功で次BONUSへ。さらに3.71%でHIGH RUSHへ昇格。';
     renderAtProgress();
     els.startMain.textContent='BATTLE JUDGE START';
     els.startSub.textContent='成功で BONUS '+(state.atSet+1)+' / BET 0';
@@ -273,9 +273,16 @@ function resolveGuaranteedJudge(){
   state.judgeAttempts++;state.judgeHits++;
   addHistory('確定JUDGE','ASSIST','CONTINUE','—',true,0);
   state.atSet++;state.highRushSet++;state.totalBonus++;state.maxSet=Math.max(state.maxSet,state.atSet);
-  state.atGame=0;state.guaranteedJudge=false;state.phase='at';state.values=[null,null,null];
-  setMessage('確定継続！ HIGH RUSH BONUS '+state.highRushSet+'へ。','win');
-  vibration([25,20,25,20,80]);tone('rush');
+  state.atGame=0;state.guaranteedJudge=false;state.values=[null,null,null];
+  if(!state.highRushBoosted&&Math.random()<RATE_UP_CHANCE_RATE){
+    state.phase='boost';
+    setMessage('確定継続！ さらにCONTINUE RATE CHANCE発生！ 成功で85% MODE。','win');
+    vibration([25,20,25,20,100]);tone('rush');
+  }else{
+    state.phase='at';
+    setMessage('確定継続！ HIGH RUSH BONUS '+state.highRushSet+'へ。','win');
+    vibration([25,20,25,20,80]);tone('rush');
+  }
   render();
 }
 
@@ -301,7 +308,7 @@ function startRound(){
   }else{
     state.values=[roll(),roll(),null];animate(0);animate(1);
     els.sumLine.textContent='公開合計 '+(state.values[0]+state.values[1])+' + ?';
-    if(state.phase==='boost')setMessage('CONTINUE RATE CHANCE。成功でHIGH RUSH継続期待度85%。');
+    if(state.phase==='boost')setMessage('CONTINUE RATE CHANCE。継続は確定済み。成功でHIGH RUSH継続期待度85%。');
     else setMessage('BATTLE JUDGE。成功でBONUS '+(state.atSet+1)+'へ。');
   }
   state.waiting=true;showProbability();els.choiceArea.classList.remove('is-hidden');els.startBtn.classList.add('is-hidden');
