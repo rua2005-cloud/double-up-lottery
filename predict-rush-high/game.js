@@ -39,7 +39,7 @@ let state=freshState();
 
 function freshState(){
   return{
-    medals:1000,gauge:0,phase:'normal',atEarned:0,atGame:0,atSet:0,waiting:false,
+    medals:2000,gauge:0,phase:'normal',atEarned:0,atGame:0,atSet:0,waiting:false,
     highRush:false,highRushSet:0,highRushEarned:0,highRushBoosted:false,highRushSuperBoosted:false,guaranteedJudge:false,values:[null,null,null],history:[],
     normalGames:0,normalHits:0,atCount:0,highRushCount:0,maxSet:0,currentDrought:0,maxDrought:0,
     totalBonus:0,totalBet:0,totalPayout:0,completedAtCount:0,totalAtGain:0,maxAtGain:0,
