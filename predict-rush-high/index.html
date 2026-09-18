@@ -8,7 +8,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <meta name="description" content="PREDICT RUSH 105派生版。通常12BET・LOW 3 / MID 5 / HIGH 9。HIGH RUSHは10G固定・配当3倍→6倍→10倍。HR継続後は20%で85%へのRATE UP、85%中は20%で95%へのSUPER RATE UP CHANCE。">
+  <meta name="description" content="PREDICT RUSH 105派生版。通常12BET・LOW 3 / MID 5 / HIGH 9。HIGH RUSHは10G固定・配当3倍→6倍→10倍。HR継続後は10%で85%へのRATE UP、85%中は20%で95%へのSUPER RATE UP CHANCE。">
   <link rel="icon" href="../predict-rush/icon.svg?v=2.6" type="image/svg+xml">
   <link rel="stylesheet" href="../predict-rush/styles.css?v=2.6">
   <style>
@@ -132,15 +132,15 @@
     <details class="rules-panel"><summary>ルールを見る</summary><div class="rules-body">
       <p><strong>① NORMAL</strong><br>12枚BET。第1リールだけ見てLOW / MID / HIGHを予想します。LOW・MID的中でゲージ+1、HIGH的中で+2、MISSでゲージ0。ゲージ5でPREDICT ATへ。通常配当はLOW 3 / MID 5 / HIGH 9枚。</p>
       <p><strong>② PREDICT AT</strong><br>1Gあたり1枚BET、10Gで1BONUS。3リールが全部見えるので正解ゾーンを選びます。配当はLOW 3 / MID 5 / HIGH 9枚。10G終了後はBATTLE JUDGEへ。</p>
-      <p><strong>③ BATTLE JUDGE</strong><br>BET 0。最初の2リールだけ見てLOW / MID / HIGHを予想します。成功で次BONUS、失敗でAT終了。通常AT中はJUDGE成功で+8枚を獲得し、その後3.92%でHIGH RUSHへ昇格します。HIGH RUSH中のJUDGE成功には+8枚は付きません。</p>
+      <p><strong>③ BATTLE JUDGE</strong><br>BET 0。最初の2リールだけ見てLOW / MID / HIGHを予想します。成功で次BONUS、失敗でAT終了。通常AT中はJUDGE成功で+24枚を獲得し、その後3.92%でHIGH RUSHへ昇格します。HIGH RUSH中のJUDGE成功には+8枚は付きません。</p>
       <p><strong>④ HIGH RUSH</strong><br>各BONUSは10G固定。HR BONUS 1〜5は配当×3（9 / 15 / 27）、6〜10は×6（18 / 30 / 54）、11以降は×10（30 / 50 / 90）。</p>
       <p><strong>⑤ HRの継続</strong><br>各10Gの終了後、まず確定継続を抽選します。通常HRは15%で確定継続。外れた場合だけBATTLE JUDGEを行い、成功すれば継続します。通常HRの合算継続期待度は約74.4%です。</p>
-      <p><strong>⑥ CONTINUE RATE CHANCE</strong><br>HRの継続が確定したあと、85% MODE未到達なら毎回20%で発生します。確定継続でもBATTLE JUDGE成功でも同じく抽選されます。CHANCEでは2リールを見て予想し、成功で85% MODEへ。失敗しても継続はすでに確定しているのでHRは終わりません。</p>
+      <p><strong>⑥ CONTINUE RATE CHANCE</strong><br>HRの継続が確定したあと、85% MODE未到達なら毎回10%で発生します。確定継続でもBATTLE JUDGE成功でも同じく抽選されます。CHANCEでは2リールを見て予想し、成功で85% MODEへ。失敗しても継続はすでに確定しているのでHRは終わりません。</p>
       <p><strong>⑦ 85% MODE</strong><br>成功後はHR終了まで継続期待度85%。確定継続率が約50.3%に上がり、確定継続を引かなかった場合は通常のBATTLE JUDGEを行います。継続が確定するたび、95% MODE未到達なら20%でSUPER RATE UP CHANCEを抽選します。</p>
       <p><strong>⑧ SUPER RATE UP CHANCE</strong><br>85% MODE中の継続確定後に20%で発生。2リールを見てLOW / MID / HIGHを予想し、成功で95% MODEへ。失敗してもHRは終了せず、85% MODEのまま次BONUSへ進みます。</p>
       <p><strong>⑨ 95% MODE</strong><br>成功後はHR終了まで継続期待度95%。確定継続率は約83.4%となり、確定継続を引かなかった場合だけ通常のBATTLE JUDGEを行います。10G区切りと配当倍率はそのままです。</p>
     </div></details>
-    <footer>Virtual medals only · HIGH RUSH v2.2</footer>
+    <footer>Virtual medals only · HIGH RUSH v2.3</footer>
   </main>
 
   <dialog id="settingsDialog"><form method="dialog" class="settings-card">
@@ -150,6 +150,6 @@
     <label class="setting-row"><span><b>振動</b><small>対応端末で振動</small></span><input id="vibrateToggle" type="checkbox" checked></label>
     <button id="resetBtn" type="button" class="danger-btn">セッションをリセット</button>
   </form></dialog>
-  <script src="game.js?v=2.2"></script>
+  <script src="game.js?v=2.3"></script>
 </body>
 </html>
