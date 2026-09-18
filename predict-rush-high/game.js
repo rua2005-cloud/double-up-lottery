@@ -368,7 +368,7 @@ function startRound(){
   }else{
     state.values=[roll(),roll(),null];animate(0);animate(1);
     els.sumLine.textContent='公開合計 '+(state.values[0]+state.values[1])+' + ?';
-    if(state.phase==='superboost')setMessage('SUPER RATE UP CHANCE。継続は確定済み。成功でHIGH RUSH継続期待度95%。');
+    if(state.phase==='superboost')setMessage('SUPER RATE UP CHANCE。継続は確定済み。成功でHIGH RUSH継続期待度92.5%。');
     else if(state.phase==='boost')setMessage('CONTINUE RATE CHANCE。継続は確定済み。成功でHIGH RUSH継続期待度85%。');
     else if(state.phase==='revival')setMessage('REVIVAL CHANCE。LOW / MID / HIGHを予想してHIGH RUSH復活を狙え。');
     else setMessage('BATTLE JUDGE。成功でBONUS '+(state.atSet+1)+'へ。');
