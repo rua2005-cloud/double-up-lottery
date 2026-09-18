@@ -263,7 +263,7 @@ function render(){
     els.atStatus.classList.add('guaranteed');
     els.atPhaseLabel.textContent='HIGH RUSH BONUS '+state.highRushSet+' COMPLETE';
     els.atGameText.textContent='10 / 10';
-    els.atStatusNote.textContent=state.highRushSuperBoosted?'確定継続。95% MODEのまま次BONUSへ。':state.highRushBoosted?'確定継続。次BONUSは確定し、さらに20%でSUPER RATE UP CHANCEを抽選。':'確定継続。次BONUSは確定し、さらに20%でRATE UP CHANCEを抽選。';
+    els.atStatusNote.textContent=state.highRushSuperBoosted?'確定継続。95% MODEのまま次BONUSへ。':state.highRushBoosted?'確定継続。次BONUSは確定し、さらに20%でSUPER RATE UP CHANCEを抽選。':'確定継続。次BONUSは確定し、さらに10%でRATE UP CHANCEを抽選。';
     renderAtProgress();
     els.startMain.textContent='確定継続';
     els.startSub.textContent=state.highRushSuperBoosted?'タップで次BONUSへ':state.highRushBoosted?'タップで継続 / 20% SUPER抽選':'タップで継続 / 10% RATE UP抽選';
