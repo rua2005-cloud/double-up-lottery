@@ -22,6 +22,8 @@
     .machine.boost{border-color:#287984;box-shadow:0 18px 60px rgba(86,236,255,.10)}
     .mode-chip.revival{color:#ffb0ff;border-color:#8d3f8d;background:#2a122a;box-shadow:0 0 18px rgba(255,105,255,.14)}
     .machine.revival{border-color:#8d3f8d;box-shadow:0 18px 60px rgba(255,105,255,.10)}
+    .mode-chip.hrend{color:#ff8f9c;border-color:#7a3039;background:#2b1115}
+    .machine.hrend{border-color:#7a3039;box-shadow:0 18px 60px rgba(255,90,105,.10)}
     .at-status{margin-top:12px;border:1px solid #5d4a23;background:#18150d;border-radius:13px;padding:10px}
     .at-status-head{display:flex;justify-content:space-between;align-items:center;gap:8px}
     .at-status-head span{font-size:10px;font-weight:900;color:var(--gold)}
@@ -40,6 +42,8 @@
     .at-status.boost .at-status-head span{color:#8ff7ff}
     .at-status.revival{border-color:#8d3f8d;background:#241124}
     .at-status.revival .at-status-head span{color:#ffb0ff}
+    .at-status.hrend{border-color:#7a3039;background:#231014}
+    .at-status.hrend .at-status-head span{color:#ff8f9c}
     .detail-title{margin:13px 0 7px;font-size:10px;font-weight:900;color:var(--muted);letter-spacing:.08em}
     .detail-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
     .detail-stat{padding:9px 7px;border:1px solid var(--line);border-radius:10px;background:#0c131f;text-align:center;min-width:0}
@@ -143,9 +147,9 @@
       <p><strong>⑦ 85% MODE</strong><br>成功後はHR終了まで継続期待度85%。REVIVAL込みで85%を維持するため確定継続率は約42.2%。確定継続を引かなかった場合は通常のBATTLE JUDGEを行います。継続が確定するたび、95% MODE未到達なら20%でSUPER RATE UP CHANCEを抽選します。</p>
       <p><strong>⑧ SUPER RATE UP CHANCE</strong><br>85% MODE中の継続確定後に20%で発生。2リールを見てLOW / MID / HIGHを予想し、成功で95% MODEへ。失敗してもHRは終了せず、85% MODEのまま次BONUSへ進みます。</p>
       <p><strong>⑨ 95% MODE</strong><br>成功後はHR終了まで継続期待度95%。REVIVAL込みで95%を維持するため確定継続率は約80.7%。確定継続を引かなかった場合だけ通常のBATTLE JUDGEを行います。10G区切りと配当倍率はそのままです。</p>
-      <p><strong>⑩ REVIVAL CHANCE</strong><br>HIGH RUSHのBATTLE JUDGE失敗後、20%で発生。失敗演出のあとにREVIVAL CHANCEへ移行し、2リールを見てLOW / MID / HIGHを予想します。成功で次BONUSへ復活、失敗で終了。REVIVAL CHANCE自体の出現頻度は1BONUSあたり通常HR約5.96%、85% MODE約3.49%、95% MODE約1.16%です。</p>
+      <p><strong>⑩ REVIVAL CHANCE</strong><br>HIGH RUSHのBATTLE JUDGE失敗後はHIGH RUSH ENDで停止します。ENDを押した瞬間に20%でREVIVAL CHANCEを抽選。当選時は2リールを見てLOW / MID / HIGHを予想し、成功で次BONUSへ復活、失敗で終了します。非当選ならそのまま通常時へ戻ります。REVIVAL CHANCE自体の出現頻度は1BONUSあたり通常HR約5.96%、85% MODE約3.49%、95% MODE約1.16%です。</p>
     </div></details>
-    <footer>Virtual medals only · HIGH RUSH v2.5</footer>
+    <footer>Virtual medals only · HIGH RUSH v2.6</footer>
   </main>
 
   <dialog id="settingsDialog"><form method="dialog" class="settings-card">
@@ -155,6 +159,6 @@
     <label class="setting-row"><span><b>振動</b><small>対応端末で振動</small></span><input id="vibrateToggle" type="checkbox" checked></label>
     <button id="resetBtn" type="button" class="danger-btn">セッションをリセット</button>
   </form></dialog>
-  <script src="game.js?v=2.5"></script>
+  <script src="game.js?v=2.6"></script>
 </body>
 </html>
