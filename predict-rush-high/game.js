@@ -22,12 +22,12 @@ const els={
   probToggle:$('probToggle'),soundToggle:$('soundToggle'),vibrateToggle:$('vibrateToggle'),resetBtn:$('resetBtn')
 };
 
-const PAY={low:3,mid:5,high:9};
+const PAY={low:5,mid:8,high:15};
 const LABEL={low:'LOW',mid:'MID',high:'HIGH'};
-const NORMAL_BET=12;
+const NORMAL_BET=20;
 const AT_BET=1;
-const NORMAL_JUDGE_REWARD=24;
-const HIGH_RUSH_UP_RATE=.05013;
+const NORMAL_JUDGE_REWARD=40;
+const HIGH_RUSH_UP_RATE=.094;
 const RATE_UP_CHANCE_RATE=.10;
 const SUPER_RATE_UP_CHANCE_RATE=.20;
 const NATURAL_JUDGE_RATE=509/729;
@@ -44,7 +44,7 @@ let state=freshState();
 
 function freshState(){
   return{
-    medals:2000,gauge:0,phase:'normal',atEarned:0,atGame:0,atSet:0,waiting:false,
+    medals:3000,gauge:0,phase:'normal',atEarned:0,atGame:0,atSet:0,waiting:false,
     highRush:false,highRushSet:0,highRushEarned:0,highRushBoosted:false,highRushSuperBoosted:false,guaranteedJudge:false,values:[null,null,null],history:[],
     normalGames:0,normalHits:0,atCount:0,highRushCount:0,maxSet:0,currentDrought:0,maxDrought:0,
     totalBonus:0,totalBet:0,totalPayout:0,completedAtCount:0,totalAtGain:0,maxAtGain:0,
@@ -61,10 +61,10 @@ const signedFixed=(n,d=1)=>{
   return Number(n)===0?'±'+s:(Number(n)>0?'+':'')+s;
 };
 
-function highMultiplier(set){
-  if(set<=5)return 3;
-  if(set<=10)return 6;
-  return 10;
+function highRushPay(set){
+  if(set<=5)return{low:9,mid:15,high:27};
+  if(set<=10)return{low:18,mid:30,high:54};
+  return{low:30,mid:50,high:90};
 }
 
 function currentGuaranteeRate(){
@@ -143,7 +143,7 @@ function showProbability(){
   if(state.phase==='at'){
     const sum=state.values.reduce((a,b)=>a+b,0);
     const answer=classify(sum);
-    els.probTitle.textContent=state.highRush?'HIGH RUSH ×'+highMultiplier(state.highRushSet):'HIT PROBABILITY';
+    els.probTitle.textContent=state.highRush?'HIGH RUSH BONUS '+state.highRushSet:'HIT PROBABILITY';
     els.probSub.textContent='3リール公開済み・正解は確定';
     els.pLow.textContent=answer==='low'?'100%':'0%';
     els.pMid.textContent=answer==='mid'?'100%':'0%';
@@ -207,7 +207,7 @@ function render(){
     els.modeChip.textContent='NORMAL';
     els.roundTitle.textContent='NORMAL GAME';
     els.roundRule.textContent=NORMAL_BET+' BET / 1 REEL OPEN';
-    els.payTable.innerHTML='<span>LOW <b>3</b></span><span>MID <b>5</b></span><span>HIGH <b>9</b></span>';
+    els.payTable.innerHTML='<span>LOW <b>5</b></span><span>MID <b>8</b></span><span>HIGH <b>15</b></span>';
     els.startMain.textContent=NORMAL_BET+'枚でSTART';
     els.startSub.textContent='第1リールを公開';
   }else if(state.phase==='at'){
@@ -215,19 +215,18 @@ function render(){
     els.atGameText.textContent=(state.atGame+1)+' / 10';
     renderAtProgress();
     if(state.highRush){
-      const m=highMultiplier(state.highRushSet);
-      const low=PAY.low*m,mid=PAY.mid*m,high=PAY.high*m;
+      const hrPay=highRushPay(state.highRushSet);
       els.atPhaseLabel.textContent='HIGH RUSH BONUS '+state.highRushSet;
-      els.modeChip.textContent='HIGH RUSH ×'+m;
+      els.modeChip.textContent='HIGH RUSH B'+state.highRushSet;
       els.modeChip.classList.add('high');
       els.machine.classList.add('high');
       els.atStatus.classList.add('high');
       els.roundTitle.textContent='HIGH RUSH';
-      els.roundRule.textContent='1 BET / 3 REELS OPEN / ×'+m;
-      els.payTable.innerHTML='<span>LOW <b>'+low+'</b></span><span>MID <b>'+mid+'</b></span><span>HIGH <b>'+high+'</b></span>';
-      els.atStatusNote.textContent='10G BONUS・配当×'+m+' / 継続期待度 '+currentHighRushRateLabel()+'。';
+      els.roundRule.textContent='1 BET / 3 REELS OPEN';
+      els.payTable.innerHTML='<span>LOW <b>'+hrPay.low+'</b></span><span>MID <b>'+hrPay.mid+'</b></span><span>HIGH <b>'+hrPay.high+'</b></span>';
+      els.atStatusNote.textContent='10G BONUS・配当 '+hrPay.low+' / '+hrPay.mid+' / '+hrPay.high+' / 継続期待度 '+currentHighRushRateLabel()+'。';
       els.startMain.textContent='1枚で HIGH RUSH / '+(state.atGame+1)+'G';
-      els.startSub.textContent='10G BONUS・配当×'+m+(state.highRushSuperBoosted?'・92.5% MODE':state.highRushBoosted?'・85% MODE':'');
+      els.startSub.textContent='10G BONUS・配当 '+hrPay.low+' / '+hrPay.mid+' / '+hrPay.high+(state.highRushSuperBoosted?'・92.5% MODE':state.highRushBoosted?'・85% MODE':'');
     }else{
       els.atPhaseLabel.textContent='BONUS '+state.atSet;
       els.modeChip.textContent='BONUS '+state.atSet;
@@ -235,8 +234,8 @@ function render(){
       els.machine.classList.add('at');
       els.roundTitle.textContent='PREDICT AT';
       els.roundRule.textContent='1 BET / 3 REELS OPEN';
-      els.payTable.innerHTML='<span>LOW <b>3</b></span><span>MID <b>5</b></span><span>HIGH <b>9</b></span>';
-      els.atStatusNote.textContent='10Gで1ボーナス。通常ATのBATTLE JUDGE成功で+24枚、さらに5.013%でHIGH RUSH昇格。';
+      els.payTable.innerHTML='<span>LOW <b>5</b></span><span>MID <b>8</b></span><span>HIGH <b>15</b></span>';
+      els.atStatusNote.textContent='10Gで1ボーナス。通常ATのBATTLE JUDGE成功で+40枚、さらに9.4%でHIGH RUSH昇格。';
       els.startMain.textContent='1枚で BONUS '+state.atSet+' / '+(state.atGame+1)+'G';
       els.startSub.textContent='3リールを全部公開';
     }
@@ -431,11 +430,10 @@ function choose(pred){
     sum=state.values.reduce((a,b)=>a+b,0);actual=classify(sum);hit=pred===actual;state.atGame++;
     els.sumLine.textContent='TOTAL '+sum+' = '+LABEL[actual];
     if(hit){
-      const mult=state.highRush?highMultiplier(state.highRushSet):1;
-      reward=PAY[actual]*mult;
+      reward=state.highRush?highRushPay(state.highRushSet)[actual]:PAY[actual];
       state.medals+=reward;state.totalPayout+=reward;state.atEarned+=reward;
       if(state.highRush)state.highRushEarned+=reward;
-      setMessage((state.highRush?'HIGH RUSH ×'+mult+' / ':'')+LABEL[actual]+' 正解！ 払出 +'+reward+'枚。','win');
+      setMessage((state.highRush?'HIGH RUSH / ':'')+LABEL[actual]+' 正解！ 払出 +'+reward+'枚。','win');
       vibration([20,18,30]);tone(state.highRush?'rush':'win');
     }else{
       setMessage('不正解。正解は '+LABEL[actual]+'。払出0枚 / このG差枚 -1。','lose');vibration(55);tone('lose');
