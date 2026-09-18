@@ -26,10 +26,10 @@ const PAY={low:3,mid:5,high:9};
 const LABEL={low:'LOW',mid:'MID',high:'HIGH'};
 const NORMAL_BET=12;
 const AT_BET=1;
-const NORMAL_JUDGE_REWARD=8;
+const NORMAL_JUDGE_REWARD=24;
 const HIGH_RUSH_UP_RATE=.0392;
 const GUARANTEE_RATE=.15;
-const RATE_UP_CHANCE_RATE=.20;
+const RATE_UP_CHANCE_RATE=.10;
 const SUPER_RATE_UP_CHANCE_RATE=.20;
 const NATURAL_JUDGE_RATE=509/729;
 const BOOST_TARGET_RATE=.85;
@@ -232,7 +232,7 @@ function render(){
       els.roundTitle.textContent='PREDICT AT';
       els.roundRule.textContent='1 BET / 3 REELS OPEN';
       els.payTable.innerHTML='<span>LOW <b>3</b></span><span>MID <b>5</b></span><span>HIGH <b>9</b></span>';
-      els.atStatusNote.textContent='10Gで1ボーナス。通常ATのBATTLE JUDGE成功で+8枚、さらに3.92%でHIGH RUSH昇格。';
+      els.atStatusNote.textContent='10Gで1ボーナス。通常ATのBATTLE JUDGE成功で+24枚、さらに3.92%でHIGH RUSH昇格。';
       els.startMain.textContent='1枚で BONUS '+state.atSet+' / '+(state.atGame+1)+'G';
       els.startSub.textContent='3リールを全部公開';
     }
@@ -266,7 +266,7 @@ function render(){
     els.atStatusNote.textContent=state.highRushSuperBoosted?'確定継続。95% MODEのまま次BONUSへ。':state.highRushBoosted?'確定継続。次BONUSは確定し、さらに20%でSUPER RATE UP CHANCEを抽選。':'確定継続。次BONUSは確定し、さらに20%でRATE UP CHANCEを抽選。';
     renderAtProgress();
     els.startMain.textContent='確定継続';
-    els.startSub.textContent=state.highRushSuperBoosted?'タップで次BONUSへ':state.highRushBoosted?'タップで継続 / 20% SUPER抽選':'タップで継続 / 20% RATE UP抽選';
+    els.startSub.textContent=state.highRushSuperBoosted?'タップで次BONUSへ':state.highRushBoosted?'タップで継続 / 20% SUPER抽選':'タップで継続 / 10% RATE UP抽選';
   }else{
     els.modeChip.textContent='BATTLE JUDGE';
     els.modeChip.classList.add('judge');
@@ -278,7 +278,7 @@ function render(){
     els.atStatus.classList.add('judge');
     els.atPhaseLabel.textContent=state.highRush?'HIGH RUSH BONUS '+state.highRushSet+' COMPLETE':'BONUS '+state.atSet+' COMPLETE';
     els.atGameText.textContent='10 / 10';
-    els.atStatusNote.textContent=state.highRush?(state.highRushSuperBoosted?'95% MODE / HIGH RUSH継続を賭けたBATTLE JUDGE。':state.highRushBoosted?'85% MODE / HIGH RUSH継続を賭けたBATTLE JUDGE。成功後20%でSUPER RATE UP CHANCE。':'BATTLE JUDGE成功で継続確定。その後20%でRATE UP CHANCE。'):'成功で+8枚＋次BONUS。さらに3.92%でHIGH RUSHへ昇格。';
+    els.atStatusNote.textContent=state.highRush?(state.highRushSuperBoosted?'95% MODE / HIGH RUSH継続を賭けたBATTLE JUDGE。':state.highRushBoosted?'85% MODE / HIGH RUSH継続を賭けたBATTLE JUDGE。成功後20%でSUPER RATE UP CHANCE。':'BATTLE JUDGE成功で継続確定。その後10%でRATE UP CHANCE。'):'成功で+24枚＋次BONUS。さらに3.92%でHIGH RUSHへ昇格。';
     renderAtProgress();
     els.startMain.textContent='BATTLE JUDGE START';
     els.startSub.textContent='成功で BONUS '+(state.atSet+1)+' / BET 0';
