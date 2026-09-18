@@ -239,6 +239,21 @@ function render(){
       els.startMain.textContent='1枚で BONUS '+state.atSet+' / '+(state.atGame+1)+'G';
       els.startSub.textContent='3リールを全部公開';
     }
+  }else if(state.phase==='hrend'){
+    els.modeChip.textContent='HIGH RUSH END';
+    els.modeChip.classList.add('hrend');
+    els.machine.classList.add('hrend');
+    els.roundTitle.textContent='HIGH RUSH END';
+    els.roundRule.textContent='END / REVIVAL LOTTERY';
+    els.payTable.innerHTML='<span>END <b>20% REVIVAL</b></span>';
+    els.atStatus.classList.remove('is-hidden');
+    els.atStatus.classList.add('hrend');
+    els.atPhaseLabel.textContent='BATTLE JUDGE FAILED';
+    els.atGameText.textContent='END';
+    els.atStatusNote.textContent='BATTLE JUDGE失敗。ENDを押すと20%でREVIVAL CHANCEを抽選します。';
+    renderAtProgress();
+    els.startMain.textContent='END';
+    els.startSub.textContent='終了 / 20%でREVIVAL CHANCE抽選';
   }else if(state.phase==='revival'){
     els.modeChip.textContent='REVIVAL CHANCE';
     els.modeChip.classList.add('revival');
@@ -330,6 +345,9 @@ function resolveGuaranteedJudge(){
 
 function startRound(){
   if(state.waiting)return;
+  if(state.phase==='hrend'){
+    resolveHighRushEnd();return;
+  }
   if(state.phase==='normal'){
     if(state.medals<NORMAL_BET)return;
     state.medals-=NORMAL_BET;state.totalBet+=NORMAL_BET;
@@ -374,23 +392,16 @@ function renderHistory(){
   });
 }
 
-function queueRevivalChance(){
-  const bonuses=state.atSet,continues=Math.max(0,bonuses-1),total=state.atEarned;
-  setMessage('HIGH RUSH経由AT終了 / '+bonuses+'ボーナス / '+continues+'回継続 / AT累計 '+signed(total)+'枚。','lose');
-  vibration(110);tone('lose');
-  state.waiting=true;
-  els.choiceArea.classList.add('is-hidden');
-  els.probabilityPanel.classList.add('is-hidden');
-  els.startBtn.classList.add('is-hidden');
-  render();
-  setTimeout(()=>{
-    state.phase='revival';state.values=[null,null,null];state.guaranteedJudge=false;state.waiting=false;
+function resolveHighRushEnd(){
+  if(Math.random()<REVIVAL_CHANCE_RATE){
+    state.phase='revival';state.values=[null,null,null];state.guaranteedJudge=false;
     setMessage('REVIVAL CHANCE発生！ LOW / MID / HIGHを予想して復活を狙え。','win');
-    els.startBtn.classList.remove('is-hidden');
     vibration([30,20,30,20,100]);tone('rush');render();
-  },700);
+    return;
+  }
+  finishAt();
+  render();
 }
-
 function finishAt(){
   const total=state.atEarned,bonuses=state.atSet,continues=Math.max(0,bonuses-1),wasHigh=state.highRush;
   const highRushBonuses=state.highRushSet,highRushGain=state.highRushEarned;
@@ -459,11 +470,13 @@ function choose(pred){
       }
     }else{
       addHistory('JUDGE',LABEL[pred],LABEL[actual],sum,false,0);
-      if(state.highRush&&Math.random()<REVIVAL_CHANCE_RATE){
-        queueRevivalChance();
-        return;
+      if(state.highRush){
+        state.phase='hrend';state.guaranteedJudge=false;
+        setMessage('BATTLE JUDGE失敗。HIGH RUSH END。','lose');
+        vibration(110);tone('lose');
+      }else{
+        finishAt();
       }
-      finishAt();
     }
   }else if(state.phase==='revival'){
     state.values[2]=roll();animate(2);sum=state.values.reduce((a,b)=>a+b,0);actual=classify(sum);hit=pred===actual;
