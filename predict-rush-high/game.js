@@ -28,14 +28,17 @@ const NORMAL_BET=12;
 const AT_BET=1;
 const NORMAL_JUDGE_REWARD=24;
 const HIGH_RUSH_UP_RATE=.0392;
-const GUARANTEE_RATE=.15;
 const RATE_UP_CHANCE_RATE=.10;
 const SUPER_RATE_UP_CHANCE_RATE=.20;
 const NATURAL_JUDGE_RATE=509/729;
+const REVIVAL_CHANCE_RATE=.0565;
+const BASE_TARGET_RATE=.15+(1-.15)*NATURAL_JUDGE_RATE;
 const BOOST_TARGET_RATE=.85;
 const SUPER_BOOST_TARGET_RATE=.95;
-const BOOST_GUARANTEE_RATE=(BOOST_TARGET_RATE-NATURAL_JUDGE_RATE)/(1-NATURAL_JUDGE_RATE);
-const SUPER_BOOST_GUARANTEE_RATE=(SUPER_BOOST_TARGET_RATE-NATURAL_JUDGE_RATE)/(1-NATURAL_JUDGE_RATE);
+const NATURAL_WITH_REVIVAL_RATE=NATURAL_JUDGE_RATE+(1-NATURAL_JUDGE_RATE)*REVIVAL_CHANCE_RATE*NATURAL_JUDGE_RATE;
+const GUARANTEE_RATE=(BASE_TARGET_RATE-NATURAL_WITH_REVIVAL_RATE)/(1-NATURAL_WITH_REVIVAL_RATE);
+const BOOST_GUARANTEE_RATE=(BOOST_TARGET_RATE-NATURAL_WITH_REVIVAL_RATE)/(1-NATURAL_WITH_REVIVAL_RATE);
+const SUPER_BOOST_GUARANTEE_RATE=(SUPER_BOOST_TARGET_RATE-NATURAL_WITH_REVIVAL_RATE)/(1-NATURAL_WITH_REVIVAL_RATE);
 let state=freshState();
 
 function freshState(){
@@ -124,7 +127,7 @@ function animate(index){
 function realProbabilities(){
   const counts={low:0,mid:0,high:0};
   let total=0;
-  if(state.phase==='judge'||state.phase==='boost'||state.phase==='superboost'){
+  if(state.phase==='judge'||state.phase==='boost'||state.phase==='superboost'||state.phase==='revival'){
     const base=state.values[0]+state.values[1];
     for(let z=1;z<=9;z++){counts[classify(base+z)]++;total++}
   }else{
@@ -150,8 +153,8 @@ function showProbability(){
     els.pLow.textContent='—';els.pMid.textContent='—';els.pHigh.textContent='100%';
   }else{
     const p=realProbabilities();
-    els.probTitle.textContent=state.phase==='superboost'?'SUPER RATE UP CHANCE':state.phase==='boost'?'CONTINUE RATE CHANCE':state.phase==='judge'?'BATTLE JUDGE':'HIT PROBABILITY';
-    els.probSub.textContent=state.phase==='superboost'?'成功でHIGH RUSH継続期待度95%':state.phase==='boost'?'成功でHIGH RUSH継続期待度85%':'公開情報から算出';
+    els.probTitle.textContent=state.phase==='superboost'?'SUPER RATE UP CHANCE':state.phase==='boost'?'CONTINUE RATE CHANCE':state.phase==='revival'?'REVIVAL CHANCE':state.phase==='judge'?'BATTLE JUDGE':'HIT PROBABILITY';
+    els.probSub.textContent=state.phase==='superboost'?'成功でHIGH RUSH継続期待度95%':state.phase==='boost'?'成功でHIGH RUSH継続期待度85%':state.phase==='revival'?'成功でHIGH RUSH復活':'公開情報から算出';
     els.pLow.textContent=(p.low*100).toFixed(1)+'%';
     els.pMid.textContent=(p.mid*100).toFixed(1)+'%';
     els.pHigh.textContent=(p.high*100).toFixed(1)+'%';
@@ -236,6 +239,20 @@ function render(){
       els.startMain.textContent='1枚で BONUS '+state.atSet+' / '+(state.atGame+1)+'G';
       els.startSub.textContent='3リールを全部公開';
     }
+  }else if(state.phase==='revival'){
+    els.modeChip.textContent='REVIVAL CHANCE';
+    els.modeChip.classList.add('revival');
+    els.machine.classList.add('revival');
+    els.roundTitle.textContent='REVIVAL CHANCE';
+    els.roundRule.textContent='BET 0 / HIT → HIGH RUSH REVIVAL';
+    els.payTable.innerHTML='<span>HIT <b>REVIVAL</b></span><span>MISS <b>END</b></span>';
+    els.atStatus.classList.remove('is-hidden');
+    els.atStatus.classList.add('revival');
+    els.atPhaseLabel.textContent='HIGH RUSH LAST CHANCE';
+    els.atGameText.textContent='REVIVAL';
+    els.atStatusNote.textContent='BATTLE JUDGE失敗後の復活予想。2リールを見てLOW / MID / HIGHを予想し、成功で次BONUSへ。';
+    els.startMain.textContent='REVIVAL CHANCE START';
+    els.startSub.textContent='2リール公開 / 成功で復活 / BET 0';
   }else if(state.phase==='boost'||state.phase==='superboost'){
     const isSuper=state.phase==='superboost';
     els.modeChip.textContent=isSuper?'SUPER RATE UP':'RATE UP CHANCE';
@@ -335,6 +352,7 @@ function startRound(){
     els.sumLine.textContent='公開合計 '+(state.values[0]+state.values[1])+' + ?';
     if(state.phase==='superboost')setMessage('SUPER RATE UP CHANCE。継続は確定済み。成功でHIGH RUSH継続期待度95%。');
     else if(state.phase==='boost')setMessage('CONTINUE RATE CHANCE。継続は確定済み。成功でHIGH RUSH継続期待度85%。');
+    else if(state.phase==='revival')setMessage('REVIVAL CHANCE。LOW / MID / HIGHを予想してHIGH RUSH復活を狙え。');
     else setMessage('BATTLE JUDGE。成功でBONUS '+(state.atSet+1)+'へ。');
   }
   state.waiting=true;showProbability();els.choiceArea.classList.remove('is-hidden');els.startBtn.classList.add('is-hidden');
@@ -354,6 +372,23 @@ function renderHistory(){
     r.innerHTML='<span>'+h.mode+'</span><span>'+h.pred+' → '+h.sum+' ('+h.actual+')</span><strong class="'+(h.hit?'good':'bad')+'">'+(h.hit?(h.reward?('+'+h.reward):'HIT'):'MISS')+'</strong>';
     els.historyList.appendChild(r);
   });
+}
+
+function queueRevivalChance(){
+  const bonuses=state.atSet,continues=Math.max(0,bonuses-1),total=state.atEarned;
+  setMessage('HIGH RUSH経由AT終了 / '+bonuses+'ボーナス / '+continues+'回継続 / AT累計 '+signed(total)+'枚。','lose');
+  vibration(110);tone('lose');
+  state.waiting=true;
+  els.choiceArea.classList.add('is-hidden');
+  els.probabilityPanel.classList.add('is-hidden');
+  els.startBtn.classList.add('is-hidden');
+  render();
+  setTimeout(()=>{
+    state.phase='revival';state.values=[null,null,null];state.guaranteedJudge=false;state.waiting=false;
+    setMessage('REVIVAL CHANCE発生！ LOW / MID / HIGHを予想して復活を狙え。','win');
+    els.startBtn.classList.remove('is-hidden');
+    vibration([30,20,30,20,100]);tone('rush');render();
+  },700);
 }
 
 function finishAt(){
@@ -423,7 +458,27 @@ function choose(pred){
         vibration([30,25,30,25,70]);tone('at');
       }
     }else{
-      addHistory('JUDGE',LABEL[pred],LABEL[actual],sum,false,0);finishAt();
+      addHistory('JUDGE',LABEL[pred],LABEL[actual],sum,false,0);
+      if(state.highRush&&Math.random()<REVIVAL_CHANCE_RATE){
+        queueRevivalChance();
+        return;
+      }
+      finishAt();
+    }
+  }else if(state.phase==='revival'){
+    state.values[2]=roll();animate(2);sum=state.values.reduce((a,b)=>a+b,0);actual=classify(sum);hit=pred===actual;
+    els.sumLine.textContent='TOTAL '+sum+' = '+LABEL[actual];
+    addHistory('REVIVAL',LABEL[pred],LABEL[actual],sum,hit,0);
+    if(hit){
+      state.atSet++;state.highRushSet++;state.totalBonus++;state.maxSet=Math.max(state.maxSet,state.atSet);state.atGame=0;state.values=[null,null,null];
+      if(!maybeStartRateUpChance('REVIVAL成功！')){
+        state.phase='at';
+        setMessage('REVIVAL成功！ HIGH RUSH BONUS '+state.highRushSet+'へ復活！','win');
+        vibration([30,20,30,20,120]);tone('rush');
+      }
+    }else{
+      setMessage('REVIVAL失敗。HIGH RUSH終了。','lose');
+      finishAt();
     }
   }else if(state.phase==='boost'||state.phase==='superboost'){
     const isSuper=state.phase==='superboost';
