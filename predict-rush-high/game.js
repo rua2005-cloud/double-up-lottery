@@ -26,6 +26,7 @@ const PAY={low:3,mid:5,high:9};
 const LABEL={low:'LOW',mid:'MID',high:'HIGH'};
 const NORMAL_BET=12;
 const AT_BET=1;
+const NORMAL_JUDGE_REWARD=8;
 const HIGH_RUSH_UP_RATE=.0392;
 const GUARANTEE_RATE=.15;
 const RATE_UP_CHANCE_RATE=.20;
@@ -231,7 +232,7 @@ function render(){
       els.roundTitle.textContent='PREDICT AT';
       els.roundRule.textContent='1 BET / 3 REELS OPEN';
       els.payTable.innerHTML='<span>LOW <b>3</b></span><span>MID <b>5</b></span><span>HIGH <b>9</b></span>';
-      els.atStatusNote.textContent='10Gで1ボーナス。BATTLE JUDGE成功時に3.92%でHIGH RUSH昇格。';
+      els.atStatusNote.textContent='10Gで1ボーナス。通常ATのBATTLE JUDGE成功で+8枚、さらに3.92%でHIGH RUSH昇格。';
       els.startMain.textContent='1枚で BONUS '+state.atSet+' / '+(state.atGame+1)+'G';
       els.startSub.textContent='3リールを全部公開';
     }
@@ -277,7 +278,7 @@ function render(){
     els.atStatus.classList.add('judge');
     els.atPhaseLabel.textContent=state.highRush?'HIGH RUSH BONUS '+state.highRushSet+' COMPLETE':'BONUS '+state.atSet+' COMPLETE';
     els.atGameText.textContent='10 / 10';
-    els.atStatusNote.textContent=state.highRush?(state.highRushSuperBoosted?'95% MODE / HIGH RUSH継続を賭けたBATTLE JUDGE。':state.highRushBoosted?'85% MODE / HIGH RUSH継続を賭けたBATTLE JUDGE。成功後20%でSUPER RATE UP CHANCE。':'BATTLE JUDGE成功で継続確定。その後20%でRATE UP CHANCE。'):'成功で次BONUSへ。さらに3.92%でHIGH RUSHへ昇格。';
+    els.atStatusNote.textContent=state.highRush?(state.highRushSuperBoosted?'95% MODE / HIGH RUSH継続を賭けたBATTLE JUDGE。':state.highRushBoosted?'85% MODE / HIGH RUSH継続を賭けたBATTLE JUDGE。成功後20%でSUPER RATE UP CHANCE。':'BATTLE JUDGE成功で継続確定。その後20%でRATE UP CHANCE。'):'成功で+8枚＋次BONUS。さらに3.92%でHIGH RUSHへ昇格。';
     renderAtProgress();
     els.startMain.textContent='BATTLE JUDGE START';
     els.startSub.textContent='成功で BONUS '+(state.atSet+1)+' / BET 0';
@@ -399,7 +400,11 @@ function choose(pred){
     state.judgeAttempts++;if(hit)state.judgeHits++;
     els.sumLine.textContent='TOTAL '+sum+' = '+LABEL[actual];
     if(hit){
-      addHistory('JUDGE',LABEL[pred],LABEL[actual],sum,true,0);
+      const normalJudgeReward=state.highRush?0:NORMAL_JUDGE_REWARD;
+      if(normalJudgeReward){
+        state.medals+=normalJudgeReward;state.totalPayout+=normalJudgeReward;state.atEarned+=normalJudgeReward;
+      }
+      addHistory('JUDGE',LABEL[pred],LABEL[actual],sum,true,normalJudgeReward);
       state.atSet++;state.totalBonus++;state.maxSet=Math.max(state.maxSet,state.atSet);state.atGame=0;
       if(state.highRush){
         state.highRushSet++;
@@ -410,11 +415,11 @@ function choose(pred){
         }
       }else if(Math.random()<HIGH_RUSH_UP_RATE){
         state.highRush=true;state.highRushSet=1;state.highRushEarned=0;state.highRushBoosted=false;state.highRushSuperBoosted=false;state.highRushCount++;state.phase='at';
-        setMessage('BATTLE JUDGE成功！ HIGH RUSH昇格！ BONUS 1 START！','win');
+        setMessage('BATTLE JUDGE成功！ +'+NORMAL_JUDGE_REWARD+'枚 / HIGH RUSH昇格！ BONUS 1 START！','win');
         vibration([30,20,30,20,100]);tone('rush');
       }else{
         state.phase='at';
-        setMessage('BATTLE JUDGE成功！ BONUS '+state.atSet+'へ。','win');
+        setMessage('BATTLE JUDGE成功！ +'+NORMAL_JUDGE_REWARD+'枚 / BONUS '+state.atSet+'へ。','win');
         vibration([30,25,30,25,70]);tone('at');
       }
     }else{
