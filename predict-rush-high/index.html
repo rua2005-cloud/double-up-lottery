@@ -8,7 +8,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <meta name="description" content="PREDICT RUSH 105派生版。通常20BET・LOW 5 / MID 8 / HIGH 15。通常ATは1BET。HIGH RUSHは10G固定・BONUS帯ごとの固定配当。HR継続後は10%で85%へのRATE UP、85%中は20%で92.5%へのSUPER RATE UP CHANCE。BATTLE JUDGE失敗後はREVIVAL CHANCEあり。">
+  <meta name="description" content="PREDICT RUSH 105派生版。通常20BET・LOW 5 / MID 8 / HIGH 15。通常ATは1BET。BATTLE JUDGE成功後は約27.6%でHIGH RUSH CHANCEが発生し、2リール公開予想を3連続成功でHIGH RUSHへ。HR継続後はRATE UP CHANCE、BATTLE JUDGE失敗後はREVIVAL CHANCEあり。">
   <link rel="icon" href="../predict-rush/icon.svg?v=2.6" type="image/svg+xml">
   <link rel="stylesheet" href="../predict-rush/styles.css?v=2.6">
   <style>
@@ -16,6 +16,8 @@
     .machine.judge{border-color:#70343c;box-shadow:0 18px 60px rgba(255,111,125,.08)}
     .mode-chip.high{color:#ffe36f;border-color:#947419;background:#2c2409;box-shadow:0 0 18px rgba(255,218,61,.15)}
     .machine.high{border-color:#947419;box-shadow:0 18px 60px rgba(255,218,61,.12)}
+    .mode-chip.hrchance{color:#ffd66f;border-color:#a36f24;background:#2b1d0d;box-shadow:0 0 18px rgba(255,177,61,.16)}
+    .machine.hrchance{border-color:#a36f24;box-shadow:0 18px 60px rgba(255,177,61,.11)}
     .mode-chip.guaranteed{color:#9dffb4;border-color:#26763b;background:#102619}
     .machine.guaranteed{border-color:#26763b;box-shadow:0 18px 60px rgba(86,255,132,.10)}
     .mode-chip.boost{color:#8ff7ff;border-color:#287984;background:#10252a;box-shadow:0 0 18px rgba(86,236,255,.14)}
@@ -36,6 +38,8 @@
     .at-status.judge .at-status-head span{color:#ff9aa4}
     .at-status.high{border-color:#947419;background:#211c09}
     .at-status.high .at-status-head span{color:#ffe36f}
+    .at-status.hrchance{border-color:#a36f24;background:#24190d}
+    .at-status.hrchance .at-status-head span{color:#ffd66f}
     .at-status.guaranteed{border-color:#26763b;background:#102019}
     .at-status.guaranteed .at-status-head span{color:#9dffb4}
     .at-status.boost{border-color:#287984;background:#102126}
@@ -75,8 +79,8 @@
 
     <section id="machine" class="machine">
       <div class="machine-top">
-        <div><p id="roundTitle">NORMAL GAME</p><span id="roundRule">12 BET / 1 REEL OPEN</span></div>
-        <div class="pay-table" id="payTable"><span>LOW <b>3</b></span><span>MID <b>5</b></span><span>HIGH <b>9</b></span></div>
+        <div><p id="roundTitle">NORMAL GAME</p><span id="roundRule">20 BET / 1 REEL OPEN</span></div>
+        <div class="pay-table" id="payTable"><span>LOW <b>5</b></span><span>MID <b>8</b></span><span>HIGH <b>15</b></span></div>
       </div>
 
       <section id="atStatus" class="at-status is-hidden">
@@ -140,16 +144,17 @@
     <details class="rules-panel"><summary>ルールを見る</summary><div class="rules-body">
       <p><strong>① NORMAL</strong><br>20枚BET。第1リールだけ見てLOW / MID / HIGHを予想します。LOW・MID的中でゲージ+1、HIGH的中で+2、MISSでゲージ0。ゲージ5でPREDICT ATへ。通常配当はLOW 5 / MID 8 / HIGH 15枚。初期所持は3000枚。</p>
       <p><strong>② PREDICT AT</strong><br>1Gあたり1枚BET、10Gで1BONUS。3リールが全部見えるので正解ゾーンを選びます。通常ATの配当はLOW 5 / MID 8 / HIGH 15枚。10G終了後はBATTLE JUDGEへ。</p>
-      <p><strong>③ BATTLE JUDGE</strong><br>BET 0。最初の2リールだけ見てLOW / MID / HIGHを予想します。成功で次BONUS、失敗でAT終了。通常AT中はJUDGE成功で+40枚を獲得し、その後9.4%でHIGH RUSHへ昇格します。HIGH RUSH中のJUDGE成功には+40枚は付きません。</p>
-      <p><strong>④ HIGH RUSH</strong><br>各BONUSは10G固定。HR BONUS 1〜5はLOW / MID / HIGHが9 / 15 / 27枚、6〜10は18 / 30 / 54枚、11以降は30 / 50 / 90枚。</p>
-      <p><strong>⑤ HRの継続</strong><br>各10Gの終了後、まず確定継続を抽選します。通常HRの確定継続は0%。毎回BATTLE JUDGEを行い、成功すれば継続します。JUDGE失敗後のREVIVAL CHANCEまで含めた合算継続期待度は約74.4%です。</p>
-      <p><strong>⑥ CONTINUE RATE CHANCE</strong><br>HRの継続が確定したあと、85% MODE未到達なら毎回10%で発生します。確定継続でもBATTLE JUDGE成功でも同じく抽選されます。CHANCEでは2リールを見て予想し、成功で85% MODEへ。失敗しても継続はすでに確定しているのでHRは終わりません。</p>
-      <p><strong>⑦ 85% MODE</strong><br>成功後はHR終了まで継続期待度85%。REVIVAL込みで85%を維持するため確定継続率は約41.5%。確定継続を引かなかった場合は通常のBATTLE JUDGEを行います。継続が確定するたび、92.5% MODE未到達なら20%でSUPER RATE UP CHANCEを抽選します。</p>
-      <p><strong>⑧ SUPER RATE UP CHANCE</strong><br>85% MODE中の継続確定後に20%で発生。2リールを見てLOW / MID / HIGHを予想し、成功で92.5% MODEへ。失敗してもHRは終了せず、85% MODEのまま次BONUSへ進みます。</p>
-      <p><strong>⑨ 92.5% MODE</strong><br>成功後はHR終了まで継続期待度92.5%。REVIVAL込みで92.5%を維持するため確定継続率は約70.8%。確定継続を引かなかった場合だけ通常のBATTLE JUDGEを行います。10G区切りと配当倍率はそのままです。</p>
-      <p><strong>⑩ REVIVAL CHANCE</strong><br>HIGH RUSHのBATTLE JUDGE失敗後はHIGH RUSH ENDで停止します。ENDを押した瞬間に約24.52%でREVIVAL CHANCEを抽選。当選時は1リールだけ見てLOW / MID / HIGHを予想し、成功で次BONUSへ復活、失敗で終了します。1リール開示時の最適予想成功率は約61.18%。非当選ならそのまま通常時へ戻ります。REVIVAL CHANCE自体の出現頻度は1BONUSあたり通常HR約7.40%、85% MODE約4.33%、92.5% MODE約2.16%です。</p>
+      <p><strong>③ BATTLE JUDGE</strong><br>BET 0。最初の2リールだけ見てLOW / MID / HIGHを予想します。成功で次BONUS、失敗でAT終了。通常AT中はJUDGE成功で+40枚を獲得し、その後約27.6%でHIGH RUSH CHANCEを抽選します。HIGH RUSH中のJUDGE成功には+40枚は付きません。</p>
+      <p><strong>④ HIGH RUSH CHANCE</strong><br>BET 0。発生時は2リール公開でLOW / MID / HIGHを予想し、3連続成功でHIGH RUSHへ昇格します。1回の最適予想成功率は約69.82%、3連続突破率は約34.04%。発生率約27.6%と合わせた理論上のHIGH RUSH昇格率は従来と同じ約9.4%です。途中で失敗してもBATTLE JUDGE成功は有効なので、通常ATの次BONUSへ進みます。</p>
+      <p><strong>⑤ HIGH RUSH</strong><br>各BONUSは10G固定。HR BONUS 1〜5はLOW / MID / HIGHが9 / 15 / 27枚、6〜10は18 / 30 / 54枚、11以降は30 / 50 / 90枚。</p>
+      <p><strong>⑥ HRの継続</strong><br>各10Gの終了後、まず確定継続を抽選します。通常HRの確定継続は0%。毎回BATTLE JUDGEを行い、成功すれば継続します。JUDGE失敗後のREVIVAL CHANCEまで含めた合算継続期待度は約74.4%です。</p>
+      <p><strong>⑦ CONTINUE RATE CHANCE</strong><br>HRの継続が確定したあと、85% MODE未到達なら毎回10%で発生します。確定継続でもBATTLE JUDGE成功でも同じく抽選されます。CHANCEでは2リールを見て予想し、成功で85% MODEへ。失敗しても継続はすでに確定しているのでHRは終わりません。</p>
+      <p><strong>⑧ 85% MODE</strong><br>成功後はHR終了まで継続期待度85%。REVIVAL込みで85%を維持するため確定継続率は約41.5%。確定継続を引かなかった場合は通常のBATTLE JUDGEを行います。継続が確定するたび、92.5% MODE未到達なら20%でSUPER RATE UP CHANCEを抽選します。</p>
+      <p><strong>⑨ SUPER RATE UP CHANCE</strong><br>85% MODE中の継続確定後に20%で発生。2リールを見てLOW / MID / HIGHを予想し、成功で92.5% MODEへ。失敗してもHRは終了せず、85% MODEのまま次BONUSへ進みます。</p>
+      <p><strong>⑩ 92.5% MODE</strong><br>成功後はHR終了まで継続期待度92.5%。REVIVAL込みで92.5%を維持するため確定継続率は約70.8%。確定継続を引かなかった場合だけ通常のBATTLE JUDGEを行います。10G区切りと配当倍率はそのままです。</p>
+      <p><strong>⑪ REVIVAL CHANCE</strong><br>HIGH RUSHのBATTLE JUDGE失敗後はHIGH RUSH ENDで停止します。ENDを押した瞬間に約24.52%でREVIVAL CHANCEを抽選。当選時は1リールだけ見てLOW / MID / HIGHを予想し、成功で次BONUSへ復活、失敗で終了します。1リール開示時の最適予想成功率は約61.18%。非当選ならそのまま通常時へ戻ります。REVIVAL CHANCE自体の出現頻度は1BONUSあたり通常HR約7.40%、85% MODE約4.33%、92.5% MODE約2.16%です。</p>
     </div></details>
-    <footer>Virtual medals only · HIGH RUSH v2.10</footer>
+    <footer>Virtual medals only · HIGH RUSH v2.11</footer>
   </main>
 
   <dialog id="settingsDialog"><form method="dialog" class="settings-card">
@@ -159,6 +164,6 @@
     <label class="setting-row"><span><b>振動</b><small>対応端末で振動</small></span><input id="vibrateToggle" type="checkbox" checked></label>
     <button id="resetBtn" type="button" class="danger-btn">セッションをリセット</button>
   </form></dialog>
-  <script src="game.js?v=2.10"></script>
+  <script src="game.js?v=2.11"></script>
 </body>
 </html>
