@@ -34,11 +34,13 @@ const HIGH_RUSH_CHANCE_RATE=HIGH_RUSH_TARGET_RATE/HIGH_RUSH_CHANCE_PASS_RATE;
 const RATE_UP_CHANCE_RATE=.10;
 const SUPER_RATE_UP_CHANCE_RATE=.20;
 const REVIVAL_PREDICT_RATE=446/729;
-const REVIVAL_CHANCE_RATE=2187/8920;
-const BASE_TARGET_RATE=.15+(1-.15)*NATURAL_JUDGE_RATE;
+const REVIVAL_TARGET_RATE=.15;
+const REVIVAL_CHANCE_PASS_RATE=4*Math.pow(REVIVAL_PREDICT_RATE,3)*(1-REVIVAL_PREDICT_RATE)+Math.pow(REVIVAL_PREDICT_RATE,4);
+const REVIVAL_CHANCE_RATE=REVIVAL_TARGET_RATE/REVIVAL_CHANCE_PASS_RATE;
+const BASE_TARGET_RATE=REVIVAL_TARGET_RATE+(1-REVIVAL_TARGET_RATE)*NATURAL_JUDGE_RATE;
 const BOOST_TARGET_RATE=.85;
 const SUPER_BOOST_TARGET_RATE=.925;
-const NATURAL_WITH_REVIVAL_RATE=NATURAL_JUDGE_RATE+(1-NATURAL_JUDGE_RATE)*REVIVAL_CHANCE_RATE*REVIVAL_PREDICT_RATE;
+const NATURAL_WITH_REVIVAL_RATE=NATURAL_JUDGE_RATE+(1-NATURAL_JUDGE_RATE)*REVIVAL_TARGET_RATE;
 const GUARANTEE_RATE=0;
 const BOOST_GUARANTEE_RATE=(BOOST_TARGET_RATE-NATURAL_WITH_REVIVAL_RATE)/(1-NATURAL_WITH_REVIVAL_RATE);
 const SUPER_BOOST_GUARANTEE_RATE=(SUPER_BOOST_TARGET_RATE-NATURAL_WITH_REVIVAL_RATE)/(1-NATURAL_WITH_REVIVAL_RATE);
@@ -47,7 +49,7 @@ let state=freshState();
 function freshState(){
   return{
     medals:3000,gauge:0,phase:'normal',atEarned:0,atGame:0,atSet:0,waiting:false,
-    highRush:false,highRushSet:0,highRushEarned:0,highRushBoosted:false,highRushSuperBoosted:false,highRushChanceResults:[],guaranteedJudge:false,values:[null,null,null],history:[],
+    highRush:false,highRushSet:0,highRushEarned:0,highRushBoosted:false,highRushSuperBoosted:false,highRushChanceResults:[],revivalChanceResults:[],guaranteedJudge:false,values:[null,null,null],history:[],
     normalGames:0,normalHits:0,atCount:0,highRushCount:0,maxSet:0,currentDrought:0,maxDrought:0,
     totalBonus:0,totalBet:0,totalPayout:0,completedAtCount:0,totalAtGain:0,maxAtGain:0,
     completedHighRushCount:0,totalHighRushBonus:0,maxHighRushBonus:0,totalHighRushGain:0,maxHighRushGain:0,
@@ -158,7 +160,8 @@ function showProbability(){
     const p=realProbabilities();
     els.probTitle.textContent=state.phase==='superboost'?'SUPER RATE UP CHANCE':state.phase==='boost'?'CONTINUE RATE CHANCE':state.phase==='hrchance'?'HIGH RUSH CHANCE':state.phase==='revival'?'REVIVAL CHANCE':state.phase==='judge'?'BATTLE JUDGE':'HIT PROBABILITY';
     const hrChanceHits=state.highRushChanceResults.filter(Boolean).length;
-    els.probSub.textContent=state.phase==='superboost'?'成功でHIGH RUSH継続期待度92.5%':state.phase==='boost'?'成功でHIGH RUSH継続期待度85%':state.phase==='hrchance'?((state.highRushChanceResults.length+1)+'戦目 / '+hrChanceHits+' HIT / 3 HITで突破'):state.phase==='revival'?'成功でHIGH RUSH復活':'公開情報から算出';
+    const revivalHits=state.revivalChanceResults.filter(Boolean).length;
+    els.probSub.textContent=state.phase==='superboost'?'成功でHIGH RUSH継続期待度92.5%':state.phase==='boost'?'成功でHIGH RUSH継続期待度85%':state.phase==='hrchance'?((state.highRushChanceResults.length+1)+'戦目 / '+hrChanceHits+' HIT / 3 HITで突破'):state.phase==='revival'?((state.revivalChanceResults.length+1)+'戦目 / '+revivalHits+' HIT / 3 HITで復活'):'公開情報から算出';
     els.pLow.textContent=(p.low*100).toFixed(1)+'%';
     els.pMid.textContent=(p.mid*100).toFixed(1)+'%';
     els.pHigh.textContent=(p.high*100).toFixed(1)+'%';
@@ -180,6 +183,15 @@ function renderHighRushChanceProgress(){
   for(let i=0;i<5;i++){
     const d=document.createElement('i');
     if(i<state.highRushChanceResults.length)d.classList.add(state.highRushChanceResults[i]?'on':'miss');
+    els.atProgress.appendChild(d);
+  }
+}
+
+function renderRevivalChanceProgress(){
+  els.atProgress.innerHTML='';
+  for(let i=0;i<4;i++){
+    const d=document.createElement('i');
+    if(i<state.revivalChanceResults.length)d.classList.add(state.revivalChanceResults[i]?'on':'miss');
     els.atProgress.appendChild(d);
   }
 }
@@ -257,29 +269,32 @@ function render(){
     els.machine.classList.add('hrend');
     els.roundTitle.textContent='HIGH RUSH END';
     els.roundRule.textContent='END / REVIVAL LOTTERY';
-    els.payTable.innerHTML='<span>END <b>24.52% REVIVAL</b></span>';
+    els.payTable.innerHTML='<span>END <b>30.26% REVIVAL</b></span>';
     els.atStatus.classList.remove('is-hidden');
     els.atStatus.classList.add('hrend');
     els.atPhaseLabel.textContent='BATTLE JUDGE FAILED';
     els.atGameText.textContent='END';
-    els.atStatusNote.textContent='BATTLE JUDGE失敗。ENDを押すと24.52%でREVIVAL CHANCEを抽選します。';
+    els.atStatusNote.textContent='BATTLE JUDGE失敗。ENDを押すと約30.26%でREVIVAL CHANCEを抽選します。';
     renderAtProgress();
     els.startMain.textContent='END';
-    els.startSub.textContent='終了 / 24.52%でREVIVAL CHANCE抽選';
+    els.startSub.textContent='終了 / 約30.26%でREVIVAL CHANCE抽選';
   }else if(state.phase==='revival'){
     els.modeChip.textContent='REVIVAL CHANCE';
     els.modeChip.classList.add('revival');
     els.machine.classList.add('revival');
     els.roundTitle.textContent='REVIVAL CHANCE';
-    els.roundRule.textContent='BET 0 / HIT → HIGH RUSH REVIVAL';
-    els.payTable.innerHTML='<span>HIT <b>REVIVAL</b></span><span>MISS <b>END</b></span>';
+    const revivalHits=state.revivalChanceResults.filter(Boolean).length;
+    const revivalGames=state.revivalChanceResults.length;
+    els.roundRule.textContent='BET 0 / 1 REEL OPEN / 3 HIT OF 4';
+    els.payTable.innerHTML='<span>3 HIT <b>REVIVAL</b></span><span>2 MISS <b>END</b></span>';
     els.atStatus.classList.remove('is-hidden');
     els.atStatus.classList.add('revival');
     els.atPhaseLabel.textContent='HIGH RUSH LAST CHANCE';
-    els.atGameText.textContent='REVIVAL';
-    els.atStatusNote.textContent='BATTLE JUDGE失敗後の復活予想。1リールだけ見てLOW / MID / HIGHを予想し、成功で次BONUSへ。';
-    els.startMain.textContent='REVIVAL CHANCE START';
-    els.startSub.textContent='1リール公開 / 成功で復活 / BET 0';
+    els.atGameText.textContent=revivalGames+' / 4 ・ '+revivalHits+' HIT';
+    els.atStatusNote.textContent='最大4回の1リール公開予想。3回成功でHIGH RUSH復活。2回失敗した時点で終了。';
+    renderRevivalChanceProgress();
+    els.startMain.textContent='REVIVAL CHANCE '+(revivalGames+1)+'/4';
+    els.startSub.textContent='現在 '+revivalHits+' HIT / 3 HITで復活 / BET 0';
   }else if(state.phase==='hrchance'){
     els.modeChip.textContent='HIGH RUSH CHANCE';
     els.modeChip.classList.add('hrchance');
@@ -398,7 +413,7 @@ function startRound(){
     if(state.phase==='revival'){
       state.values=[roll(),null,null];animate(0);
       els.sumLine.textContent='第1リール '+state.values[0]+' / 残り2リール';
-      setMessage('REVIVAL CHANCE。1リールだけ見てLOW / MID / HIGHを予想してHIGH RUSH復活を狙え。');
+      setMessage('REVIVAL CHANCE '+(state.revivalChanceResults.length+1)+'/4。現在'+state.revivalChanceResults.filter(Boolean).length+' HIT。3 HITで復活。');
     }else{
       state.values=[roll(),roll(),null];animate(0);animate(1);
       els.sumLine.textContent='公開合計 '+(state.values[0]+state.values[1])+' + ?';
@@ -429,8 +444,8 @@ function renderHistory(){
 
 function resolveHighRushEnd(){
   if(Math.random()<REVIVAL_CHANCE_RATE){
-    state.phase='revival';state.values=[null,null,null];state.guaranteedJudge=false;
-    setMessage('REVIVAL CHANCE発生！ LOW / MID / HIGHを予想して復活を狙え。','win');
+    state.phase='revival';state.values=[null,null,null];state.revivalChanceResults=[];state.guaranteedJudge=false;
+    setMessage('REVIVAL CHANCE発生！ 最大4戦、3 HITでHIGH RUSH復活。','win');
     vibration([30,20,30,20,100]);tone('rush');render();
     return;
   }
@@ -447,7 +462,7 @@ function finishAt(){
     state.totalHighRushGain+=highRushGain;
     state.maxHighRushGain=state.completedHighRushCount===1?highRushGain:Math.max(state.maxHighRushGain,highRushGain);
   }
-  state.phase='normal';state.atEarned=0;state.atGame=0;state.atSet=0;state.highRush=false;state.highRushSet=0;state.highRushEarned=0;state.highRushBoosted=false;state.highRushSuperBoosted=false;state.highRushChanceResults=[];state.guaranteedJudge=false;state.values=[null,null,null];
+  state.phase='normal';state.atEarned=0;state.atGame=0;state.atSet=0;state.highRush=false;state.highRushSet=0;state.highRushEarned=0;state.highRushBoosted=false;state.highRushSuperBoosted=false;state.highRushChanceResults=[];state.revivalChanceResults=[];state.guaranteedJudge=false;state.values=[null,null,null];
   setMessage((wasHigh?'HIGH RUSH経由AT':'AT')+'終了 / '+bonuses+'ボーナス / '+continues+'回継続 / AT累計 '+signed(total)+'枚。','lose');
   vibration(110);tone('lose');
 }
@@ -537,16 +552,25 @@ function choose(pred){
     state.values[1]=roll();state.values[2]=roll();animate(1);animate(2);sum=state.values.reduce((a,b)=>a+b,0);actual=classify(sum);hit=pred===actual;
     els.sumLine.textContent='TOTAL '+sum+' = '+LABEL[actual];
     addHistory('REVIVAL',LABEL[pred],LABEL[actual],sum,hit,0);
-    if(hit){
+    state.revivalChanceResults.push(hit);
+    const hits=state.revivalChanceResults.filter(Boolean).length;
+    const games=state.revivalChanceResults.length;
+    const misses=games-hits;
+    if(hits>=3){
+      state.revivalChanceResults=[];
       state.atSet++;state.highRushSet++;state.totalBonus++;state.maxSet=Math.max(state.maxSet,state.atSet);state.atGame=0;state.values=[null,null,null];
       if(!maybeStartRateUpChance('REVIVAL成功！')){
         state.phase='at';
-        setMessage('REVIVAL成功！ HIGH RUSH BONUS '+state.highRushSet+'へ復活！','win');
+        setMessage('3 HIT達成！ HIGH RUSH BONUS '+state.highRushSet+'へ復活！','win');
         vibration([30,20,30,20,120]);tone('rush');
       }
-    }else{
-      setMessage('REVIVAL失敗。HIGH RUSH終了。','lose');
+    }else if(misses>=2||games>=4){
+      state.revivalChanceResults=[];
       finishAt();
+    }else{
+      state.values=[null,null,null];
+      setMessage((hit?'成功！ ':'MISS。')+hits+' HIT / '+games+'回消化。あと'+(3-hits)+' HITで復活。',hit?'win':'lose');
+      vibration(hit?[25,18,35]:55);tone(hit?'win':'lose');
     }
   }else if(state.phase==='boost'||state.phase==='superboost'){
     const isSuper=state.phase==='superboost';
@@ -575,7 +599,7 @@ function choose(pred){
     if(hit){
       state.normalHits++;reward=PAY[pred];state.medals+=reward;state.totalPayout+=reward;state.gauge+=pred==='high'?2:1;
       if(state.gauge>=5){
-        state.gauge=0;state.phase='at';state.atEarned=0;state.atGame=0;state.atSet=1;state.highRush=false;state.highRushSet=0;state.highRushEarned=0;state.highRushBoosted=false;state.highRushSuperBoosted=false;state.highRushChanceResults=[];state.guaranteedJudge=false;
+        state.gauge=0;state.phase='at';state.atEarned=0;state.atGame=0;state.atSet=1;state.highRush=false;state.highRushSet=0;state.highRushEarned=0;state.highRushBoosted=false;state.highRushSuperBoosted=false;state.highRushChanceResults=[];state.revivalChanceResults=[];state.guaranteedJudge=false;
         state.atCount++;state.totalBonus++;state.maxSet=Math.max(state.maxSet,1);state.currentDrought=0;
         setMessage('的中 +'+reward+'枚。GAUGE MAX → BONUS 1 START！','win');vibration([30,25,30,25,70]);tone('at');
       }else{
