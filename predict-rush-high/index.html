@@ -8,7 +8,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <meta name="description" content="PREDICT RUSH 105派生版。通常20BET・LOW 5 / MID 8 / HIGH 15。通常ATは1BET。通常ATのBATTLE JUDGE成功ごとに9.4%でHIGH RUSHへ直接昇格。HIGH RUSHのJUDGE失敗時は15%で直接REVIVAL。">
+  <meta name="description" content="PREDICT RUSH 105派生版。通常20BET・LOW 5 / MID 8 / HIGH 15。AT当選時の10%でRUNE DRIVEへ。3Gの0リール開示予想でRUNEを集め、3 RUNEならHIGH RUSH直行。通常ATのBATTLE JUDGE成功ごとに9.4%でHIGH RUSHへ直接昇格。">
   <link rel="icon" href="../predict-rush/icon.svg?v=2.6" type="image/svg+xml">
   <link rel="stylesheet" href="../predict-rush/styles.css?v=2.6">
   <style>
@@ -22,6 +22,10 @@
     .machine.guaranteed{border-color:#26763b;box-shadow:0 18px 60px rgba(86,255,132,.10)}
     .mode-chip.boost{color:#8ff7ff;border-color:#287984;background:#10252a;box-shadow:0 0 18px rgba(86,236,255,.14)}
     .machine.boost{border-color:#287984;box-shadow:0 18px 60px rgba(86,236,255,.10)}
+    .mode-chip.rune{color:#d8b0ff;border-color:#7348a3;background:#21142f;box-shadow:0 0 18px rgba(185,112,255,.15)}
+    .machine.rune{border-color:#7348a3;box-shadow:0 18px 60px rgba(185,112,255,.11)}
+    .mode-chip.extrajudge{color:#ffb0e4;border-color:#8b3f75;background:#2a1324}
+    .machine.extrajudge{border-color:#8b3f75;box-shadow:0 18px 60px rgba(255,105,207,.10)}
     .at-status{margin-top:12px;border:1px solid #5d4a23;background:#18150d;border-radius:13px;padding:10px}
     .at-status-head{display:flex;justify-content:space-between;align-items:center;gap:8px}
     .at-status-head span{font-size:10px;font-weight:900;color:var(--gold)}
@@ -40,6 +44,10 @@
     .at-status.guaranteed .at-status-head span{color:#9dffb4}
     .at-status.boost{border-color:#287984;background:#102126}
     .at-status.boost .at-status-head span{color:#8ff7ff}
+    .at-status.rune{border-color:#7348a3;background:#1c1228}
+    .at-status.rune .at-status-head span{color:#d8b0ff}
+    .at-status.extrajudge{border-color:#8b3f75;background:#25131f}
+    .at-status.extrajudge .at-status-head span{color:#ffb0e4}
     .detail-title{margin:13px 0 7px;font-size:10px;font-weight:900;color:var(--muted);letter-spacing:.08em}
     .detail-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
     .detail-stat{padding:9px 7px;border:1px solid var(--line);border-radius:10px;background:#0c131f;text-align:center;min-width:0}
@@ -135,16 +143,17 @@
 
     <details class="rules-panel"><summary>ルールを見る</summary><div class="rules-body">
       <p><strong>① NORMAL</strong><br>20枚BET。第1リールだけ見てLOW / MID / HIGHを予想します。LOW・MID的中でゲージ+1、HIGH的中で+2、MISSでゲージ0。ゲージ5でPREDICT ATへ。通常配当はLOW 5 / MID 8 / HIGH 15枚。初期所持は3000枚。</p>
-      <p><strong>② PREDICT AT</strong><br>1Gあたり1枚BET、10Gで1BONUS。3リールが全部見えるので正解ゾーンを選びます。通常ATの配当はLOW 5 / MID 8 / HIGH 15枚。10G終了後はBATTLE JUDGEへ。</p>
-      <p><strong>③ BATTLE JUDGE</strong><br>BET 0。最初の2リールだけ見てLOW / MID / HIGHを予想します。通常ATでは成功で+20枚と次BONUSを獲得し、さらに成功するたび9.4%でHIGH RUSHへ直接昇格します。JUDGEを多く通すほどHIGH RUSH抽選を受ける回数が増えます。失敗で通常AT終了。HIGH RUSH中のJUDGE成功には+20枚は付きません。</p>
-      <p><strong>④ HIGH RUSH</strong><br>各BONUSは10G固定。HR BONUS 1〜5はLOW / MID / HIGHが9 / 15 / 27枚、6〜10は18 / 30 / 54枚、11以降は30 / 50 / 90枚。</p>
-      <p><strong>⑤ HRの継続・REVIVAL</strong><br>各10Gの終了後、まず確定継続を抽選します。確定継続でなければBATTLE JUDGEへ。JUDGE成功で継続、失敗するとHIGH RUSH ENDで一度停止します。ENDを押した瞬間に15%でREVIVALを抽選し、当選なら次BONUSへ復活、非当選なら終了します。REVIVAL用の追加予想はありません。通常HRの合算継続期待度は約74.4%です。</p>
-      <p><strong>⑥ CONTINUE RATE CHANCE</strong><br>HRの継続が確定したあと、85% MODE未到達なら毎回12%で発生します。確定継続でもBATTLE JUDGE成功でもREVIVALでも同じく抽選されます。CHANCEでは2リールを見て予想し、成功で85% MODEへ。失敗しても継続はすでに確定しているのでHRは終わりません。</p>
-      <p><strong>⑦ 85% MODE</strong><br>成功後はHR終了まで継続期待度85%。REVIVAL込みで85%を維持するため確定継続率は約41.5%。確定継続を引かなかった場合は通常のBATTLE JUDGEを行います。継続が確定するたび、95% MODE未到達なら25%でSUPER RATE UP CHANCEを抽選します。</p>
-      <p><strong>⑧ SUPER RATE UP CHANCE</strong><br>85% MODE中の継続確定後に25%で発生。2リールを見てLOW / MID / HIGHを予想し、成功で95% MODEへ。失敗してもHRは終了せず、85% MODEのまま次BONUSへ進みます。</p>
-      <p><strong>⑨ 95% MODE</strong><br>成功後はHR終了まで継続期待度95%。REVIVAL込みで95%を維持するため確定継続率は約80.5%。確定継続を引かなかった場合だけ通常のBATTLE JUDGEを行います。10G区切りと配当倍率はそのままです。</p>
+      <p><strong>② RUNE DRIVE</strong><br>AT当選時の10%でBONUS開始前に突入。BET 0・3G固定で、3リールすべて非公開のままLOW / MID / HIGHを予想します。1G的中ごとに1 RUNE獲得。0 RUNEなら通常AT、1 RUNEなら通常BATTLE JUDGE成功後の9.4%昇格に漏れた際5%でEXTRA BATTLE JUDGE、2 RUNEなら同条件で10%でEXTRA BATTLE JUDGE、3 RUNEなら通常ATを飛ばしてHIGH RUSHへ直行します。</p>
+      <p><strong>③ PREDICT AT</strong><br>1Gあたり1枚BET、10Gで1BONUS。3リールが全部見えるので正解ゾーンを選びます。通常ATの配当はLOW 5 / MID 8 / HIGH 15枚。10G終了後はBATTLE JUDGEへ。</p>
+      <p><strong>④ BATTLE JUDGE</strong><br>BET 0。最初の2リールだけ見てLOW / MID / HIGHを予想します。通常ATでは成功で+20枚と次BONUSを獲得し、さらに成功するたび9.4%でHIGH RUSHへ直接昇格します。RUNE 1・2所持時はこの9.4%に漏れたあと、それぞれ5%・10%でEXTRA BATTLE JUDGEが発生。EXTRA成功でHIGH RUSHへ、失敗しても通常ATは継続します。通常BATTLE JUDGE失敗でAT終了。HIGH RUSH中のJUDGE成功には+20枚は付きません。</p>
+      <p><strong>⑤ HIGH RUSH</strong><br>各BONUSは10G固定。HR BONUS 1〜5はLOW / MID / HIGHが9 / 15 / 27枚、6〜10は18 / 30 / 54枚、11以降は30 / 50 / 90枚。</p>
+      <p><strong>⑥ HRの継続・REVIVAL</strong><br>各10Gの終了後、まず確定継続を抽選します。確定継続でなければBATTLE JUDGEへ。JUDGE成功で継続、失敗するとHIGH RUSH ENDで一度停止します。ENDを押した瞬間に15%でREVIVALを抽選し、当選なら次BONUSへ復活、非当選なら終了します。REVIVAL用の追加予想はありません。通常HRの合算継続期待度は約74.4%です。</p>
+      <p><strong>⑦ CONTINUE RATE CHANCE</strong><br>HRの継続が確定したあと、85% MODE未到達なら毎回12%で発生します。確定継続でもBATTLE JUDGE成功でもREVIVALでも同じく抽選されます。CHANCEでは2リールを見て予想し、成功で85% MODEへ。失敗しても継続はすでに確定しているのでHRは終わりません。</p>
+      <p><strong>⑧ 85% MODE</strong><br>成功後はHR終了まで継続期待度85%。REVIVAL込みで85%を維持するため確定継続率は約41.5%。確定継続を引かなかった場合は通常のBATTLE JUDGEを行います。継続が確定するたび、95% MODE未到達なら25%でSUPER RATE UP CHANCEを抽選します。</p>
+      <p><strong>⑨ SUPER RATE UP CHANCE</strong><br>85% MODE中の継続確定後に25%で発生。2リールを見てLOW / MID / HIGHを予想し、成功で95% MODEへ。失敗してもHRは終了せず、85% MODEのまま次BONUSへ進みます。</p>
+      <p><strong>⑩ 95% MODE</strong><br>成功後はHR終了まで継続期待度95%。REVIVAL込みで95%を維持するため確定継続率は約80.5%。確定継続を引かなかった場合だけ通常のBATTLE JUDGEを行います。10G区切りと配当倍率はそのままです。</p>
     </div></details>
-    <footer>Virtual medals only · HIGH RUSH v2.18</footer>
+    <footer>Virtual medals only · HIGH RUSH v2.19</footer>
   </main>
 
   <dialog id="settingsDialog"><form method="dialog" class="settings-card">
@@ -154,6 +163,6 @@
     <label class="setting-row"><span><b>振動</b><small>対応端末で振動</small></span><input id="vibrateToggle" type="checkbox" checked></label>
     <button id="resetBtn" type="button" class="danger-btn">セッションをリセット</button>
   </form></dialog>
-  <script src="game.js?v=2.18"></script>
+  <script src="game.js?v=2.19"></script>
 </body>
 </html>
