@@ -26,7 +26,7 @@ const PAY={low:5,mid:8,high:15};
 const LABEL={low:'LOW',mid:'MID',high:'HIGH'};
 const NORMAL_BET=20;
 const AT_BET=1;
-const NORMAL_JUDGE_REWARD=40;
+const NORMAL_JUDGE_REWARD=20;
 const NATURAL_JUDGE_RATE=509/729;
 const HIGH_RUSH_UP_RATE=.094;
 const RATE_UP_CHANCE_RATE=.10;
@@ -34,7 +34,7 @@ const SUPER_RATE_UP_CHANCE_RATE=.20;
 const REVIVAL_TARGET_RATE=.15;
 const BASE_TARGET_RATE=REVIVAL_TARGET_RATE+(1-REVIVAL_TARGET_RATE)*NATURAL_JUDGE_RATE;
 const BOOST_TARGET_RATE=.85;
-const SUPER_BOOST_TARGET_RATE=.925;
+const SUPER_BOOST_TARGET_RATE=.95;
 const NATURAL_WITH_REVIVAL_RATE=NATURAL_JUDGE_RATE+(1-NATURAL_JUDGE_RATE)*REVIVAL_TARGET_RATE;
 const GUARANTEE_RATE=0;
 const BOOST_GUARANTEE_RATE=(BOOST_TARGET_RATE-NATURAL_WITH_REVIVAL_RATE)/(1-NATURAL_WITH_REVIVAL_RATE);
@@ -73,7 +73,7 @@ function currentGuaranteeRate(){
 }
 
 function currentHighRushRateLabel(){
-  if(state.highRushSuperBoosted)return '92.5%';
+  if(state.highRushSuperBoosted)return '95%';
   if(state.highRushBoosted)return '85.0%';
   return '約74.4%';
 }
@@ -111,7 +111,7 @@ function maybeStartRateUpChance(prefix){
   }
   if(state.highRushBoosted&&!state.highRushSuperBoosted&&Math.random()<SUPER_RATE_UP_CHANCE_RATE){
     state.phase='superboost';state.values=[null,null,null];
-    setMessage(prefix+' SUPER RATE UP CHANCE発生！ 成功で92.5% MODE。','win');
+    setMessage(prefix+' SUPER RATE UP CHANCE発生！ 成功で95% MODE。','win');
     vibration([30,18,30,18,120]);tone('rush');
     return true;
   }
@@ -154,7 +154,7 @@ function showProbability(){
   }else{
     const p=realProbabilities();
     els.probTitle.textContent=state.phase==='superboost'?'SUPER RATE UP CHANCE':state.phase==='boost'?'CONTINUE RATE CHANCE':state.phase==='judge'?'BATTLE JUDGE':'HIT PROBABILITY';
-    els.probSub.textContent=state.phase==='superboost'?'成功でHIGH RUSH継続期待度92.5%':state.phase==='boost'?'成功でHIGH RUSH継続期待度85%':'公開情報から算出';
+    els.probSub.textContent=state.phase==='superboost'?'成功でHIGH RUSH継続期待度95%':state.phase==='boost'?'成功でHIGH RUSH継続期待度85%':'公開情報から算出';
     els.pLow.textContent=(p.low*100).toFixed(1)+'%';
     els.pMid.textContent=(p.mid*100).toFixed(1)+'%';
     els.pHigh.textContent=(p.high*100).toFixed(1)+'%';
@@ -226,7 +226,7 @@ function render(){
       els.payTable.innerHTML='<span>LOW <b>'+hrPay.low+'</b></span><span>MID <b>'+hrPay.mid+'</b></span><span>HIGH <b>'+hrPay.high+'</b></span>';
       els.atStatusNote.textContent='10G BONUS・配当 '+hrPay.low+' / '+hrPay.mid+' / '+hrPay.high+' / 継続期待度 '+currentHighRushRateLabel()+'。';
       els.startMain.textContent='1枚で HIGH RUSH / '+(state.atGame+1)+'G';
-      els.startSub.textContent='10G BONUS・配当 '+hrPay.low+' / '+hrPay.mid+' / '+hrPay.high+(state.highRushSuperBoosted?'・92.5% MODE':state.highRushBoosted?'・85% MODE':'');
+      els.startSub.textContent='10G BONUS・配当 '+hrPay.low+' / '+hrPay.mid+' / '+hrPay.high+(state.highRushSuperBoosted?'・95% MODE':state.highRushBoosted?'・85% MODE':'');
     }else{
       els.atPhaseLabel.textContent='BONUS '+state.atSet;
       els.modeChip.textContent='BONUS '+state.atSet;
@@ -235,7 +235,7 @@ function render(){
       els.roundTitle.textContent='PREDICT AT';
       els.roundRule.textContent='1 BET / 3 REELS OPEN';
       els.payTable.innerHTML='<span>LOW <b>5</b></span><span>MID <b>8</b></span><span>HIGH <b>15</b></span>';
-      els.atStatusNote.textContent='10Gで1ボーナス。通常ATのBATTLE JUDGE成功で+40枚、さらに9.4%でHIGH RUSHへ直接昇格。';
+      els.atStatusNote.textContent='10Gで1ボーナス。通常ATのBATTLE JUDGE成功で+20枚、さらに9.4%でHIGH RUSHへ直接昇格。';
       els.startMain.textContent='1枚で BONUS '+state.atSet+' / '+(state.atGame+1)+'G';
       els.startSub.textContent='3リールを全部公開';
     }
@@ -260,15 +260,15 @@ function render(){
     els.modeChip.classList.add('boost');
     els.machine.classList.add('boost');
     els.roundTitle.textContent=isSuper?'SUPER RATE UP CHANCE':'CONTINUE RATE CHANCE';
-    els.roundRule.textContent='BET 0 / HIT → '+(isSuper?'92.5%':'85%')+' MODE';
-    els.payTable.innerHTML='<span>HIT <b>'+(isSuper?'92.5%':'85%')+' MODE</b></span><span>MISS <b>HR CONTINUE</b></span>';
+    els.roundRule.textContent='BET 0 / HIT → '+(isSuper?'95%':'85%')+' MODE';
+    els.payTable.innerHTML='<span>HIT <b>'+(isSuper?'95%':'85%')+' MODE</b></span><span>MISS <b>HR CONTINUE</b></span>';
     els.atStatus.classList.remove('is-hidden');
     els.atStatus.classList.add('boost');
     els.atPhaseLabel.textContent=isSuper?'HIGH RUSH SUPER RATE UP':'HIGH RUSH RATE UP';
-    els.atGameText.textContent=isSuper?'85% → 92.5%':'74% → 85%';
-    els.atStatusNote.textContent='継続はすでに確定済み。LOW / MID / HIGHを予想し、成功でHIGH RUSH終了まで継続期待度'+(isSuper?'92.5%':'85%')+'。失敗しても次BONUSへ。';
+    els.atGameText.textContent=isSuper?'85% → 95%':'74% → 85%';
+    els.atStatusNote.textContent='継続はすでに確定済み。LOW / MID / HIGHを予想し、成功でHIGH RUSH終了まで継続期待度'+(isSuper?'95%':'85%')+'。失敗しても次BONUSへ。';
     els.startMain.textContent=(isSuper?'SUPER ':'')+'RATE UP CHANCE START';
-    els.startSub.textContent='成功で'+(isSuper?'92.5%':'85%')+' MODE / BET 0';
+    els.startSub.textContent='成功で'+(isSuper?'95%':'85%')+' MODE / BET 0';
   }else if(state.guaranteedJudge){
     const assist=(currentGuaranteeRate()*100).toFixed(1);
     els.modeChip.textContent='GUARANTEED JUDGE';
@@ -281,7 +281,7 @@ function render(){
     els.atStatus.classList.add('guaranteed');
     els.atPhaseLabel.textContent='HIGH RUSH BONUS '+state.highRushSet+' COMPLETE';
     els.atGameText.textContent='10 / 10';
-    els.atStatusNote.textContent=state.highRushSuperBoosted?'確定継続。92.5% MODEのまま次BONUSへ。':state.highRushBoosted?'確定継続。次BONUSは確定し、さらに20%でSUPER RATE UP CHANCEを抽選。':'確定継続。次BONUSは確定し、さらに10%でRATE UP CHANCEを抽選。';
+    els.atStatusNote.textContent=state.highRushSuperBoosted?'確定継続。95% MODEのまま次BONUSへ。':state.highRushBoosted?'確定継続。次BONUSは確定し、さらに20%でSUPER RATE UP CHANCEを抽選。':'確定継続。次BONUSは確定し、さらに10%でRATE UP CHANCEを抽選。';
     renderAtProgress();
     els.startMain.textContent='確定継続';
     els.startSub.textContent=state.highRushSuperBoosted?'タップで次BONUSへ':state.highRushBoosted?'タップで継続 / 20% SUPER抽選':'タップで継続 / 10% RATE UP抽選';
@@ -296,7 +296,7 @@ function render(){
     els.atStatus.classList.add('judge');
     els.atPhaseLabel.textContent=state.highRush?'HIGH RUSH BONUS '+state.highRushSet+' COMPLETE':'BONUS '+state.atSet+' COMPLETE';
     els.atGameText.textContent='10 / 10';
-    els.atStatusNote.textContent=state.highRush?(state.highRushSuperBoosted?'92.5% MODE / HIGH RUSH継続を賭けたBATTLE JUDGE。失敗後はENDで15% REVIVAL抽選。':state.highRushBoosted?'85% MODE / HIGH RUSH継続を賭けたBATTLE JUDGE。失敗後はENDで15% REVIVAL抽選。':'BATTLE JUDGE成功で継続確定。失敗後はENDで15% REVIVAL抽選。'):'成功で+40枚＋次BONUS。さらに9.4%でHIGH RUSHへ直接昇格。';
+    els.atStatusNote.textContent=state.highRush?(state.highRushSuperBoosted?'95% MODE / HIGH RUSH継続を賭けたBATTLE JUDGE。失敗後はENDで15% REVIVAL抽選。':state.highRushBoosted?'85% MODE / HIGH RUSH継続を賭けたBATTLE JUDGE。失敗後はENDで15% REVIVAL抽選。':'BATTLE JUDGE成功で継続確定。失敗後はENDで15% REVIVAL抽選。'):'成功で+20枚＋次BONUS。さらに9.4%でHIGH RUSHへ直接昇格。';
     renderAtProgress();
     els.startMain.textContent='BATTLE JUDGE START';
     els.startSub.textContent='成功で BONUS '+(state.atSet+1)+' / BET 0';
@@ -369,7 +369,7 @@ function startRound(){
   }else{
     state.values=[roll(),roll(),null];animate(0);animate(1);
     els.sumLine.textContent='公開合計 '+(state.values[0]+state.values[1])+' + ?';
-    if(state.phase==='superboost')setMessage('SUPER RATE UP CHANCE。継続は確定済み。成功でHIGH RUSH継続期待度92.5%。');
+    if(state.phase==='superboost')setMessage('SUPER RATE UP CHANCE。継続は確定済み。成功でHIGH RUSH継続期待度95%。');
     else if(state.phase==='boost')setMessage('CONTINUE RATE CHANCE。継続は確定済み。成功でHIGH RUSH継続期待度85%。');
     else setMessage('BATTLE JUDGE。成功でBONUS '+(state.atSet+1)+'へ。');
   }
@@ -476,7 +476,7 @@ function choose(pred){
     if(hit){
       if(isSuper){
         state.highRushSuperBoosted=true;
-        setMessage('SUPER RATE UP成功！ HIGH RUSHが92.5% MODEへ昇格！','win');
+        setMessage('SUPER RATE UP成功！ HIGH RUSHが95% MODEへ昇格！','win');
       }else{
         state.highRushBoosted=true;
         setMessage('RATE UP成功！ HIGH RUSHが85% MODEへ昇格！','win');
