@@ -29,8 +29,8 @@ const AT_BET=1;
 const NORMAL_JUDGE_REWARD=20;
 const NATURAL_JUDGE_RATE=509/729;
 const HIGH_RUSH_UP_RATE=.094;
-const RATE_UP_CHANCE_RATE=.10;
-const SUPER_RATE_UP_CHANCE_RATE=.20;
+const RATE_UP_CHANCE_RATE=.12;
+const SUPER_RATE_UP_CHANCE_RATE=.25;
 const REVIVAL_TARGET_RATE=.15;
 const BASE_TARGET_RATE=REVIVAL_TARGET_RATE+(1-REVIVAL_TARGET_RATE)*NATURAL_JUDGE_RATE;
 const BOOST_TARGET_RATE=.85;
@@ -63,8 +63,7 @@ const signedFixed=(n,d=1)=>{
 function highRushPay(set){
   if(set<=5)return{low:9,mid:15,high:27};
   if(set<=10)return{low:18,mid:30,high:54};
-  if(set<=15)return{low:30,mid:50,high:90};
-  return{low:40,mid:67,high:120};
+  return{low:30,mid:50,high:90};
 }
 
 function currentGuaranteeRate(){
@@ -282,10 +281,10 @@ function render(){
     els.atStatus.classList.add('guaranteed');
     els.atPhaseLabel.textContent='HIGH RUSH BONUS '+state.highRushSet+' COMPLETE';
     els.atGameText.textContent='10 / 10';
-    els.atStatusNote.textContent=state.highRushSuperBoosted?'確定継続。95% MODEのまま次BONUSへ。':state.highRushBoosted?'確定継続。次BONUSは確定し、さらに20%でSUPER RATE UP CHANCEを抽選。':'確定継続。次BONUSは確定し、さらに10%でRATE UP CHANCEを抽選。';
+    els.atStatusNote.textContent=state.highRushSuperBoosted?'確定継続。95% MODEのまま次BONUSへ。':state.highRushBoosted?'確定継続。次BONUSは確定し、さらに25%でSUPER RATE UP CHANCEを抽選。':'確定継続。次BONUSは確定し、さらに12%でRATE UP CHANCEを抽選。';
     renderAtProgress();
     els.startMain.textContent='確定継続';
-    els.startSub.textContent=state.highRushSuperBoosted?'タップで次BONUSへ':state.highRushBoosted?'タップで継続 / 20% SUPER抽選':'タップで継続 / 10% RATE UP抽選';
+    els.startSub.textContent=state.highRushSuperBoosted?'タップで次BONUSへ':state.highRushBoosted?'タップで継続 / 25% SUPER抽選':'タップで継続 / 12% RATE UP抽選';
   }else{
     els.modeChip.textContent='BATTLE JUDGE';
     els.modeChip.classList.add('judge');
