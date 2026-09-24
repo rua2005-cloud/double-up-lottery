@@ -63,7 +63,8 @@ const signedFixed=(n,d=1)=>{
 function highRushPay(set){
   if(set<=5)return{low:9,mid:15,high:27};
   if(set<=10)return{low:18,mid:30,high:54};
-  return{low:30,mid:50,high:90};
+  if(set<=15)return{low:30,mid:50,high:90};
+  return{low:40,mid:67,high:120};
 }
 
 function currentGuaranteeRate(){
