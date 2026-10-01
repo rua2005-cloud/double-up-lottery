@@ -20,7 +20,7 @@ const els={
   maxAtGainStat:$('maxAtGainStat'),totalBetStat:$('totalBetStat'),totalPayoutStat:$('totalPayoutStat'),
   netStat:$('netStat'),rtpStat:$('rtpStat'),settingsBtn:$('settingsBtn'),settingsDialog:$('settingsDialog'),
   probToggle:$('probToggle'),soundToggle:$('soundToggle'),vibrateToggle:$('vibrateToggle'),
-  autoToggle:$('autoToggle'),autoSpeed:$('autoSpeed'),resetBtn:$('resetBtn')
+  autoToggle:$('autoToggle'),autoMode:$('autoMode'),autoSpeed:$('autoSpeed'),resetBtn:$('resetBtn')
 };
 
 const PAY={low:5,mid:8,high:15};
@@ -53,7 +53,7 @@ function freshState(){
     normalGames:0,normalHits:0,atCount:0,highRushCount:0,maxSet:0,currentDrought:0,maxDrought:0,
     totalBonus:0,totalBet:0,totalPayout:0,completedAtCount:0,totalAtGain:0,maxAtGain:0,
     completedHighRushCount:0,totalHighRushBonus:0,maxHighRushBonus:0,totalHighRushGain:0,maxHighRushGain:0,
-    judgeAttempts:0,judgeHits:0,settings:{probability:true,sound:true,vibrate:true,auto:false,autoSpeed:'normal'}
+    judgeAttempts:0,judgeHits:0,settings:{probability:true,sound:true,vibrate:true,auto:false,autoMode:'semi',autoSpeed:'normal'}
   };
 }
 
@@ -139,6 +139,7 @@ function canAutoProceed(){
 }
 
 function isManualAutoPhase(){
+  if(state.settings.autoMode==='full')return false;
   return state.phase==='rune'||state.phase==='judge'||state.phase==='boost'||state.phase==='superboost'||state.phase==='hrend';
 }
 
@@ -185,7 +186,9 @@ function startAuto(){
   }
   autoRunning=true;
   autoPausedForManual=false;
-  setMessage('最適AUTO開始。特殊区間では自動停止して手動操作に切り替わります。');
+  setMessage(state.settings.autoMode==='full'
+    ?'全自動AUTO開始。特殊区間も含めて最適打ちで自動進行します。'
+    :'最適AUTO開始。特殊区間では自動停止して手動操作に切り替わります。');
   continueAuto();
 }
 
@@ -491,10 +494,10 @@ function render(){
       els.startBtn.classList.remove('is-hidden');
       if(autoRunning){
         els.startMain.textContent='AUTO STOP';
-        els.startSub.textContent='最適打ちで自動進行中 / '+(state.settings.autoSpeed==='fast'?'FAST':'NORMAL');
+        els.startSub.textContent=(state.settings.autoMode==='full'?'全自動':'特殊区間手動')+' / '+(state.settings.autoSpeed==='fast'?'FAST':'NORMAL');
       }else{
         els.startMain.textContent='AUTO START';
-        els.startSub.textContent='最適打ち / '+(state.settings.autoSpeed==='fast'?'FAST':'NORMAL');
+        els.startSub.textContent=(state.settings.autoMode==='full'?'全自動・最適打ち':'特殊区間手動・最適打ち')+' / '+(state.settings.autoSpeed==='fast'?'FAST':'NORMAL');
       }
     }
   }else if(state.waiting){
@@ -758,6 +761,11 @@ els.autoToggle.addEventListener('change',()=>{
   if(!state.settings.auto&&autoRunning)stopAuto();
   else render();
 });
+els.autoMode.addEventListener('change',()=>{
+  state.settings.autoMode=els.autoMode.value;
+  if(autoRunning)continueAuto();
+  else render();
+});
 els.autoSpeed.addEventListener('change',()=>{
   state.settings.autoSpeed=els.autoSpeed.value;
   if(autoRunning&&!autoPausedForManual)scheduleAuto();
@@ -766,6 +774,7 @@ els.autoSpeed.addEventListener('change',()=>{
 els.resetBtn.addEventListener('click',()=>{if(confirm('メダル・ゲージ・戦績をすべてリセットしますか？'))reset()});
 
 els.autoToggle.checked=state.settings.auto;
+els.autoMode.value=state.settings.autoMode;
 els.autoSpeed.value=state.settings.autoSpeed;
 render();
 })();
