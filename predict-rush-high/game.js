@@ -266,7 +266,7 @@ function animate(index){
 function realProbabilities(){
   const counts={low:0,mid:0,high:0};
   let total=0;
-  if(state.phase==='rune'){
+  if(!state.waiting||state.phase==='rune'){
     for(let x=1;x<=9;x++)for(let y=1;y<=9;y++)for(let z=1;z<=9;z++){counts[classify(x+y+z)]++;total++}
   }else if(state.phase==='judge'||state.phase==='boost'||state.phase==='superboost'){
     const base=state.values[0]+state.values[1];
@@ -280,7 +280,7 @@ function realProbabilities(){
 
 function showProbability(){
   if(!state.settings.probability){els.probabilityPanel.classList.add('is-hidden');return}
-  if(state.phase==='at'){
+  if(state.phase==='at'&&state.waiting){
     const sum=state.values.reduce((a,b)=>a+b,0);
     const answer=classify(sum);
     els.probTitle.textContent=state.highRush?'HIGH RUSH BONUS '+state.highRushSet:'HIT PROBABILITY';
@@ -295,7 +295,7 @@ function showProbability(){
   }else{
     const p=realProbabilities();
     els.probTitle.textContent=state.phase==='rune'?'RUNE DRIVE':state.phase==='superboost'?'SUPER RATE UP CHANCE':state.phase==='boost'?'CONTINUE RATE CHANCE':state.phase==='judge'?'BATTLE JUDGE':'HIT PROBABILITY';
-    els.probSub.textContent=state.phase==='rune'?'0リール公開・完全3択':state.phase==='superboost'?'成功でHIGH RUSH継続期待度95%':state.phase==='boost'?'成功でHIGH RUSH継続期待度85%':'公開情報から算出';
+    els.probSub.textContent=state.waiting?(state.phase==='rune'?'0リール公開・完全3択':state.phase==='superboost'?'成功でHIGH RUSH継続期待度95%':state.phase==='boost'?'成功でHIGH RUSH継続期待度85%':'公開情報から算出'):'リール公開前の基礎確率';
     els.pLow.textContent=(p.low*100).toFixed(1)+'%';
     els.pMid.textContent=(p.mid*100).toFixed(1)+'%';
     els.pHigh.textContent=(p.high*100).toFixed(1)+'%';
@@ -504,6 +504,7 @@ function render(){
     els.choiceArea.classList.add('is-hidden');
     els.startBtn.classList.remove('is-hidden');
   }
+  showProbability();
   els.gamesStat.textContent=state.normalGames;
   els.hitRateStat.textContent=state.normalGames?((state.normalHits/state.normalGames)*100).toFixed(1)+'%':'—';
   els.atCountStat.textContent=state.atCount;
@@ -726,14 +727,14 @@ function choose(pred){
     addHistory('通常',LABEL[pred],LABEL[actual],sum,hit,reward);
   }
 
-  state.waiting=false;els.choiceArea.classList.add('is-hidden');els.probabilityPanel.classList.add('is-hidden');els.startBtn.classList.remove('is-hidden');render();
+  state.waiting=false;els.choiceArea.classList.add('is-hidden');els.startBtn.classList.remove('is-hidden');render();
   if(autoRunning)continueAuto();
 }
 
 function reset(){
   clearAutoTimer();autoRunning=false;autoPausedForManual=false;
   const keep={...state.settings};state=freshState();state.settings=keep;
-  els.choiceArea.classList.add('is-hidden');els.probabilityPanel.classList.add('is-hidden');els.startBtn.classList.remove('is-hidden');
+  els.choiceArea.classList.add('is-hidden');els.startBtn.classList.remove('is-hidden');
   els.sumLine.textContent='STARTで第1リールを公開';setMessage('セッションをリセットしました。');render();els.settingsDialog.close();
 }
 
@@ -749,7 +750,7 @@ els.startBtn.addEventListener('click',()=>{
 document.querySelectorAll('[data-choice]').forEach(b=>b.addEventListener('click',()=>choose(b.dataset.choice)));
 els.historyToggle.addEventListener('click',()=>{const hidden=els.historyPanel.classList.toggle('is-hidden');els.historyToggle.textContent=hidden?'詳細を見る':'詳細を閉じる'});
 els.settingsBtn.addEventListener('click',()=>els.settingsDialog.showModal());
-els.probToggle.addEventListener('change',()=>{state.settings.probability=els.probToggle.checked;if(state.waiting)showProbability();else els.probabilityPanel.classList.add('is-hidden')});
+els.probToggle.addEventListener('change',()=>{state.settings.probability=els.probToggle.checked;showProbability()});
 els.soundToggle.addEventListener('change',()=>state.settings.sound=els.soundToggle.checked);
 els.vibrateToggle.addEventListener('change',()=>state.settings.vibrate=els.vibrateToggle.checked);
 els.autoToggle.addEventListener('change',()=>{
