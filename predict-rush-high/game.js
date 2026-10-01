@@ -463,6 +463,12 @@ function render(){
       els.startMain.textContent='AUTO START';
       els.startSub.textContent='最適打ち / '+(state.settings.autoSpeed==='fast'?'FAST':'NORMAL');
     }
+  }else if(state.waiting){
+    els.choiceArea.classList.remove('is-hidden');
+    els.startBtn.classList.add('is-hidden');
+  }else{
+    els.choiceArea.classList.add('is-hidden');
+    els.startBtn.classList.remove('is-hidden');
   }
   els.gamesStat.textContent=state.normalGames;
   els.hitRateStat.textContent=state.normalGames?((state.normalHits/state.normalGames)*100).toFixed(1)+'%':'—';
