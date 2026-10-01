@@ -157,9 +157,9 @@
       <p><strong>⑧ 85% MODE</strong><br>成功後はHR終了まで継続期待度85%。REVIVAL込みで85%を維持するため確定継続率は約41.5%。確定継続を引かなかった場合は通常のBATTLE JUDGEを行います。継続が確定するたび、95% MODE未到達なら25%でSUPER RATE UP CHANCEを抽選します。</p>
       <p><strong>⑨ SUPER RATE UP CHANCE</strong><br>85% MODE中の継続確定後に25%で発生。2リールを見てLOW / MID / HIGHを予想し、成功で95% MODEへ。失敗してもHRは終了せず、85% MODEのまま次BONUSへ進みます。</p>
       <p><strong>⑩ 95% MODE</strong><br>成功後はHR終了まで継続期待度95%。REVIVAL込みで95%を維持するため確定継続率は約80.5%。確定継続を引かなかった場合だけ通常のBATTLE JUDGEを行います。10G区切りと配当倍率はそのままです。</p>
-      <p><strong>⑪ 最適AUTO</strong><br>設定からONにすると、通常時とPREDICT AT / HIGH RUSH BONUSを最適打ちで自動進行します。RUNE DRIVE、BATTLE JUDGE、CONTINUE RATE CHANCE、SUPER RATE UP CHANCE、HIGH RUSH ENDからのREVIVAL抽選では自動で一時停止し、その区間だけ手動操作になります。特殊区間が終わるとAUTOを自動再開します。</p>
+      <p><strong>⑪ 最適AUTO</strong><br>設定からONにすると最適打ちで自動進行します。AUTOタイプは2種類。SPECIAL MANUALでは通常時とPREDICT AT / HIGH RUSH BONUSを自動進行し、RUNE DRIVE、BATTLE JUDGE、CONTINUE RATE CHANCE、SUPER RATE UP CHANCE、HIGH RUSH ENDからのREVIVAL抽選だけ手動。FULL AUTOではこれらの特殊区間も含め、すべて最適選択で自動進行します。</p>
     </div></details>
-    <footer>Virtual medals only · HIGH RUSH v2.25</footer>
+    <footer>Virtual medals only · HIGH RUSH v2.26</footer>
   </main>
 
   <dialog id="settingsDialog"><form method="dialog" class="settings-card">
@@ -167,10 +167,11 @@
     <label class="setting-row"><span><b>確率表示</b><small>通常時・AT・BATTLE JUDGEの確率を表示</small></span><input id="probToggle" type="checkbox" checked></label>
     <label class="setting-row"><span><b>効果音</b><small>簡易サウンド</small></span><input id="soundToggle" type="checkbox" checked></label>
     <label class="setting-row"><span><b>振動</b><small>対応端末で振動</small></span><input id="vibrateToggle" type="checkbox" checked></label>
-    <label class="setting-row"><span><b>最適AUTO</b><small>通常時とBONUSを最適打ちで自動進行。RUNE DRIVE / BATTLE JUDGE / RATE UP / SUPER RATE UP / HR END・REVIVALは手動</small></span><input id="autoToggle" type="checkbox"></label>
+    <label class="setting-row"><span><b>最適AUTO</b><small>ONで最適打ちの自動進行を有効化</small></span><input id="autoToggle" type="checkbox"></label>
+    <label class="setting-row"><span><b>AUTOタイプ</b><small>SPECIAL MANUALは重要区間だけ手動、FULL AUTOはすべて自動</small></span><select id="autoMode"><option value="semi">SPECIAL MANUAL</option><option value="full">FULL AUTO</option></select></label>
     <label class="setting-row"><span><b>AUTO速度</b><small>NORMALは展開を追いやすく、FASTは高速消化</small></span><select id="autoSpeed"><option value="normal">NORMAL</option><option value="fast">FAST</option></select></label>
     <button id="resetBtn" type="button" class="danger-btn">セッションをリセット</button>
   </form></dialog>
-  <script src="game.js?v=2.25"></script>
+  <script src="game.js?v=2.26"></script>
 </body>
 </html>
