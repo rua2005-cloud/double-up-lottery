@@ -58,6 +58,7 @@ function freshState(){
 }
 
 let autoRunning=false;
+let autoPausedForManual=false;
 let autoTimer=null;
 
 const roll=()=>1+Math.floor(Math.random()*9);
@@ -137,6 +138,10 @@ function canAutoProceed(){
   return true;
 }
 
+function isManualAutoPhase(){
+  return state.phase==='rune'||state.phase==='judge'||state.phase==='boost'||state.phase==='superboost'||state.phase==='hrend';
+}
+
 function clearAutoTimer(){
   if(autoTimer!==null){
     clearTimeout(autoTimer);
@@ -153,8 +158,22 @@ function scheduleAuto(){
 function stopAuto(message=''){
   clearAutoTimer();
   autoRunning=false;
+  autoPausedForManual=false;
   if(message)setMessage(message,'lose');
   render();
+}
+
+function continueAuto(){
+  clearAutoTimer();
+  if(!autoRunning)return;
+  if(isManualAutoPhase()){
+    autoPausedForManual=true;
+    render();
+    return;
+  }
+  autoPausedForManual=false;
+  render();
+  scheduleAuto();
 }
 
 function startAuto(){
@@ -165,9 +184,9 @@ function startAuto(){
     return;
   }
   autoRunning=true;
-  setMessage('最適AUTO開始。');
-  render();
-  scheduleAuto();
+  autoPausedForManual=false;
+  setMessage('最適AUTO開始。特殊区間では自動停止して手動操作に切り替わります。');
+  continueAuto();
 }
 
 function autoStep(){
@@ -180,6 +199,11 @@ function autoStep(){
     stopAuto('最適AUTO停止。メダルが不足しています。');
     return;
   }
+  if(isManualAutoPhase()){
+    autoPausedForManual=true;
+    render();
+    return;
+  }
   if(state.waiting){
     const pred=autoChoice();
     if(!pred){
@@ -189,8 +213,8 @@ function autoStep(){
     choose(pred);
   }else{
     startRound();
+    if(autoRunning)continueAuto();
   }
-  if(autoRunning)scheduleAuto();
 }
 
 function vibration(pattern){
@@ -454,14 +478,24 @@ function render(){
   const insufficient=(state.phase==='normal'&&state.medals<NORMAL_BET)||(state.phase==='at'&&state.medals<AT_BET);
   els.startBtn.disabled=autoRunning?false:insufficient;
   if(state.settings.auto){
-    els.choiceArea.classList.add('is-hidden');
-    els.startBtn.classList.remove('is-hidden');
-    if(autoRunning){
-      els.startMain.textContent='AUTO STOP';
-      els.startSub.textContent='最適打ちで自動進行中 / '+(state.settings.autoSpeed==='fast'?'FAST':'NORMAL');
+    if(autoRunning&&autoPausedForManual){
+      if(state.waiting){
+        els.choiceArea.classList.remove('is-hidden');
+        els.startBtn.classList.add('is-hidden');
+      }else{
+        els.choiceArea.classList.add('is-hidden');
+        els.startBtn.classList.remove('is-hidden');
+      }
     }else{
-      els.startMain.textContent='AUTO START';
-      els.startSub.textContent='最適打ち / '+(state.settings.autoSpeed==='fast'?'FAST':'NORMAL');
+      els.choiceArea.classList.add('is-hidden');
+      els.startBtn.classList.remove('is-hidden');
+      if(autoRunning){
+        els.startMain.textContent='AUTO STOP';
+        els.startSub.textContent='最適打ちで自動進行中 / '+(state.settings.autoSpeed==='fast'?'FAST':'NORMAL');
+      }else{
+        els.startMain.textContent='AUTO START';
+        els.startSub.textContent='最適打ち / '+(state.settings.autoSpeed==='fast'?'FAST':'NORMAL');
+      }
     }
   }else if(state.waiting){
     els.choiceArea.classList.remove('is-hidden');
@@ -488,6 +522,7 @@ function resolveGuaranteedJudge(){
     vibration([25,20,25,20,80]);tone('rush');
   }
   render();
+  if(autoRunning)continueAuto();
 }
 
 function resolveHighRushEnd(){
@@ -503,6 +538,7 @@ function resolveHighRushEnd(){
     finishAt();
   }
   render();
+  if(autoRunning)continueAuto();
 }
 
 function startRound(){
@@ -691,10 +727,11 @@ function choose(pred){
   }
 
   state.waiting=false;els.choiceArea.classList.add('is-hidden');els.probabilityPanel.classList.add('is-hidden');els.startBtn.classList.remove('is-hidden');render();
+  if(autoRunning)continueAuto();
 }
 
 function reset(){
-  clearAutoTimer();autoRunning=false;
+  clearAutoTimer();autoRunning=false;autoPausedForManual=false;
   const keep={...state.settings};state=freshState();state.settings=keep;
   els.choiceArea.classList.add('is-hidden');els.probabilityPanel.classList.add('is-hidden');els.startBtn.classList.remove('is-hidden');
   els.sumLine.textContent='STARTで第1リールを公開';setMessage('セッションをリセットしました。');render();els.settingsDialog.close();
@@ -702,7 +739,8 @@ function reset(){
 
 els.startBtn.addEventListener('click',()=>{
   if(state.settings.auto){
-    if(autoRunning)stopAuto();
+    if(autoRunning&&autoPausedForManual)startRound();
+    else if(autoRunning)stopAuto();
     else startAuto();
   }else{
     startRound();
@@ -721,7 +759,7 @@ els.autoToggle.addEventListener('change',()=>{
 });
 els.autoSpeed.addEventListener('change',()=>{
   state.settings.autoSpeed=els.autoSpeed.value;
-  if(autoRunning)scheduleAuto();
+  if(autoRunning&&!autoPausedForManual)scheduleAuto();
   render();
 });
 els.resetBtn.addEventListener('click',()=>{if(confirm('メダル・ゲージ・戦績をすべてリセットしますか？'))reset()});
