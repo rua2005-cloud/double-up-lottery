@@ -49,6 +49,7 @@
     .detail-stat{padding:9px 7px;border:1px solid var(--line);border-radius:10px;background:#0c131f;text-align:center;min-width:0}
     .detail-stat span{display:block;font-size:8px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     .detail-stat b{display:block;margin-top:3px;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .setting-row select{min-width:92px;border:1px solid var(--line);border-radius:9px;background:#0c131f;color:var(--text);padding:7px 9px;font:inherit}
     @media(max-width:520px){.detail-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
   </style>
   <title>PREDICT RUSH 105 - HIGH RUSH</title>
@@ -149,7 +150,7 @@
       <p><strong>⑨ SUPER RATE UP CHANCE</strong><br>85% MODE中の継続確定後に25%で発生。2リールを見てLOW / MID / HIGHを予想し、成功で95% MODEへ。失敗してもHRは終了せず、85% MODEのまま次BONUSへ進みます。</p>
       <p><strong>⑩ 95% MODE</strong><br>成功後はHR終了まで継続期待度95%。REVIVAL込みで95%を維持するため確定継続率は約80.5%。確定継続を引かなかった場合だけ通常のBATTLE JUDGEを行います。10G区切りと配当倍率はそのままです。</p>
     </div></details>
-    <footer>Virtual medals only · HIGH RUSH v2.20</footer>
+    <footer>Virtual medals only · HIGH RUSH v2.21</footer>
   </main>
 
   <dialog id="settingsDialog"><form method="dialog" class="settings-card">
@@ -157,8 +158,10 @@
     <label class="setting-row"><span><b>確率表示</b><small>通常時・AT・BATTLE JUDGEの確率を表示</small></span><input id="probToggle" type="checkbox" checked></label>
     <label class="setting-row"><span><b>効果音</b><small>簡易サウンド</small></span><input id="soundToggle" type="checkbox" checked></label>
     <label class="setting-row"><span><b>振動</b><small>対応端末で振動</small></span><input id="vibrateToggle" type="checkbox" checked></label>
+    <label class="setting-row"><span><b>最適AUTO</b><small>通常・AT・JUDGEを最適選択で自動進行</small></span><input id="autoToggle" type="checkbox"></label>
+    <label class="setting-row"><span><b>AUTO速度</b><small>NORMALは展開を追いやすく、FASTは高速消化</small></span><select id="autoSpeed"><option value="normal">NORMAL</option><option value="fast">FAST</option></select></label>
     <button id="resetBtn" type="button" class="danger-btn">セッションをリセット</button>
   </form></dialog>
-  <script src="game.js?v=2.20"></script>
+  <script src="game.js?v=2.21"></script>
 </body>
 </html>
