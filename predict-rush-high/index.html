@@ -49,11 +49,14 @@
     .detail-stat{padding:9px 7px;border:1px solid var(--line);border-radius:10px;background:#0c131f;text-align:center;min-width:0}
     .detail-stat span{display:block;font-size:8px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     .detail-stat b{display:block;margin-top:3px;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .control-stage{min-height:177px}
+    .control-stage{position:relative;height:177px}
+    .control-stage .probability-panel{position:absolute;top:0;left:0;right:0}
+    .control-stage .choice-area{position:absolute;left:0;right:0;bottom:0;margin-top:0}
+    .control-stage .start-btn{position:absolute;left:0;right:0;bottom:0;margin-top:0}
     .message{min-height:72px;display:flex;align-items:center}
     .setting-row select{min-width:92px;border:1px solid var(--line);border-radius:9px;background:#0c131f;color:var(--text);padding:7px 9px;font:inherit}
     @media(max-width:520px){.detail-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
-    @media(max-width:360px){.control-stage{min-height:173px}}
+    @media(max-width:360px){.control-stage{height:173px}}
   </style>
   <title>PREDICT RUSH 105 - HIGH RUSH</title>
 </head>
@@ -156,7 +159,7 @@
       <p><strong>⑩ 95% MODE</strong><br>成功後はHR終了まで継続期待度95%。REVIVAL込みで95%を維持するため確定継続率は約80.5%。確定継続を引かなかった場合だけ通常のBATTLE JUDGEを行います。10G区切りと配当倍率はそのままです。</p>
       <p><strong>⑪ 最適AUTO</strong><br>設定からONにすると、通常時とPREDICT AT / HIGH RUSH BONUSを最適打ちで自動進行します。RUNE DRIVE、BATTLE JUDGE、CONTINUE RATE CHANCE、SUPER RATE UP CHANCE、HIGH RUSH ENDからのREVIVAL抽選では自動で一時停止し、その区間だけ手動操作になります。特殊区間が終わるとAUTOを自動再開します。</p>
     </div></details>
-    <footer>Virtual medals only · HIGH RUSH v2.23</footer>
+    <footer>Virtual medals only · HIGH RUSH v2.24</footer>
   </main>
 
   <dialog id="settingsDialog"><form method="dialog" class="settings-card">
@@ -168,6 +171,6 @@
     <label class="setting-row"><span><b>AUTO速度</b><small>NORMALは展開を追いやすく、FASTは高速消化</small></span><select id="autoSpeed"><option value="normal">NORMAL</option><option value="fast">FAST</option></select></label>
     <button id="resetBtn" type="button" class="danger-btn">セッションをリセット</button>
   </form></dialog>
-  <script src="game.js?v=2.22"></script>
+  <script src="game.js?v=2.24"></script>
 </body>
 </html>
