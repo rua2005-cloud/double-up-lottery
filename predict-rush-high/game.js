@@ -19,7 +19,8 @@ const els={
   avgBonusStat:$('avgBonusStat'),judgeRateStat:$('judgeRateStat'),avgAtGainStat:$('avgAtGainStat'),
   maxAtGainStat:$('maxAtGainStat'),totalBetStat:$('totalBetStat'),totalPayoutStat:$('totalPayoutStat'),
   netStat:$('netStat'),rtpStat:$('rtpStat'),settingsBtn:$('settingsBtn'),settingsDialog:$('settingsDialog'),
-  probToggle:$('probToggle'),soundToggle:$('soundToggle'),vibrateToggle:$('vibrateToggle'),resetBtn:$('resetBtn')
+  probToggle:$('probToggle'),soundToggle:$('soundToggle'),vibrateToggle:$('vibrateToggle'),
+  autoToggle:$('autoToggle'),autoSpeed:$('autoSpeed'),resetBtn:$('resetBtn')
 };
 
 const PAY={low:5,mid:8,high:15};
@@ -52,9 +53,12 @@ function freshState(){
     normalGames:0,normalHits:0,atCount:0,highRushCount:0,maxSet:0,currentDrought:0,maxDrought:0,
     totalBonus:0,totalBet:0,totalPayout:0,completedAtCount:0,totalAtGain:0,maxAtGain:0,
     completedHighRushCount:0,totalHighRushBonus:0,maxHighRushBonus:0,totalHighRushGain:0,maxHighRushGain:0,
-    judgeAttempts:0,judgeHits:0,settings:{probability:true,sound:true,vibrate:true}
+    judgeAttempts:0,judgeHits:0,settings:{probability:true,sound:true,vibrate:true,auto:false,autoSpeed:'normal'}
   };
 }
+
+let autoRunning=false;
+let autoTimer=null;
 
 const roll=()=>1+Math.floor(Math.random()*9);
 const classify=sum=>sum<=15?'low':sum<=20?'mid':'high';
@@ -88,6 +92,105 @@ function currentNormalHighRushUpRate(){
 
 function currentNormalHighRushUpLabel(){
   return (currentNormalHighRushUpRate()*100).toFixed(1)+'%';
+}
+
+function autoDelay(){
+  return state.settings.autoSpeed==='fast'?120:320;
+}
+
+function optimalNormalChoice(first,gauge){
+  if(gauge<=1){
+    if(first<=5)return 'low';
+    if(first<=7)return 'mid';
+    return 'high';
+  }
+  if(gauge<=3){
+    if(first<=6)return 'low';
+    if(first<=8)return 'mid';
+    return 'high';
+  }
+  return first<=6?'low':'mid';
+}
+
+function highestProbabilityChoice(){
+  const p=realProbabilities();
+  let best='low';
+  if(p.mid>p[best])best='mid';
+  if(p.high>p[best])best='high';
+  return best;
+}
+
+function autoChoice(){
+  if(state.phase==='normal')return optimalNormalChoice(state.values[0],state.gauge);
+  if(state.phase==='rune')return 'low';
+  if(state.phase==='at'){
+    const sum=state.values.reduce((a,b)=>a+b,0);
+    return classify(sum);
+  }
+  if(state.phase==='judge'||state.phase==='boost'||state.phase==='superboost')return highestProbabilityChoice();
+  return null;
+}
+
+function canAutoProceed(){
+  if(state.phase==='normal'&&state.medals<NORMAL_BET)return false;
+  if(state.phase==='at'&&state.medals<AT_BET)return false;
+  return true;
+}
+
+function clearAutoTimer(){
+  if(autoTimer!==null){
+    clearTimeout(autoTimer);
+    autoTimer=null;
+  }
+}
+
+function scheduleAuto(){
+  clearAutoTimer();
+  if(!autoRunning)return;
+  autoTimer=setTimeout(autoStep,autoDelay());
+}
+
+function stopAuto(message=''){
+  clearAutoTimer();
+  autoRunning=false;
+  if(message)setMessage(message,'lose');
+  render();
+}
+
+function startAuto(){
+  if(!state.settings.auto||autoRunning)return;
+  if(!canAutoProceed()){
+    setMessage('最適AUTOを開始できません。メダルが不足しています。','lose');
+    render();
+    return;
+  }
+  autoRunning=true;
+  setMessage('最適AUTO開始。');
+  render();
+  scheduleAuto();
+}
+
+function autoStep(){
+  if(!autoRunning)return;
+  if(!state.settings.auto){
+    stopAuto();
+    return;
+  }
+  if(!canAutoProceed()){
+    stopAuto('最適AUTO停止。メダルが不足しています。');
+    return;
+  }
+  if(state.waiting){
+    const pred=autoChoice();
+    if(!pred){
+      stopAuto('最適AUTO停止。選択できない状態です。');
+      return;
+    }
+    choose(pred);
+  }else{
+    startRound();
+  }
+  if(autoRunning)scheduleAuto();
 }
 
 function vibration(pattern){
@@ -348,7 +451,19 @@ function render(){
     els.reels[i].classList.toggle('covered',v==null);
   });
 
-  els.startBtn.disabled=state.waiting||(state.phase==='normal'&&state.medals<NORMAL_BET)||(state.phase==='at'&&state.medals<AT_BET);
+  const insufficient=(state.phase==='normal'&&state.medals<NORMAL_BET)||(state.phase==='at'&&state.medals<AT_BET);
+  els.startBtn.disabled=autoRunning?false:insufficient;
+  if(state.settings.auto){
+    els.choiceArea.classList.add('is-hidden');
+    els.startBtn.classList.remove('is-hidden');
+    if(autoRunning){
+      els.startMain.textContent='AUTO STOP';
+      els.startSub.textContent='最適打ちで自動進行中 / '+(state.settings.autoSpeed==='fast'?'FAST':'NORMAL');
+    }else{
+      els.startMain.textContent='AUTO START';
+      els.startSub.textContent='最適打ち / '+(state.settings.autoSpeed==='fast'?'FAST':'NORMAL');
+    }
+  }
   els.gamesStat.textContent=state.normalGames;
   els.hitRateStat.textContent=state.normalGames?((state.normalHits/state.normalGames)*100).toFixed(1)+'%':'—';
   els.atCountStat.textContent=state.atCount;
@@ -573,19 +688,39 @@ function choose(pred){
 }
 
 function reset(){
+  clearAutoTimer();autoRunning=false;
   const keep={...state.settings};state=freshState();state.settings=keep;
   els.choiceArea.classList.add('is-hidden');els.probabilityPanel.classList.add('is-hidden');els.startBtn.classList.remove('is-hidden');
   els.sumLine.textContent='STARTで第1リールを公開';setMessage('セッションをリセットしました。');render();els.settingsDialog.close();
 }
 
-els.startBtn.addEventListener('click',startRound);
+els.startBtn.addEventListener('click',()=>{
+  if(state.settings.auto){
+    if(autoRunning)stopAuto();
+    else startAuto();
+  }else{
+    startRound();
+  }
+});
 document.querySelectorAll('[data-choice]').forEach(b=>b.addEventListener('click',()=>choose(b.dataset.choice)));
 els.historyToggle.addEventListener('click',()=>{const hidden=els.historyPanel.classList.toggle('is-hidden');els.historyToggle.textContent=hidden?'詳細を見る':'詳細を閉じる'});
 els.settingsBtn.addEventListener('click',()=>els.settingsDialog.showModal());
 els.probToggle.addEventListener('change',()=>{state.settings.probability=els.probToggle.checked;if(state.waiting)showProbability();else els.probabilityPanel.classList.add('is-hidden')});
 els.soundToggle.addEventListener('change',()=>state.settings.sound=els.soundToggle.checked);
 els.vibrateToggle.addEventListener('change',()=>state.settings.vibrate=els.vibrateToggle.checked);
+els.autoToggle.addEventListener('change',()=>{
+  state.settings.auto=els.autoToggle.checked;
+  if(!state.settings.auto&&autoRunning)stopAuto();
+  else render();
+});
+els.autoSpeed.addEventListener('change',()=>{
+  state.settings.autoSpeed=els.autoSpeed.value;
+  if(autoRunning)scheduleAuto();
+  render();
+});
 els.resetBtn.addEventListener('click',()=>{if(confirm('メダル・ゲージ・戦績をすべてリセットしますか？'))reset()});
 
+els.autoToggle.checked=state.settings.auto;
+els.autoSpeed.value=state.settings.autoSpeed;
 render();
 })();
