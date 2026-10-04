@@ -20,16 +20,16 @@ const CONFIG = {
   initialMedals:3000,
   normalBet:3,
   hitRate:157.6,
-  ceiling:600,
-  normalBase:32.8,
+  ceiling:400,
+  normalBase:38.0,
   bonusGames:20,
-  bonusNet:2.5,
+  bonusNet:1.65,
   setGames:10,
   revivalRate:.12,
   completeGain:19000,
   limitGain:2400,
   modes:[
-    {key:'rush1',name:'PREDICT RUSH',short:'PREDICT',net:3,cont:.65,promo:.18,limit:.25},
+    {key:'rush1',name:'PREDICT RUSH',short:'PREDICT',net:1.75,cont:.65,promo:.18,limit:.25},
     {key:'rush2',name:'HIGH RUSH',short:'HIGH',net:5,cont:.75,promo:.16,limit:.40},
     {key:'rush3',name:'RATE UP',short:'85% MODE',net:7,cont:.85,promo:.13,limit:.55},
     {key:'rush4',name:'SUPER RUSH',short:'95% MODE',net:9,cont:.95,promo:0,limit:.70}
@@ -71,6 +71,7 @@ function freshState(){
 
 const signed = n => n===0 ? '±0' : (n>0?'+':'') + Math.round(n);
 const pct = n => Math.round(n*100) + '%';
+const netText = n => Number.isInteger(n) ? n.toFixed(1) : n.toFixed(2);
 
 function randomSymbol(){ return SYMBOLS[Math.floor(Math.random()*SYMBOLS.length)]; }
 
@@ -125,12 +126,12 @@ function addFlow(bet,payout){
 }
 
 function normalPayout(){
-  // Average payout ≈1.476 medals/G, giving roughly 32.8G per 50 medals at 3BET.
+  // Average payout ≈1.684 medals/G, giving roughly 38G per 50 medals at 3BET.
   const r=Math.random();
-  if(r<.150) return 8;
-  if(r<.210) return 3;
-  if(r<.250) return 2;
-  if(r<.266) return 1;
+  if(r<.170) return 8;
+  if(r<.240) return 3;
+  if(r<.285) return 2;
+  if(r<.309) return 1;
   return 0;
 }
 
@@ -153,7 +154,7 @@ function beginRush(){
   state.rushMode=0;
   state.setGame=0;
   state.setNo=1;
-  message('PREDICT RUSH START！ +3.0枚/G・継続率65%。','win');
+  message('PREDICT RUSH START！ +1.75枚/G・継続率65%。','win');
   tone('win');
 }
 
@@ -236,9 +237,10 @@ function spinNormal(){
 }
 
 function bonusNetPayout(){
-  // Alternates +2 and +3 net for an exact +2.5 average over 20G.
-  state.bonusTick=!state.bonusTick;
-  return CONFIG.normalBet + (state.bonusTick?2:3);
+  // Fixed 20G pattern totaling +33 medals (average +1.65/G).
+  const played=CONFIG.bonusGames-state.bonusGamesLeft;
+  const pattern=[2,2,1,2,1,2,2,1,2,1,2,2,1,2,1,2,2,1,2,2];
+  return CONFIG.normalBet + pattern[played];
 }
 
 function spinBonus(){
@@ -250,7 +252,7 @@ function spinBonus(){
   state.bonusGamesLeft--;
   setReels(randomSymbol(),randomSymbol(),randomSymbol());
   if(state.bonusGamesLeft<=0){
-    addHistory('BONUS','20G','+50枚',true);
+    addHistory('BONUS','20G','+33枚',true);
     beginRush();
   }else{
     message('PREDICT BONUS 残り'+state.bonusGamesLeft+'G / 差枚 '+signed(state.atGain),'hot');
@@ -261,10 +263,11 @@ function spinBonus(){
 function spinRush(){
   const m=CONFIG.modes[state.rushMode];
   state.totalGames++;
-  const payout=CONFIG.normalBet+m.net;
+  const netGain=m.net===1.75?(Math.random()<.75?2:1):m.net;
+  const payout=CONFIG.normalBet+netGain;
   addFlow(CONFIG.normalBet,payout);
   state.atGain=state.medals-state.atStart;
-  state.segmentGain+=m.net;
+  state.segmentGain+=netGain;
   state.setGame++;
   setReels(randomSymbol(),randomSymbol(),randomSymbol());
   message(m.name+' '+state.setNo+'SET / '+state.setGame+'/'+CONFIG.setGames+'G / AT '+signed(state.atGain),'win');
@@ -309,7 +312,7 @@ function resolveJudge(){
   if(promoted){
     setReels('U','P','!');
     addHistory('昇格',m.short,next.short,true);
-    message((revival?'REVIVAL + ':'')+'RANK UP！ '+next.name+' / +'+next.net+'.0枚・'+pct(next.cont),'hot');
+    message((revival?'REVIVAL + ':'')+'RANK UP！ '+next.name+' / +'+netText(next.net)+'枚・'+pct(next.cont),'hot');
     tone(state.rushMode===3?'super':'win');
   }else{
     setReels('N','E','X');
@@ -394,12 +397,12 @@ function render(){
     els.modeChip.textContent='PREDICT BONUS';
     els.phaseKicker.textContent='BONUS';
     els.phaseTitle.textContent='PREDICT BONUS';
-    els.phaseRule.textContent='20G / 純増 約+2.5枚/G / RUSH確定';
+    els.phaseRule.textContent='20G / 約+33枚 / RUSH確定';
     els.progressLabel.textContent='BONUS';
     els.progressValue.textContent=(CONFIG.bonusGames-state.bonusGamesLeft)+' / '+CONFIG.bonusGames+'G';
     els.progressBar.style.width=((CONFIG.bonusGames-state.bonusGamesLeft)/CONFIG.bonusGames*100)+'%';
     els.currentMode.textContent='BONUS';
-    els.netPerGame.textContent='+2.5枚';
+    els.netPerGame.textContent='+1.65枚';
     els.continueRate.textContent='RUSH確定';
     els.startMain.textContent=autoRunning?'AUTO STOP':'BONUS START';
     els.startSub.textContent='残り '+state.bonusGamesLeft+'G';
@@ -421,12 +424,12 @@ function render(){
     els.modeChip.textContent=state.phase==='judge'?'BATTLE JUDGE':state.phase==='limit'?'LIMIT LINK':m.name;
     els.phaseKicker.textContent=state.phase==='judge'?'SET COMPLETE':state.phase==='limit'?'SMART SLOT SYSTEM':m.short;
     els.phaseTitle.textContent=state.phase==='judge'?'BATTLE JUDGE':state.phase==='limit'?'LIMIT LINK':m.name;
-    els.phaseRule.textContent='純増 +'+m.net+'.0枚/G / 継続率 '+pct(m.cont)+(m.promo?' / 昇格 '+pct(m.promo):'');
+    els.phaseRule.textContent='純増 +'+netText(m.net)+'枚/G / 継続率 '+pct(m.cont)+(m.promo?' / 昇格 '+pct(m.promo):'');
     els.progressLabel.textContent=state.phase==='judge'?'継続抽選':state.phase==='limit'?'再接続率':'SET '+state.setNo;
     els.progressValue.textContent=state.phase==='judge'?pct(m.cont):state.phase==='limit'?pct(m.limit):state.setGame+' / '+CONFIG.setGames+'G';
     els.progressBar.style.width=state.phase==='judge'?pct(m.cont):state.phase==='limit'?pct(m.limit):(state.setGame/CONFIG.setGames*100)+'%';
     els.currentMode.textContent=m.short;
-    els.netPerGame.textContent='+'+m.net+'.0枚';
+    els.netPerGame.textContent='+'+netText(m.net)+'枚';
     els.continueRate.textContent=pct(m.cont);
     els.startMain.textContent=autoRunning?'AUTO STOP':state.phase==='judge'?'JUDGE START':state.phase==='limit'?'LINK START':'3枚でSTART';
     els.startSub.textContent=autoRunning?'自動遊技中':m.name+' / '+state.setNo+'SET';
