@@ -127,10 +127,10 @@ function addFlow(bet,payout){
 function normalPayout(){
   // Average payout ≈1.476 medals/G, giving roughly 32.8G per 50 medals at 3BET.
   const r=Math.random();
-  if(r<.125) return 8;
-  if(r<.185) return 3;
-  if(r<.235) return 2;
-  if(r<.260) return 1;
+  if(r<.150) return 8;
+  if(r<.210) return 3;
+  if(r<.250) return 2;
+  if(r<.266) return 1;
   return 0;
 }
 
