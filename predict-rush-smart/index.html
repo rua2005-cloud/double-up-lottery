@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#090b14">
+  <title>PREDICT RUSH SMART</title>
+  <link rel="stylesheet" href="./style.css?v=1">
+</head>
+<body>
+  <main class="app">
+    <header class="hero">
+      <div>
+        <p class="eyebrow">SMART SLOT PROTOTYPE</p>
+        <h1>PREDICT RUSH <span>SMART</span></h1>
+        <p class="tagline">当たる。続く。育つ。最後は95% × HIGH SPEED。</p>
+      </div>
+      <button id="settingsBtn" class="icon-btn" aria-label="設定">⚙</button>
+    </header>
+
+    <section class="top-stats">
+      <div><span>MEDALS</span><strong id="medals">3000</strong></div>
+      <div><span>差枚</span><strong id="net">±0</strong></div>
+      <div><span>通常G</span><strong id="normalGames">0</strong></div>
+      <div><span>初当り</span><strong id="bonusCount">0</strong></div>
+    </section>
+
+    <section id="machine" class="machine normal">
+      <div class="mode-row">
+        <span id="modeChip" class="mode-chip">NORMAL</span>
+        <span id="rateChip" class="rate-chip">設定1 / 1/157.6</span>
+      </div>
+
+      <div class="display">
+        <p id="phaseKicker">NORMAL GAME</p>
+        <h2 id="phaseTitle">PREDICT THE FUTURE</h2>
+        <p id="phaseRule">3 BET / 天井 600G</p>
+        <div id="progressWrap" class="progress-wrap">
+          <div class="progress-label">
+            <span id="progressLabel">BONUSまで</span>
+            <strong id="progressValue">0 / 600G</strong>
+          </div>
+          <div class="progress"><i id="progressBar"></i></div>
+        </div>
+      </div>
+
+      <div class="reels" aria-label="slot reels">
+        <div class="reel"><span id="r1">◆</span></div>
+        <div class="reel"><span id="r2">◆</span></div>
+        <div class="reel"><span id="r3">◆</span></div>
+      </div>
+
+      <div id="message" class="message">STARTで遊技開始。設定1固定。</div>
+
+      <button id="startBtn" class="start-btn">
+        <span id="startMain">3枚でSTART</span>
+        <small id="startSub">BONUS 1/157.6 / 天井600G</small>
+      </button>
+
+      <div class="at-grid">
+        <div>
+          <span>現在MODE</span>
+          <strong id="currentMode">NORMAL</strong>
+        </div>
+        <div>
+          <span>純増</span>
+          <strong id="netPerGame">—</strong>
+        </div>
+        <div>
+          <span>継続率</span>
+          <strong id="continueRate">—</strong>
+        </div>
+        <div>
+          <span>AT差枚</span>
+          <strong id="atGain">±0</strong>
+        </div>
+      </div>
+    </section>
+
+    <section class="ladder">
+      <h3>RUSH EVOLUTION</h3>
+      <div class="ladder-grid">
+        <article id="level1"><b>01</b><span>PREDICT RUSH</span><strong>+3.0 / 65%</strong></article>
+        <article id="level2"><b>02</b><span>HIGH RUSH</span><strong>+5.0 / 75%</strong></article>
+        <article id="level3"><b>03</b><span>RATE UP</span><strong>+7.0 / 85%</strong></article>
+        <article id="level4"><b>04</b><span>SUPER RUSH</span><strong>+9.0 / 95%</strong></article>
+      </div>
+    </section>
+
+    <section class="details">
+      <div class="detail-head">
+        <h3>SESSION DATA</h3>
+        <button id="historyToggle" class="text-btn">履歴を見る</button>
+      </div>
+      <div class="detail-grid">
+        <div><span>総ゲーム</span><strong id="totalGames">0G</strong></div>
+        <div><span>初当り確率</span><strong id="hitRate">—</strong></div>
+        <div><span>最大ハマり</span><strong id="maxDrought">0G</strong></div>
+        <div><span>95%到達</span><strong id="superCount">0</strong></div>
+        <div><span>最大AT差枚</span><strong id="maxAtGain">±0</strong></div>
+        <div><span>機械割</span><strong id="rtp">—</strong></div>
+      </div>
+      <div id="historyPanel" class="history hidden"></div>
+    </section>
+  </main>
+
+  <dialog id="settingsDialog">
+    <form method="dialog" class="dialog-card">
+      <div class="dialog-head">
+        <div>
+          <p class="eyebrow">GAME SETTINGS</p>
+          <h2>設定</h2>
+        </div>
+        <button class="icon-btn" value="cancel">×</button>
+      </div>
+      <label class="setting-row">
+        <span><b>AUTO PLAY</b><small>停止まで自動進行</small></span>
+        <input id="autoToggle" type="checkbox">
+      </label>
+      <label class="setting-row">
+        <span><b>AUTO SPEED</b><small>自動遊技速度</small></span>
+        <select id="autoSpeed">
+          <option value="normal">NORMAL</option>
+          <option value="fast">FAST</option>
+        </select>
+      </label>
+      <label class="setting-row">
+        <span><b>SOUND</b><small>簡易SE</small></span>
+        <input id="soundToggle" type="checkbox" checked>
+      </label>
+      <button id="resetBtn" type="button" class="danger-btn">セッションをリセット</button>
+      <p class="note">設定1固定。AT中の継続率・昇格率・純増に設定差はありません。</p>
+    </form>
+  </dialog>
+
+  <script src="./game.js?v=1"></script>
+</body>
+</html>
