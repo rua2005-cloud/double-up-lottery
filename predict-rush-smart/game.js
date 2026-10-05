@@ -13,7 +13,21 @@ const els = {
   maxAtGain:$('maxAtGain'), rtp:$('rtp'), historyToggle:$('historyToggle'), historyPanel:$('historyPanel'),
   levels:[$('level1'),$('level2'),$('level3'),$('level4')], settingsBtn:$('settingsBtn'),
   settingsDialog:$('settingsDialog'), autoToggle:$('autoToggle'), autoSpeed:$('autoSpeed'),
-  soundToggle:$('soundToggle'), resetBtn:$('resetBtn')
+  soundToggle:$('soundToggle'), resetBtn:$('resetBtn'),
+  avgHitGame:$('avgHitGame'), medianHitGame:$('medianHitGame'), minHitGame:$('minHitGame'), deepestHitGame:$('deepestHitGame'),
+  ceilingHits:$('ceilingHits'), ceilingRate:$('ceilingRate'), atStarts:$('atStarts'), atCompleted:$('atCompleted'),
+  avgAtGain:$('avgAtGain'), medianAtGain:$('medianAtGain'), avgAtSets:$('avgAtSets'), maxAtSets:$('maxAtSets'),
+  at1000Rate:$('at1000Rate'), at2000Rate:$('at2000Rate'), at5000Rate:$('at5000Rate'),
+  reachPredict:$('reachPredict'), reachPredictRate:$('reachPredictRate'), gamesPredict:$('gamesPredict'),
+  reachHigh:$('reachHigh'), reachHighRate:$('reachHighRate'), gamesHigh:$('gamesHigh'),
+  reachRateUp:$('reachRateUp'), reachRateUpRate:$('reachRateUpRate'), gamesRateUp:$('gamesRateUp'),
+  reachSuper:$('reachSuper'), reachSuperRate:$('reachSuperRate'), gamesSuper:$('gamesSuper'),
+  judgePredict:$('judgePredict'), contPredict:$('contPredict'), promoPredict:$('promoPredict'),
+  judgeHigh:$('judgeHigh'), contHigh:$('contHigh'), promoHigh:$('promoHigh'),
+  judgeRateUp:$('judgeRateUp'), contRateUp:$('contRateUp'), promoRateUp:$('promoRateUp'),
+  judgeSuper:$('judgeSuper'), contSuper:$('contSuper'), revivalCount:$('revivalCount'),
+  limitTotal:$('limitTotal'), limitRate:$('limitRate'), sessionHigh:$('sessionHigh'), sessionLow:$('sessionLow'),
+  maxInvestment:$('maxInvestment'), maxDrawdown:$('maxDrawdown'), currentDrawdown:$('currentDrawdown'), flowTotal:$('flowTotal')
 };
 
 const CONFIG = {
@@ -64,6 +78,22 @@ function freshState(){
     totalPayout:0,
     bonusTick:false,
     complete:false,
+    maxMedals:CONFIG.initialMedals,
+    maxDrawdown:0,
+    hitIntervals:[],
+    ceilingHits:0,
+    atStarts:0,
+    atResults:[],
+    currentAtMaxMode:0,
+    modeReach:[0,0,0,0],
+    modeGames:[0,0,0,0],
+    judgeAttempts:[0,0,0,0],
+    judgeSuccess:[0,0,0,0],
+    promoEligible:[0,0,0,0],
+    promoSuccess:[0,0,0,0],
+    revivalCount:0,
+    limitAttempts:[0,0,0,0],
+    limitSuccess:[0,0,0,0],
     history:[],
     settings:{auto:false,autoSpeed:'normal',sound:true}
   };
@@ -72,6 +102,13 @@ function freshState(){
 const signed = n => n===0 ? '±0' : (n>0?'+':'') + Math.round(n);
 const pct = n => Math.round(n*100) + '%';
 const netText = n => Number.isInteger(n) ? n.toFixed(1) : n.toFixed(2);
+const mean = arr => arr.length ? arr.reduce((a,b)=>a+b,0)/arr.length : 0;
+const median = arr => {
+  if(!arr.length) return 0;
+  const a=[...arr].sort((x,y)=>x-y), m=Math.floor(a.length/2);
+  return a.length%2?a[m]:(a[m-1]+a[m])/2;
+};
+const observedRate = (success,total) => total ? (success/total*100).toFixed(1)+'%' : '—';
 
 function randomSymbol(){ return SYMBOLS[Math.floor(Math.random()*SYMBOLS.length)]; }
 
@@ -104,7 +141,7 @@ function message(text,type=''){
 
 function addHistory(kind,text,result,good){
   state.history.unshift({kind,text,result,good});
-  state.history=state.history.slice(0,14);
+  state.history=state.history.slice(0,50);
 }
 
 function renderHistory(){
@@ -123,6 +160,8 @@ function addFlow(bet,payout){
   state.medals+=payout;
   state.totalPayout+=payout;
   state.minMedals=Math.min(state.minMedals,state.medals);
+  state.maxMedals=Math.max(state.maxMedals,state.medals);
+  state.maxDrawdown=Math.max(state.maxDrawdown,state.maxMedals-state.medals);
 }
 
 function normalPayout(){
@@ -139,6 +178,8 @@ function beginBonus(){
   state.phase='bonus';
   state.bonusGamesLeft=CONFIG.bonusGames;
   state.bonusCount++;
+  state.hitIntervals.push(state.normalSinceHit);
+  if(state.normalSinceHit>=CONFIG.ceiling) state.ceilingHits++;
   state.atStart=state.medals;
   state.atGain=0;
   state.segmentGain=0;
@@ -154,21 +195,32 @@ function beginRush(){
   state.rushMode=0;
   state.setGame=0;
   state.setNo=1;
+  state.atStarts++;
+  state.currentAtMaxMode=0;
+  state.modeReach[0]++;
   message('PREDICT RUSH START！ +1.75枚/G・継続率65%。','win');
   tone('win');
 }
 
 function finishAt(reason){
   const gain=Math.round(state.medals-state.atStart);
+  const sets=state.setNo;
   state.atGain=gain;
   state.maxAtGain=Math.max(state.maxAtGain,gain);
-  addHistory('AT終了','全'+state.setNo+'SET',signed(gain)+'枚',gain>=0);
+  state.atResults.push({gain,sets,maxMode:state.currentAtMaxMode});
+  addHistory('AT終了','全'+sets+'SET',signed(gain)+'枚',gain>=0);
   state.phase='normal';
   state.rushMode=0;
   state.setGame=0;
   state.setNo=0;
   state.segmentGain=0;
-  message(reason+' / AT差枚 '+signed(gain)+'枚。','lose');
+  const paused=autoRunning;
+  if(paused){
+    clearTimeout(autoTimer);
+    autoTimer=null;
+    autoRunning=false;
+  }
+  message(reason+' / AT差枚 '+signed(gain)+'枚。'+(paused?' AUTOを一時停止しました。':''),'lose');
   tone('lose');
 }
 
@@ -183,7 +235,9 @@ function triggerLimit(){
 function resolveLimit(){
   const m=CONFIG.modes[state.rushMode];
   state.totalGames++;
+  state.limitAttempts[state.rushMode]++;
   if(Math.random()<m.limit){
+    state.limitSuccess[state.rushMode]++;
     state.segmentGain=0;
     state.phase='rush';
     state.setGame=0;
@@ -268,6 +322,7 @@ function spinRush(){
   addFlow(CONFIG.normalBet,payout);
   state.atGain=state.medals-state.atStart;
   state.segmentGain+=netGain;
+  state.modeGames[state.rushMode]++;
   state.setGame++;
   setReels(randomSymbol(),randomSymbol(),randomSymbol());
   message(m.name+' '+state.setNo+'SET / '+state.setGame+'/'+CONFIG.setGames+'G / AT '+signed(state.atGain),'win');
@@ -285,11 +340,15 @@ function spinRush(){
 
 function resolveJudge(){
   const m=CONFIG.modes[state.rushMode];
+  const modeIndex=state.rushMode;
   state.totalGames++;
+  state.judgeAttempts[modeIndex]++;
   const directRate=(m.cont-CONFIG.revivalRate)/(1-CONFIG.revivalRate);
   const direct=Math.random()<Math.max(0,Math.min(1,directRate));
   const revival=!direct && Math.random()<CONFIG.revivalRate;
   const cont=direct||revival;
+  if(cont) state.judgeSuccess[modeIndex]++;
+  if(revival) state.revivalCount++;
 
   if(!cont){
     setReels('E','N','D');
@@ -299,9 +358,15 @@ function resolveJudge(){
   }
 
   const old=state.rushMode;
-  if(state.rushMode<CONFIG.modes.length-1 && Math.random()<m.promo){
-    state.rushMode++;
-    if(state.rushMode===3) state.superCount++;
+  if(state.rushMode<CONFIG.modes.length-1){
+    state.promoEligible[modeIndex]++;
+    if(Math.random()<m.promo){
+      state.rushMode++;
+      state.promoSuccess[modeIndex]++;
+      state.currentAtMaxMode=Math.max(state.currentAtMaxMode,state.rushMode);
+      state.modeReach[state.rushMode]++;
+      if(state.rushMode===3) state.superCount++;
+    }
   }
   state.setNo++;
   state.setGame=0;
@@ -360,6 +425,65 @@ function currentClass(){
   return 'normal';
 }
 
+function renderAnalytics(){
+  const hits=state.hitIntervals;
+  els.avgHitGame.textContent=hits.length?mean(hits).toFixed(1)+'G':'—';
+  els.medianHitGame.textContent=hits.length?median(hits).toFixed(1)+'G':'—';
+  els.minHitGame.textContent=hits.length?Math.min(...hits)+'G':'—';
+  els.deepestHitGame.textContent=hits.length?Math.max(...hits)+'G':'—';
+  els.ceilingHits.textContent=state.ceilingHits;
+  els.ceilingRate.textContent=observedRate(state.ceilingHits,hits.length);
+
+  const results=state.atResults;
+  const gains=results.map(x=>x.gain);
+  const sets=results.map(x=>x.sets);
+  els.atStarts.textContent=state.atStarts;
+  els.atCompleted.textContent=results.length;
+  els.avgAtGain.textContent=results.length?signed(mean(gains))+'枚':'—';
+  els.medianAtGain.textContent=results.length?signed(median(gains))+'枚':'—';
+  els.avgAtSets.textContent=results.length?mean(sets).toFixed(2):'—';
+  els.maxAtSets.textContent=results.length?Math.max(...sets):'0';
+  els.at1000Rate.textContent=results.length?observedRate(gains.filter(x=>x>=1000).length,results.length):'—';
+  els.at2000Rate.textContent=results.length?observedRate(gains.filter(x=>x>=2000).length,results.length):'—';
+  els.at5000Rate.textContent=results.length?observedRate(gains.filter(x=>x>=5000).length,results.length):'—';
+
+  const reachEls=[
+    [els.reachPredict,els.reachPredictRate,els.gamesPredict],
+    [els.reachHigh,els.reachHighRate,els.gamesHigh],
+    [els.reachRateUp,els.reachRateUpRate,els.gamesRateUp],
+    [els.reachSuper,els.reachSuperRate,els.gamesSuper]
+  ];
+  reachEls.forEach((row,i)=>{
+    row[0].textContent=state.modeReach[i];
+    row[1].textContent=observedRate(state.modeReach[i],state.atStarts);
+    row[2].textContent=state.modeGames[i]+'G';
+  });
+
+  const judgeEls=[
+    [els.judgePredict,els.contPredict,els.promoPredict],
+    [els.judgeHigh,els.contHigh,els.promoHigh],
+    [els.judgeRateUp,els.contRateUp,els.promoRateUp],
+    [els.judgeSuper,els.contSuper,null]
+  ];
+  judgeEls.forEach((row,i)=>{
+    row[0].textContent=state.judgeAttempts[i];
+    row[1].textContent=observedRate(state.judgeSuccess[i],state.judgeAttempts[i]);
+    if(row[2]) row[2].textContent=observedRate(state.promoSuccess[i],state.promoEligible[i]);
+  });
+  els.revivalCount.textContent=state.revivalCount;
+  const limitA=state.limitAttempts.reduce((a,b)=>a+b,0);
+  const limitS=state.limitSuccess.reduce((a,b)=>a+b,0);
+  els.limitTotal.textContent=limitS+' / '+limitA;
+  els.limitRate.textContent=observedRate(limitS,limitA);
+
+  els.sessionHigh.textContent=signed(state.maxMedals-CONFIG.initialMedals);
+  els.sessionLow.textContent=signed(state.minMedals-CONFIG.initialMedals);
+  els.maxInvestment.textContent=Math.max(0,Math.round(CONFIG.initialMedals-state.minMedals))+'枚';
+  els.maxDrawdown.textContent=Math.round(state.maxDrawdown)+'枚';
+  els.currentDrawdown.textContent=Math.max(0,Math.round(state.maxMedals-state.medals))+'枚';
+  els.flowTotal.textContent=Math.round(state.totalBet)+' / '+Math.round(state.totalPayout);
+}
+
 function render(){
   const net=state.medals-CONFIG.initialMedals;
   els.medals.textContent=Math.round(state.medals);
@@ -373,6 +497,7 @@ function render(){
   els.maxAtGain.textContent=signed(state.maxAtGain);
   els.rtp.textContent=state.totalBet?(state.totalPayout/state.totalBet*100).toFixed(2)+'%':'—';
   els.atGain.textContent=(state.phase==='normal'||state.phase==='complete')?'±0':signed(state.medals-state.atStart);
+  renderAnalytics();
 
   els.machine.className='machine '+currentClass();
   els.levels.forEach((el,i)=>{
@@ -392,7 +517,7 @@ function render(){
     els.netPerGame.textContent='—';
     els.continueRate.textContent='—';
     els.startMain.textContent=autoRunning?'AUTO STOP':'3枚でSTART';
-    els.startSub.textContent=autoRunning?'自動遊技中':'BONUS 1/'+CONFIG.hitRate+' / 天井'+CONFIG.ceiling+'G';
+    els.startSub.textContent=autoRunning?'自動遊技中':state.settings.auto?'AUTO待機 / STARTで再開':'BONUS 1/'+CONFIG.hitRate+' / 天井'+CONFIG.ceiling+'G';
   }else if(state.phase==='bonus'){
     els.modeChip.textContent='PREDICT BONUS';
     els.phaseKicker.textContent='BONUS';
