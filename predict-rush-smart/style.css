@@ -93,3 +93,28 @@ dialog::backdrop{background:rgba(2,4,10,.76);backdrop-filter:blur(6px)}
   .at-grid{grid-template-columns:repeat(2,1fr)}.ladder-grid{grid-template-columns:repeat(2,1fr)}.detail-grid{grid-template-columns:repeat(2,1fr)}
   .reels{gap:7px}.reel{border-radius:13px}.history-row{grid-template-columns:70px 1fr auto}
 }
+
+.analytics{display:grid;gap:10px;margin-top:14px}
+.analytics-group{padding:13px;border:1px solid #252d42;border-radius:15px;background:#0c111d}
+.analytics-group h4,.history-head h4{margin:0 0 10px;font-size:11px;letter-spacing:.14em;color:#cfd7ea}
+.analytics-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+.analytics-grid>div{min-width:0;padding:9px 10px;border:1px solid #20283a;border-radius:10px;background:#101625}
+.analytics-grid span{display:block;color:var(--muted);font-size:9px;font-weight:800;letter-spacing:.05em}
+.analytics-grid strong{display:block;margin-top:4px;font-size:13px;overflow-wrap:anywhere}
+.analytics-grid.compact{margin-top:8px}
+.mode-table{display:grid;gap:1px;border:1px solid #20283a;border-radius:11px;overflow:hidden;background:#20283a}
+.mode-table>div{display:grid;grid-template-columns:1.35fr .8fr 1fr 1fr;align-items:center;min-width:0;background:#0f1523}
+.mode-table>div>*{min-width:0;padding:8px 9px;font-size:10px;overflow-wrap:anywhere}
+.mode-table b{font-size:10px}
+.mode-table span{text-align:right;color:#dfe5f4}
+.mode-table-head{background:#151c2d!important;color:var(--muted);font-weight:900;letter-spacing:.05em}
+.mode-table-head span:first-child{text-align:left}
+.history-head{display:flex;align-items:center;justify-content:space-between;margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
+.history-head h4{margin:0}
+.history-head small{color:var(--muted);font-size:9px}
+.history{max-height:390px;overflow:auto}
+@media(max-width:640px){
+  .analytics-grid{grid-template-columns:repeat(2,1fr)}
+  .mode-table{overflow-x:auto}
+  .mode-table>div{grid-template-columns:minmax(105px,1.35fr) minmax(68px,.8fr) minmax(90px,1fr) minmax(90px,1fr);min-width:380px}
+}
