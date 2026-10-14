@@ -480,6 +480,8 @@ function renderAnalytics(){
 }
 
 function render(){
+  // Keep the displayed setting and hit rate synced with the actual game configuration.
+  els.rateChip.textContent='設定1 / 1/'+CONFIG.hitRate;
   const net=state.medals-CONFIG.initialMedals;
   els.medals.textContent=Math.round(state.medals);
   els.net.textContent=signed(net);
