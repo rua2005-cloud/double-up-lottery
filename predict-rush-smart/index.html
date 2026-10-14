@@ -4,15 +4,15 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#090b14">
-  <title>PREDICT RUSH SMART</title>
-  <link rel="stylesheet" href="./style.css?v=3">
+  <title>HIGH RUSH SMART</title>
+  <link rel="stylesheet" href="./style.css?v=4">
 </head>
 <body>
   <main class="app">
     <header class="hero">
       <div>
         <p class="eyebrow">SMART SLOT PROTOTYPE</p>
-        <h1>PREDICT RUSH <span>SMART</span></h1>
+        <h1>HIGH RUSH <span>SMART</span></h1>
         <p class="tagline">当たる。続く。育つ。最後は95% × HIGH SPEED。</p>
       </div>
       <button id="settingsBtn" class="icon-btn" aria-label="設定">⚙</button>
@@ -28,17 +28,17 @@
     <section id="machine" class="machine normal">
       <div class="mode-row">
         <span id="modeChip" class="mode-chip">NORMAL</span>
-        <span id="rateChip" class="rate-chip">設定1 / 1/157.6</span>
+        <span id="rateChip" class="rate-chip">設定1 / 1/460</span>
       </div>
 
       <div class="display">
         <p id="phaseKicker">NORMAL GAME</p>
-        <h2 id="phaseTitle">PREDICT THE FUTURE</h2>
-        <p id="phaseRule">3 BET / 天井 400G</p>
+        <h2 id="phaseTitle">HIGH RUSH AWAITS</h2>
+        <p id="phaseRule">3 BET / 天井 800G</p>
         <div id="progressWrap" class="progress-wrap">
           <div class="progress-label">
             <span id="progressLabel">BONUSまで</span>
-            <strong id="progressValue">0 / 400G</strong>
+            <strong id="progressValue">0 / 800G</strong>
           </div>
           <div class="progress"><i id="progressBar"></i></div>
         </div>
@@ -54,7 +54,7 @@
 
       <button id="startBtn" class="start-btn">
         <span id="startMain">3枚でSTART</span>
-        <small id="startSub">BONUS 1/157.6 / 天井400G</small>
+        <small id="startSub">BONUS 1/460 / 天井800G</small>
       </button>
 
       <div class="at-grid">
@@ -80,10 +80,9 @@
     <section class="ladder">
       <h3>RUSH EVOLUTION</h3>
       <div class="ladder-grid">
-        <article id="level1"><b>01</b><span>PREDICT RUSH</span><strong>+1.75 / 65%</strong></article>
-        <article id="level2"><b>02</b><span>HIGH RUSH</span><strong>+5.0 / 75%</strong></article>
-        <article id="level3"><b>03</b><span>RATE UP</span><strong>+7.0 / 85%</strong></article>
-        <article id="level4"><b>04</b><span>SUPER RUSH</span><strong>+9.0 / 95%</strong></article>
+        <article id="level1"><b>01</b><span>HIGH RUSH</span><strong>+5.0 / 75%</strong></article>
+        <article id="level2"><b>02</b><span>RATE UP</span><strong>+7.0 / 85%</strong></article>
+        <article id="level3"><b>03</b><span>SUPER RUSH</span><strong>+9.0 / 95%</strong></article>
       </div>
     </section>
 
@@ -132,7 +131,6 @@
           <h4>MODE REACH / 到達実測</h4>
           <div class="mode-table">
             <div class="mode-table-head"><span>MODE</span><span>到達回数</span><span>AT到達率</span><span>滞在G</span></div>
-            <div><b>PREDICT 65%</b><span id="reachPredict">0</span><span id="reachPredictRate">—</span><span id="gamesPredict">0G</span></div>
             <div><b>HIGH 75%</b><span id="reachHigh">0</span><span id="reachHighRate">—</span><span id="gamesHigh">0G</span></div>
             <div><b>RATE UP 85%</b><span id="reachRateUp">0</span><span id="reachRateUpRate">—</span><span id="gamesRateUp">0G</span></div>
             <div><b>SUPER 95%</b><span id="reachSuper">0</span><span id="reachSuperRate">—</span><span id="gamesSuper">0G</span></div>
@@ -143,7 +141,6 @@
           <h4>JUDGE / 昇格実測</h4>
           <div class="mode-table">
             <div class="mode-table-head"><span>MODE</span><span>JUDGE</span><span>実測継続率</span><span>実測昇格率</span></div>
-            <div><b>PREDICT</b><span id="judgePredict">0</span><span id="contPredict">—</span><span id="promoPredict">—</span></div>
             <div><b>HIGH</b><span id="judgeHigh">0</span><span id="contHigh">—</span><span id="promoHigh">—</span></div>
             <div><b>RATE UP</b><span id="judgeRateUp">0</span><span id="contRateUp">—</span><span id="promoRateUp">—</span></div>
             <div><b>SUPER</b><span id="judgeSuper">0</span><span id="contSuper">—</span><span>—</span></div>
@@ -205,6 +202,6 @@
     </form>
   </dialog>
 
-  <script src="./game.js?v=3"></script>
+  <script src="./game.js?v=4"></script>
 </body>
 </html>
