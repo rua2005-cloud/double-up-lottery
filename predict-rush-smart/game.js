@@ -11,18 +11,16 @@ const els = {
   currentMode:$('currentMode'), netPerGame:$('netPerGame'), continueRate:$('continueRate'), atGain:$('atGain'),
   totalGames:$('totalGames'), hitRate:$('hitRate'), maxDrought:$('maxDrought'), superCount:$('superCount'),
   maxAtGain:$('maxAtGain'), rtp:$('rtp'), historyToggle:$('historyToggle'), historyPanel:$('historyPanel'),
-  levels:[$('level1'),$('level2'),$('level3'),$('level4')], settingsBtn:$('settingsBtn'),
+  levels:[$('level1'),$('level2'),$('level3')], settingsBtn:$('settingsBtn'),
   settingsDialog:$('settingsDialog'), autoToggle:$('autoToggle'), autoSpeed:$('autoSpeed'),
   soundToggle:$('soundToggle'), resetBtn:$('resetBtn'),
   avgHitGame:$('avgHitGame'), medianHitGame:$('medianHitGame'), minHitGame:$('minHitGame'), deepestHitGame:$('deepestHitGame'),
   ceilingHits:$('ceilingHits'), ceilingRate:$('ceilingRate'), atStarts:$('atStarts'), atCompleted:$('atCompleted'),
   avgAtGain:$('avgAtGain'), medianAtGain:$('medianAtGain'), avgAtSets:$('avgAtSets'), maxAtSets:$('maxAtSets'),
   at1000Rate:$('at1000Rate'), at2000Rate:$('at2000Rate'), at5000Rate:$('at5000Rate'),
-  reachPredict:$('reachPredict'), reachPredictRate:$('reachPredictRate'), gamesPredict:$('gamesPredict'),
   reachHigh:$('reachHigh'), reachHighRate:$('reachHighRate'), gamesHigh:$('gamesHigh'),
   reachRateUp:$('reachRateUp'), reachRateUpRate:$('reachRateUpRate'), gamesRateUp:$('gamesRateUp'),
   reachSuper:$('reachSuper'), reachSuperRate:$('reachSuperRate'), gamesSuper:$('gamesSuper'),
-  judgePredict:$('judgePredict'), contPredict:$('contPredict'), promoPredict:$('promoPredict'),
   judgeHigh:$('judgeHigh'), contHigh:$('contHigh'), promoHigh:$('promoHigh'),
   judgeRateUp:$('judgeRateUp'), contRateUp:$('contRateUp'), promoRateUp:$('promoRateUp'),
   judgeSuper:$('judgeSuper'), contSuper:$('contSuper'), revivalCount:$('revivalCount'),
@@ -33,8 +31,8 @@ const els = {
 const CONFIG = {
   initialMedals:3000,
   normalBet:3,
-  hitRate:157.6,
-  ceiling:400,
+  hitRate:460,
+  ceiling:800,
   normalBase:38.0,
   bonusGames:20,
   bonusNet:1.65,
@@ -43,10 +41,9 @@ const CONFIG = {
   completeGain:19000,
   limitGain:2400,
   modes:[
-    {key:'rush1',name:'PREDICT RUSH',short:'PREDICT',net:1.75,cont:.65,promo:.18,limit:.25},
-    {key:'rush2',name:'HIGH RUSH',short:'HIGH',net:5,cont:.75,promo:.16,limit:.40},
-    {key:'rush3',name:'RATE UP',short:'85% MODE',net:7,cont:.85,promo:.13,limit:.55},
-    {key:'rush4',name:'SUPER RUSH',short:'95% MODE',net:9,cont:.95,promo:0,limit:.70}
+    {key:'rush1',name:'HIGH RUSH',short:'HIGH',net:5,cont:.75,promo:.16,limit:.40},
+    {key:'rush2',name:'RATE UP',short:'85% MODE',net:7,cont:.85,promo:.13,limit:.55},
+    {key:'rush3',name:'SUPER RUSH',short:'95% MODE',net:9,cont:.95,promo:0,limit:.70}
   ]
 };
 
@@ -85,15 +82,15 @@ function freshState(){
     atStarts:0,
     atResults:[],
     currentAtMaxMode:0,
-    modeReach:[0,0,0,0],
-    modeGames:[0,0,0,0],
-    judgeAttempts:[0,0,0,0],
-    judgeSuccess:[0,0,0,0],
-    promoEligible:[0,0,0,0],
-    promoSuccess:[0,0,0,0],
+    modeReach:[0,0,0],
+    modeGames:[0,0,0],
+    judgeAttempts:[0,0,0],
+    judgeSuccess:[0,0,0],
+    promoEligible:[0,0,0],
+    promoSuccess:[0,0,0],
     revivalCount:0,
-    limitAttempts:[0,0,0,0],
-    limitSuccess:[0,0,0,0],
+    limitAttempts:[0,0,0],
+    limitSuccess:[0,0,0],
     history:[],
     settings:{auto:false,autoSpeed:'normal',sound:true}
   };
@@ -186,7 +183,7 @@ function beginBonus(){
   addHistory('初当り',state.normalSinceHit+'G','BONUS',true);
   state.normalSinceHit=0;
   setReels('7','7','7');
-  message('PREDICT BONUS！ 20G消化後、PREDICT RUSHへ。','hot');
+  message('PREDICT BONUS！ 20G消化後、HIGH RUSHへ。','hot');
   tone('win');
 }
 
@@ -198,7 +195,7 @@ function beginRush(){
   state.atStarts++;
   state.currentAtMaxMode=0;
   state.modeReach[0]++;
-  message('PREDICT RUSH START！ +1.75枚/G・継続率65%。','win');
+  message('HIGH RUSH START！ +5.0枚/G・継続率75%。','win');
   tone('win');
 }
 
@@ -317,7 +314,7 @@ function spinBonus(){
 function spinRush(){
   const m=CONFIG.modes[state.rushMode];
   state.totalGames++;
-  const netGain=m.net===1.75?(Math.random()<.75?2:1):m.net;
+  const netGain=m.net;
   const payout=CONFIG.normalBet+netGain;
   addFlow(CONFIG.normalBet,payout);
   state.atGain=state.medals-state.atStart;
@@ -365,7 +362,7 @@ function resolveJudge(){
       state.promoSuccess[modeIndex]++;
       state.currentAtMaxMode=Math.max(state.currentAtMaxMode,state.rushMode);
       state.modeReach[state.rushMode]++;
-      if(state.rushMode===3) state.superCount++;
+      if(state.rushMode===2) state.superCount++;
     }
   }
   state.setNo++;
@@ -448,7 +445,6 @@ function renderAnalytics(){
   els.at5000Rate.textContent=results.length?observedRate(gains.filter(x=>x>=5000).length,results.length):'—';
 
   const reachEls=[
-    [els.reachPredict,els.reachPredictRate,els.gamesPredict],
     [els.reachHigh,els.reachHighRate,els.gamesHigh],
     [els.reachRateUp,els.reachRateUpRate,els.gamesRateUp],
     [els.reachSuper,els.reachSuperRate,els.gamesSuper]
@@ -460,7 +456,6 @@ function renderAnalytics(){
   });
 
   const judgeEls=[
-    [els.judgePredict,els.contPredict,els.promoPredict],
     [els.judgeHigh,els.contHigh,els.promoHigh],
     [els.judgeRateUp,els.contRateUp,els.promoRateUp],
     [els.judgeSuper,els.contSuper,null]
