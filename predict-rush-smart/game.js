@@ -35,7 +35,7 @@ const CONFIG = {
   normalBet:3,
   hitRate:460,
   ceiling:800,
-  normalBase:38.0,
+  normalBase:39.0,
   bonusGames:20,
   bonusNet:1.65,
   setGames:10,
@@ -183,12 +183,13 @@ function addFlow(bet,payout){
 }
 
 function normalPayout(){
-  // Average payout ≈1.684 medals/G, giving roughly 38G per 50 medals at 3BET.
+  // Average payout ≈1.718 medals/G: about 39G per 50 medals at 3BET.
+  // Increase only the 8-medal hit probability (by moving probability mass from 0 payout).
   const r=Math.random();
-  if(r<.170) return 8;
-  if(r<.240) return 3;
-  if(r<.285) return 2;
-  if(r<.309) return 1;
+  if(r<.17425) return 8;
+  if(r<.24425) return 3;
+  if(r<.28925) return 2;
+  if(r<.31325) return 1;
   return 0;
 }
 
@@ -256,6 +257,10 @@ function triggerLimit(){
 function resolveLimit(){
   const m=CONFIG.modes[state.rushMode];
   state.totalGames++;
+  // LIMIT LINK resolution consumes one 3-BET game without payout.
+  addFlow(CONFIG.normalBet,0);
+  state.atGain=state.medals-state.atStart;
+  state.segmentGain-=CONFIG.normalBet;
   state.limitAttempts[state.rushMode]++;
   if(Math.random()<m.limit){
     state.limitSuccess[state.rushMode]++;
@@ -363,6 +368,10 @@ function resolveJudge(){
   const m=CONFIG.modes[state.rushMode];
   const modeIndex=state.rushMode;
   state.totalGames++;
+  // BATTLE JUDGE consumes one 3-BET game without payout.
+  addFlow(CONFIG.normalBet,0);
+  state.atGain=state.medals-state.atStart;
+  state.segmentGain-=CONFIG.normalBet;
   state.judgeAttempts[modeIndex]++;
   const continueRate=currentContinueRate();
   const directRate=(continueRate-CONFIG.revivalRate)/(1-CONFIG.revivalRate);
@@ -571,7 +580,7 @@ function render(){
     els.modeChip.textContent='NORMAL';
     els.phaseKicker.textContent='NORMAL GAME';
     els.phaseTitle.textContent='PREDICT THE FUTURE';
-    els.phaseRule.textContent='3 BET / BONUS 1/'+CONFIG.hitRate+' / 天井 '+CONFIG.ceiling+'G';
+    els.phaseRule.textContent='3 BET / BONUS 1/'+CONFIG.hitRate+' / 天井 '+CONFIG.ceiling+'G / 約'+CONFIG.normalBase+'G/50枚';
     els.progressLabel.textContent='天井まで';
     els.progressValue.textContent=state.normalSinceHit+' / '+CONFIG.ceiling+'G';
     els.progressBar.style.width=Math.min(100,state.normalSinceHit/CONFIG.ceiling*100)+'%';
@@ -612,7 +621,8 @@ function render(){
     els.modeChip.textContent=state.phase==='judge'?'BATTLE JUDGE':state.phase==='limit'?'LIMIT LINK':m.name;
     els.phaseKicker.textContent=state.phase==='judge'?'SET COMPLETE':state.phase==='limit'?'SMART SLOT SYSTEM':m.short;
     els.phaseTitle.textContent=state.phase==='judge'?'BATTLE JUDGE':state.phase==='limit'?'LIMIT LINK':m.name;
-    els.phaseRule.textContent='純増 +'+netText(m.net)+'枚/G / 継続率 '+pct(continueRate)+(m.promo?' / 昇格 '+pct(m.promo):'');
+    els.phaseRule.textContent='純増 +'+netText(m.net)+'枚/G / 継続率 '+pct(continueRate)+(m.promo?' / 昇格 '+pct(m.promo):'')+
+      (state.phase==='judge'||state.phase==='limit'?' / 3BET・払出0枚':'');
     els.progressLabel.textContent=state.phase==='judge'?'継続抽選':state.phase==='limit'?'再接続率':'SET '+state.setNo;
     els.progressValue.textContent=state.phase==='judge'?pct(continueRate):state.phase==='limit'?pct(m.limit):state.setGame+' / '+CONFIG.setGames+'G';
     els.progressBar.style.width=state.phase==='judge'?pct(continueRate):state.phase==='limit'?pct(m.limit):(state.setGame/CONFIG.setGames*100)+'%';
