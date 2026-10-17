@@ -54,6 +54,8 @@ const SYMBOLS = ['🍒','🔔','🍉','⚡','7','◆','RE'];
 let state;
 let autoTimer = null;
 let autoRunning = false;
+let turboBatching = false;
+let pendingTurboReels = null;
 
 function freshState(){
   return {
@@ -125,6 +127,11 @@ function currentContinueRate(){
 function randomSymbol(){ return SYMBOLS[Math.floor(Math.random()*SYMBOLS.length)]; }
 
 function setReels(a,b,c){
+  // In TURBO, retain only the final symbols and skip per-spin animations.
+  if(turboBatching){
+    pendingTurboReels=[a,b,c];
+    return;
+  }
   [a,b,c].forEach((v,i)=>{
     els.reels[i].textContent=v;
     const box=els.reels[i].parentElement;
@@ -134,7 +141,7 @@ function setReels(a,b,c){
 }
 
 function tone(type){
-  if(!state.settings.sound) return;
+  if(turboBatching || !state.settings.sound) return;
   try{
     const C=window.AudioContext||window.webkitAudioContext;
     if(!C) return;
@@ -408,21 +415,40 @@ function resolveJudge(){
   }
 }
 
-function step(){
+function step(batch=false){
   if(state.complete) return;
   if(state.phase==='normal') spinNormal();
   else if(state.phase==='bonus') spinBonus();
   else if(state.phase==='rush') spinRush();
   else if(state.phase==='judge') resolveJudge();
   else if(state.phase==='limit') resolveLimit();
-  render();
-  if(autoRunning) scheduleAuto();
+  if(!batch){
+    render();
+    if(autoRunning) scheduleAuto();
+  }
 }
 
 function scheduleAuto(){
   clearTimeout(autoTimer);
   if(!autoRunning) return;
-  autoTimer=setTimeout(step,state.settings.autoSpeed==='fast'?85:260);
+  if(state.settings.autoSpeed==='turbo'){
+    // Run up to 100 game actions per browser tick, repainting only once.
+    // finishAt() still stops AUTO immediately at the end of every AT.
+    autoTimer=setTimeout(()=>{
+      pendingTurboReels=null;
+      turboBatching=true;
+      try{
+        for(let i=0;i<100 && autoRunning && !state.complete;i++) step(true);
+      }finally{
+        turboBatching=false;
+      }
+      if(pendingTurboReels) setReels(...pendingTurboReels);
+      render();
+      if(autoRunning) scheduleAuto();
+    },0);
+    return;
+  }
+  autoTimer=setTimeout(step,state.settings.autoSpeed==='fast'?20:100);
 }
 
 function startAuto(){
