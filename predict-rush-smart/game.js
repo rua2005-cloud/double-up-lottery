@@ -235,7 +235,8 @@ function finishAt(reason){
   state.setGame=0;
   state.setNo=0;
   state.segmentGain=0;
-  const paused=autoRunning;
+  // NORMAL/FAST stop on AT completion. TURBO continues until SUPER RUSH.
+  const paused=autoRunning && state.settings.autoSpeed!=='turbo';
   if(paused){
     clearTimeout(autoTimer);
     autoTimer=null;
@@ -405,7 +406,15 @@ function resolveJudge(){
     setReels('U','P','!');
     addHistory('昇格',m.short,next.short,true);
     if(state.rushMode===2) addHistory('SUPER抽選','継続率85〜99%',pct(state.superContinueRate),true);
-    message((revival?'REVIVAL + ':'')+'RANK UP！ '+next.name+' / +'+netText(next.net)+'枚・'+pct(currentContinueRate()),'hot');
+    // TURBO pauses immediately on promotion to SUPER, before any SUPER game runs.
+    const turboPause=state.rushMode===2 && autoRunning && state.settings.autoSpeed==='turbo';
+    if(turboPause){
+      clearTimeout(autoTimer);
+      autoTimer=null;
+      autoRunning=false;
+    }
+    message((revival?'REVIVAL + ':'')+'RANK UP！ '+next.name+' / +'+netText(next.net)+'枚・'+pct(currentContinueRate())+(turboPause?' / TURBO一時停止':''),
+      'hot');
     tone(state.rushMode===2?'super':'win');
   }else{
     setReels('N','E','X');
@@ -433,7 +442,7 @@ function scheduleAuto(){
   if(!autoRunning) return;
   if(state.settings.autoSpeed==='turbo'){
     // Run up to 100 game actions per browser tick, repainting only once.
-    // finishAt() still stops AUTO immediately at the end of every AT.
+    // TURBO skips AT-end pauses but stops immediately on SUPER RUSH promotion.
     autoTimer=setTimeout(()=>{
       pendingTurboReels=null;
       turboBatching=true;
