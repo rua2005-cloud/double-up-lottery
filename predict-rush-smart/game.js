@@ -24,6 +24,8 @@ const els = {
   judgeHigh:$('judgeHigh'), contHigh:$('contHigh'), promoHigh:$('promoHigh'),
   judgeRateUp:$('judgeRateUp'), contRateUp:$('contRateUp'), promoRateUp:$('promoRateUp'),
   judgeSuper:$('judgeSuper'), contSuper:$('contSuper'), revivalCount:$('revivalCount'),
+  super99Count:$('super99Count'), superOtherCount:$('superOtherCount'), lastSuperRate:$('lastSuperRate'),
+  superLadderRate:$('superLadderRate'),
   limitTotal:$('limitTotal'), limitRate:$('limitRate'), sessionHigh:$('sessionHigh'), sessionLow:$('sessionLow'),
   maxInvestment:$('maxInvestment'), maxDrawdown:$('maxDrawdown'), currentDrawdown:$('currentDrawdown'), flowTotal:$('flowTotal')
 };
@@ -40,10 +42,11 @@ const CONFIG = {
   revivalRate:.12,
   completeGain:19000,
   limitGain:2400,
+  super99SelectionRate:.13,
   modes:[
     {key:'rush1',name:'HIGH RUSH',short:'HIGH',net:5,cont:.75,promo:.16,limit:.40},
     {key:'rush2',name:'RATE UP',short:'85% MODE',net:7,cont:.85,promo:.13,limit:.55},
-    {key:'rush3',name:'SUPER RUSH',short:'95% MODE',net:9,cont:.95,promo:0,limit:.70}
+    {key:'rush3',name:'SUPER RUSH',short:'SUPER',net:9,cont:null,promo:0,limit:.70}
   ]
 };
 
@@ -62,6 +65,9 @@ function freshState(){
     totalGames:0,
     bonusGamesLeft:0,
     rushMode:0,
+    superContinueRate:null,
+    lastSuperContinueRate:null,
+    superRateCounts:Array(15).fill(0),
     setGame:0,
     setNo:0,
     atStart:0,
@@ -106,6 +112,15 @@ const median = arr => {
   return a.length%2?a[m]:(a[m-1]+a[m])/2;
 };
 const observedRate = (success,total) => total ? (success/total*100).toFixed(1)+'%' : '—';
+
+// 99% is drawn 13% of the time; 85–98% share the other 87% equally.
+// The selected rate stays fixed for the remainder of this SUPER RUSH.
+function drawSuperContinueRate(){
+  return Math.random()<CONFIG.super99SelectionRate ? .99 : (85+Math.floor(Math.random()*14))/100;
+}
+function currentContinueRate(){
+  return state.rushMode===2 ? state.superContinueRate : CONFIG.modes[state.rushMode].cont;
+}
 
 function randomSymbol(){ return SYMBOLS[Math.floor(Math.random()*SYMBOLS.length)]; }
 
@@ -190,6 +205,7 @@ function beginBonus(){
 function beginRush(){
   state.phase='rush';
   state.rushMode=0;
+  state.superContinueRate=null;
   state.setGame=0;
   state.setNo=1;
   state.atStarts++;
@@ -208,6 +224,7 @@ function finishAt(reason){
   addHistory('AT終了','全'+sets+'SET',signed(gain)+'枚',gain>=0);
   state.phase='normal';
   state.rushMode=0;
+  state.superContinueRate=null;
   state.setGame=0;
   state.setNo=0;
   state.segmentGain=0;
@@ -331,7 +348,7 @@ function spinRush(){
   if(state.setGame>=CONFIG.setGames){
     state.phase='judge';
     setReels('⚔','?','⚔');
-    message('BATTLE JUDGE / 継続率 '+pct(m.cont),'hot');
+    message('BATTLE JUDGE / 継続率 '+pct(currentContinueRate()),'hot');
   }
 }
 
@@ -340,7 +357,8 @@ function resolveJudge(){
   const modeIndex=state.rushMode;
   state.totalGames++;
   state.judgeAttempts[modeIndex]++;
-  const directRate=(m.cont-CONFIG.revivalRate)/(1-CONFIG.revivalRate);
+  const continueRate=currentContinueRate();
+  const directRate=(continueRate-CONFIG.revivalRate)/(1-CONFIG.revivalRate);
   const direct=Math.random()<Math.max(0,Math.min(1,directRate));
   const revival=!direct && Math.random()<CONFIG.revivalRate;
   const cont=direct||revival;
@@ -349,7 +367,7 @@ function resolveJudge(){
 
   if(!cont){
     setReels('E','N','D');
-    addHistory('JUDGE',m.short,pct(m.cont)+' → END',false);
+    addHistory('JUDGE',m.short,pct(continueRate)+' → END',false);
     finishAt('BATTLE JUDGE敗北');
     return;
   }
@@ -362,7 +380,12 @@ function resolveJudge(){
       state.promoSuccess[modeIndex]++;
       state.currentAtMaxMode=Math.max(state.currentAtMaxMode,state.rushMode);
       state.modeReach[state.rushMode]++;
-      if(state.rushMode===2) state.superCount++;
+      if(state.rushMode===2){
+        state.superCount++;
+        state.superContinueRate=drawSuperContinueRate();
+        state.lastSuperContinueRate=state.superContinueRate;
+        state.superRateCounts[Math.round(state.superContinueRate*100)-85]++;
+      }
     }
   }
   state.setNo++;
@@ -374,8 +397,9 @@ function resolveJudge(){
   if(promoted){
     setReels('U','P','!');
     addHistory('昇格',m.short,next.short,true);
-    message((revival?'REVIVAL + ':'')+'RANK UP！ '+next.name+' / +'+netText(next.net)+'枚・'+pct(next.cont),'hot');
-    tone(state.rushMode===3?'super':'win');
+    if(state.rushMode===2) addHistory('SUPER抽選','継続率85〜99%',pct(state.superContinueRate),true);
+    message((revival?'REVIVAL + ':'')+'RANK UP！ '+next.name+' / +'+netText(next.net)+'枚・'+pct(currentContinueRate()),'hot');
+    tone(state.rushMode===2?'super':'win');
   }else{
     setReels('N','E','X');
     addHistory('JUDGE',m.short,revival?'REVIVAL':'CONTINUE',true);
@@ -466,6 +490,9 @@ function renderAnalytics(){
     if(row[2]) row[2].textContent=observedRate(state.promoSuccess[i],state.promoEligible[i]);
   });
   els.revivalCount.textContent=state.revivalCount;
+  els.super99Count.textContent=state.superRateCounts[14];
+  els.superOtherCount.textContent=state.superCount-state.superRateCounts[14];
+  els.lastSuperRate.textContent=state.lastSuperContinueRate===null?'—':pct(state.lastSuperContinueRate);
   const limitA=state.limitAttempts.reduce((a,b)=>a+b,0);
   const limitS=state.limitSuccess.reduce((a,b)=>a+b,0);
   els.limitTotal.textContent=limitS+' / '+limitA;
@@ -497,6 +524,10 @@ function render(){
   renderAnalytics();
 
   els.machine.className='machine '+currentClass();
+  els.superLadderRate.textContent='+9.0 / '+(
+    state.rushMode===2 && ['rush','judge','limit'].includes(state.phase)
+      ? pct(state.superContinueRate) : '85〜99%'
+  );
   els.levels.forEach((el,i)=>{
     el.classList.toggle('active',(state.phase!=='normal'&&state.phase!=='bonus'&&state.phase!=='complete')&&i===state.rushMode);
     el.classList.toggle('passed',(state.phase!=='normal'&&state.phase!=='bonus'&&state.phase!=='complete')&&i<state.rushMode);
@@ -543,16 +574,17 @@ function render(){
     els.startSub.textContent='リセットで再開';
   }else{
     const m=CONFIG.modes[state.rushMode];
+    const continueRate=currentContinueRate();
     els.modeChip.textContent=state.phase==='judge'?'BATTLE JUDGE':state.phase==='limit'?'LIMIT LINK':m.name;
     els.phaseKicker.textContent=state.phase==='judge'?'SET COMPLETE':state.phase==='limit'?'SMART SLOT SYSTEM':m.short;
     els.phaseTitle.textContent=state.phase==='judge'?'BATTLE JUDGE':state.phase==='limit'?'LIMIT LINK':m.name;
-    els.phaseRule.textContent='純増 +'+netText(m.net)+'枚/G / 継続率 '+pct(m.cont)+(m.promo?' / 昇格 '+pct(m.promo):'');
+    els.phaseRule.textContent='純増 +'+netText(m.net)+'枚/G / 継続率 '+pct(continueRate)+(m.promo?' / 昇格 '+pct(m.promo):'');
     els.progressLabel.textContent=state.phase==='judge'?'継続抽選':state.phase==='limit'?'再接続率':'SET '+state.setNo;
-    els.progressValue.textContent=state.phase==='judge'?pct(m.cont):state.phase==='limit'?pct(m.limit):state.setGame+' / '+CONFIG.setGames+'G';
-    els.progressBar.style.width=state.phase==='judge'?pct(m.cont):state.phase==='limit'?pct(m.limit):(state.setGame/CONFIG.setGames*100)+'%';
+    els.progressValue.textContent=state.phase==='judge'?pct(continueRate):state.phase==='limit'?pct(m.limit):state.setGame+' / '+CONFIG.setGames+'G';
+    els.progressBar.style.width=state.phase==='judge'?pct(continueRate):state.phase==='limit'?pct(m.limit):(state.setGame/CONFIG.setGames*100)+'%';
     els.currentMode.textContent=m.short;
     els.netPerGame.textContent='+'+netText(m.net)+'枚';
-    els.continueRate.textContent=pct(m.cont);
+    els.continueRate.textContent=pct(continueRate);
     els.startMain.textContent=autoRunning?'AUTO STOP':state.phase==='judge'?'JUDGE START':state.phase==='limit'?'LINK START':'3枚でSTART';
     els.startSub.textContent=autoRunning?'自動遊技中':m.name+' / '+state.setNo+'SET';
   }
