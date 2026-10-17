@@ -12,7 +12,7 @@ const els = {
   totalGames:$('totalGames'), hitRate:$('hitRate'), maxDrought:$('maxDrought'), superCount:$('superCount'),
   maxAtGain:$('maxAtGain'), rtp:$('rtp'), historyToggle:$('historyToggle'), historyPanel:$('historyPanel'),
   levels:[$('level1'),$('level2'),$('level3')], settingsBtn:$('settingsBtn'),
-  settingsDialog:$('settingsDialog'), autoToggle:$('autoToggle'), autoSpeed:$('autoSpeed'),
+  settingsDialog:$('settingsDialog'), machineSetting:$('machineSetting'), autoToggle:$('autoToggle'), autoSpeed:$('autoSpeed'),
   soundToggle:$('soundToggle'), resetBtn:$('resetBtn'),
   avgHitGame:$('avgHitGame'), medianHitGame:$('medianHitGame'), minHitGame:$('minHitGame'), deepestHitGame:$('deepestHitGame'),
   ceilingHits:$('ceilingHits'), ceilingRate:$('ceilingRate'), atStarts:$('atStarts'), atCompleted:$('atCompleted'),
@@ -33,7 +33,7 @@ const els = {
 const CONFIG = {
   initialMedals:5000,
   normalBet:3,
-  hitRate:460,
+  hitRates:{1:460,6:296},
   ceiling:800,
   normalBase:39.0,
   bonusGames:20,
@@ -99,11 +99,12 @@ function freshState(){
     limitAttempts:[0,0,0],
     limitSuccess:[0,0,0],
     history:[],
-    settings:{auto:false,autoSpeed:'normal',sound:true}
+    settings:{machineSetting:'1',auto:false,autoSpeed:'normal',sound:true}
   };
 }
 
 const signed = n => n===0 ? '±0' : (n>0?'+':'') + Math.round(n);
+const currentHitRate = () => CONFIG.hitRates[state.settings.machineSetting];
 const pct = n => Number((n*100).toFixed(1)) + '%';
 const netText = n => Number.isInteger(n) ? n.toFixed(1) : n.toFixed(2);
 const mean = arr => arr.length ? arr.reduce((a,b)=>a+b,0)/arr.length : 0;
@@ -306,13 +307,13 @@ function spinNormal(){
   setReels(randomSymbol(),randomSymbol(),randomSymbol());
 
   const ceiling=state.normalSinceHit>=CONFIG.ceiling;
-  const hit=ceiling || Math.random()<1/CONFIG.hitRate;
+  const hit=ceiling || Math.random()<1/currentHitRate();
   if(hit){
     beginBonus();
   }else if(pay>=8){
     message('ベル +'+pay+'枚 / '+state.normalSinceHit+'G','win');
   }else{
-    message('NORMAL '+state.normalSinceHit+'G / BONUS 1/'+CONFIG.hitRate);
+    message('NORMAL '+state.normalSinceHit+'G / BONUS 1/'+currentHitRate());
   }
 }
 
@@ -551,7 +552,7 @@ function renderAnalytics(){
 
 function render(){
   // Keep the displayed initial-hit rate synced with the game configuration.
-  els.rateChip.textContent='BONUS 1/'+CONFIG.hitRate;
+  els.rateChip.textContent='BONUS 1/'+currentHitRate();
   const net=state.medals-CONFIG.initialMedals;
   els.medals.textContent=Math.round(state.medals);
   els.net.textContent=signed(net);
@@ -580,7 +581,7 @@ function render(){
     els.modeChip.textContent='NORMAL';
     els.phaseKicker.textContent='NORMAL GAME';
     els.phaseTitle.textContent='PREDICT THE FUTURE';
-    els.phaseRule.textContent='3 BET / BONUS 1/'+CONFIG.hitRate+' / 天井 '+CONFIG.ceiling+'G / 約'+CONFIG.normalBase+'G/50枚';
+    els.phaseRule.textContent='3 BET / BONUS 1/'+currentHitRate()+' / 天井 '+CONFIG.ceiling+'G / 約'+CONFIG.normalBase+'G/50枚';
     els.progressLabel.textContent='天井まで';
     els.progressValue.textContent=state.normalSinceHit+' / '+CONFIG.ceiling+'G';
     els.progressBar.style.width=Math.min(100,state.normalSinceHit/CONFIG.ceiling*100)+'%';
@@ -588,7 +589,7 @@ function render(){
     els.netPerGame.textContent='—';
     els.continueRate.textContent='—';
     els.startMain.textContent=autoRunning?'AUTO STOP':'3枚でSTART';
-    els.startSub.textContent=autoRunning?'自動遊技中':state.settings.auto?'AUTO待機 / STARTで再開':'BONUS 1/'+CONFIG.hitRate+' / 天井'+CONFIG.ceiling+'G';
+    els.startSub.textContent=autoRunning?'自動遊技中':state.settings.auto?'AUTO待機 / STARTで再開':'BONUS 1/'+currentHitRate()+' / 天井'+CONFIG.ceiling+'G';
   }else if(state.phase==='bonus'){
     els.modeChip.textContent='PREDICT BONUS';
     els.phaseKicker.textContent='BONUS';
@@ -643,6 +644,7 @@ function reset(){
   const settings=state?{...state.settings}:{auto:false,autoSpeed:'normal',sound:true};
   state=freshState();
   state.settings=settings;
+  els.machineSetting.value=state.settings.machineSetting;
   els.autoToggle.checked=state.settings.auto;
   els.autoSpeed.value=state.settings.autoSpeed;
   els.soundToggle.checked=state.settings.sound;
@@ -660,6 +662,17 @@ els.startBtn.addEventListener('click',()=>{
   }
 });
 els.settingsBtn.addEventListener('click',()=>els.settingsDialog.showModal());
+els.machineSetting.addEventListener('change',()=>{
+  const selected=els.machineSetting.value;
+  if(selected===state.settings.machineSetting) return;
+  if(state.totalGames>0 && !confirm('設定を変更すると、メダル・履歴・戦績がリセットされます。変更しますか？')){
+    els.machineSetting.value=state.settings.machineSetting;
+    return;
+  }
+  state.settings.machineSetting=selected;
+  reset();
+  message('設定'+selected+'を選択しました。');
+});
 els.autoToggle.addEventListener('change',()=>{
   state.settings.auto=els.autoToggle.checked;
   if(!state.settings.auto) stopAuto();
@@ -682,6 +695,7 @@ els.historyToggle.addEventListener('click',()=>{
 });
 
 state=freshState();
+els.machineSetting.value=state.settings.machineSetting;
 els.autoToggle.checked=state.settings.auto;
 els.autoSpeed.value=state.settings.autoSpeed;
 els.soundToggle.checked=state.settings.sound;
