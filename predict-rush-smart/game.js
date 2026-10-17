@@ -42,7 +42,6 @@ const CONFIG = {
   revivalRate:.12,
   completeGain:19000,
   limitGain:2400,
-  super99SelectionRate:.13,
   modes:[
     {key:'rush1',name:'HIGH RUSH',short:'HIGH',net:5,cont:.75,promo:.16,limit:.40},
     {key:'rush2',name:'RATE UP',short:'85% MODE',net:7,cont:.85,promo:.13,limit:.55},
@@ -69,7 +68,7 @@ function freshState(){
     rushMode:0,
     superContinueRate:null,
     lastSuperContinueRate:null,
-    superRateCounts:Array(15).fill(0),
+    superRateCounts:Array(5).fill(0),
     setGame:0,
     setNo:0,
     atStart:0,
@@ -115,10 +114,10 @@ const median = arr => {
 };
 const observedRate = (success,total) => total ? (success/total*100).toFixed(1)+'%' : '—';
 
-// 99% is drawn 13% of the time; 85–98% share the other 87% equally.
-// The selected rate stays fixed for the remainder of this SUPER RUSH.
+// Uniformly select 95%, 96%, 97%, 98%, or 99% on SUPER promotion.
+// Keep this result for all ensuing SUPER sets, including after LIMIT LINK.
 function drawSuperContinueRate(){
-  return Math.random()<CONFIG.super99SelectionRate ? .99 : (85+Math.floor(Math.random()*14))/100;
+  return (95+Math.floor(Math.random()*5))/100;
 }
 function currentContinueRate(){
   return state.rushMode===2 ? state.superContinueRate : CONFIG.modes[state.rushMode].cont;
@@ -392,7 +391,7 @@ function resolveJudge(){
         state.superCount++;
         state.superContinueRate=drawSuperContinueRate();
         state.lastSuperContinueRate=state.superContinueRate;
-        state.superRateCounts[Math.round(state.superContinueRate*100)-85]++;
+        state.superRateCounts[Math.round(state.superContinueRate*100)-95]++;
       }
     }
   }
@@ -405,7 +404,7 @@ function resolveJudge(){
   if(promoted){
     setReels('U','P','!');
     addHistory('昇格',m.short,next.short,true);
-    if(state.rushMode===2) addHistory('SUPER抽選','継続率85〜99%',pct(state.superContinueRate),true);
+    if(state.rushMode===2) addHistory('SUPER抽選','継続率95〜99%',pct(state.superContinueRate),true);
     // TURBO pauses immediately on promotion to SUPER, before any SUPER game runs.
     const turboPause=state.rushMode===2 && autoRunning && state.settings.autoSpeed==='turbo';
     if(turboPause){
@@ -525,8 +524,8 @@ function renderAnalytics(){
     if(row[2]) row[2].textContent=observedRate(state.promoSuccess[i],state.promoEligible[i]);
   });
   els.revivalCount.textContent=state.revivalCount;
-  els.super99Count.textContent=state.superRateCounts[14];
-  els.superOtherCount.textContent=state.superCount-state.superRateCounts[14];
+  els.super99Count.textContent=state.superRateCounts[4];
+  els.superOtherCount.textContent=state.superCount-state.superRateCounts[4];
   els.lastSuperRate.textContent=state.lastSuperContinueRate===null?'—':pct(state.lastSuperContinueRate);
   const limitA=state.limitAttempts.reduce((a,b)=>a+b,0);
   const limitS=state.limitSuccess.reduce((a,b)=>a+b,0);
@@ -561,7 +560,7 @@ function render(){
   els.machine.className='machine '+currentClass();
   els.superLadderRate.textContent='+9.0 / '+(
     state.rushMode===2 && ['rush','judge','limit'].includes(state.phase)
-      ? pct(state.superContinueRate) : '85〜99%'
+      ? pct(state.superContinueRate) : '95〜99%'
   );
   els.levels.forEach((el,i)=>{
     el.classList.toggle('active',(state.phase!=='normal'&&state.phase!=='bonus'&&state.phase!=='complete')&&i===state.rushMode);
