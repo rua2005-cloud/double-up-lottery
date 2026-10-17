@@ -550,8 +550,8 @@ function renderAnalytics(){
 }
 
 function render(){
-  // Keep the displayed setting and hit rate synced with the actual game configuration.
-  els.rateChip.textContent='設定1 / 1/'+CONFIG.hitRate;
+  // Keep the displayed initial-hit rate synced with the game configuration.
+  els.rateChip.textContent='BONUS 1/'+CONFIG.hitRate;
   const net=state.medals-CONFIG.initialMedals;
   els.medals.textContent=Math.round(state.medals);
   els.net.textContent=signed(net);
@@ -647,7 +647,7 @@ function reset(){
   els.autoSpeed.value=state.settings.autoSpeed;
   els.soundToggle.checked=state.settings.sound;
   setReels('◆','◆','◆');
-  message('セッションをリセットしました。設定1固定。');
+  message('セッションをリセットしました。');
   render();
 }
 
