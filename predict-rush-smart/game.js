@@ -31,7 +31,7 @@ const els = {
 };
 
 const CONFIG = {
-  initialMedals:3000,
+  initialMedals:5000,
   normalBet:3,
   hitRate:460,
   ceiling:800,
