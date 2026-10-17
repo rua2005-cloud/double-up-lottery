@@ -234,8 +234,8 @@ function finishAt(reason){
   state.setGame=0;
   state.setNo=0;
   state.segmentGain=0;
-  // NORMAL/FAST stop on AT completion. TURBO continues until SUPER RUSH.
-  const paused=autoRunning && state.settings.autoSpeed!=='turbo';
+  // NORMAL/FAST stop after every AT; TURBO stops after an AT that reached SUPER.
+  const paused=autoRunning && (state.settings.autoSpeed!=='turbo' || state.currentAtMaxMode===2);
   if(paused){
     clearTimeout(autoTimer);
     autoTimer=null;
@@ -441,7 +441,7 @@ function scheduleAuto(){
   if(!autoRunning) return;
   if(state.settings.autoSpeed==='turbo'){
     // Run up to 100 game actions per browser tick, repainting only once.
-    // TURBO skips AT-end pauses but stops immediately on SUPER RUSH promotion.
+    // TURBO pauses on SUPER promotion and again when that AT ends.
     autoTimer=setTimeout(()=>{
       pendingTurboReels=null;
       turboBatching=true;
