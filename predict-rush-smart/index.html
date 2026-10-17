@@ -11,7 +11,7 @@
   <main class="app">
     <header class="hero">
       <div>
-        <p class="eyebrow">SMART SLOT PROTOTYPE · v15</p>
+        <p class="eyebrow">SMART SLOT PROTOTYPE · v16</p>
         <h1>HIGH RUSH <span>SMART</span></h1>
         <p class="tagline">当たる。続く。育つ。最後は90〜99%抽選 × HIGH SPEED。</p>
       </div>
@@ -191,6 +191,13 @@
         <button class="icon-btn" value="cancel">×</button>
       </div>
       <label class="setting-row">
+        <span><b>設定</b><small>設定差は通常時の初当り確率のみ。変更時は戦績をリセットします</small></span>
+        <select id="machineSetting">
+          <option value="1">設定1（1/460・約98.5%）</option>
+          <option value="6">設定6（1/296・約110.0%）</option>
+        </select>
+      </label>
+      <label class="setting-row">
         <span><b>AUTO PLAY</b><small>NORMAL/FASTはAT終了時、TURBOはSUPER突入時とSUPER到達ATの終了時に一時停止</small></span>
         <input id="autoToggle" type="checkbox">
       </label>
@@ -211,6 +218,6 @@
     </form>
   </dialog>
 
-  <script src="./game.js?v=15"></script>
+  <script src="./game.js?v=16"></script>
 </body>
 </html>
