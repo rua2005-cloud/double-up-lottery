@@ -33,9 +33,12 @@ const els = {
 const CONFIG = {
   initialMedals:5000,
   normalBet:3,
-  hitRates:{1:460,6:296},
+  hitRates:{1:388,6:296},
   ceiling:800,
-  normalBase:39.0,
+  normalBases:{1:35.0,6:39.0},
+  // Probability of an 8-medal payout in NORMAL. Remaining 3/2/1-medal
+  // payouts remain 7%, 4.5%, and 2.4% across settings.
+  normalEightRates:{1:0.15592857142857142,6:0.17425},
   bonusGames:20,
   bonusNet:1.65,
   setGames:10,
@@ -105,6 +108,7 @@ function freshState(){
 
 const signed = n => n===0 ? '±0' : (n>0?'+':'') + Math.round(n);
 const currentHitRate = () => CONFIG.hitRates[state.settings.machineSetting];
+const currentNormalBase = () => CONFIG.normalBases[state.settings.machineSetting];
 const pct = n => Number((n*100).toFixed(1)) + '%';
 const netText = n => Number.isInteger(n) ? n.toFixed(1) : n.toFixed(2);
 const mean = arr => arr.length ? arr.reduce((a,b)=>a+b,0)/arr.length : 0;
@@ -184,13 +188,13 @@ function addFlow(bet,payout){
 }
 
 function normalPayout(){
-  // Average payout ≈1.718 medals/G: about 39G per 50 medals at 3BET.
-  // Increase only the 8-medal hit probability (by moving probability mass from 0 payout).
+  // Approximate bases: setting 1 = 35G/50 medals, setting 6 = 39G/50.
   const r=Math.random();
-  if(r<.17425) return 8;
-  if(r<.24425) return 3;
-  if(r<.28925) return 2;
-  if(r<.31325) return 1;
+  const p8=CONFIG.normalEightRates[state.settings.machineSetting];
+  if(r<p8) return 8;
+  if(r<p8+.070) return 3;
+  if(r<p8+.115) return 2;
+  if(r<p8+.139) return 1;
   return 0;
 }
 
@@ -581,7 +585,7 @@ function render(){
     els.modeChip.textContent='NORMAL';
     els.phaseKicker.textContent='NORMAL GAME';
     els.phaseTitle.textContent='PREDICT THE FUTURE';
-    els.phaseRule.textContent='3 BET / BONUS 1/'+currentHitRate()+' / 天井 '+CONFIG.ceiling+'G / 約'+CONFIG.normalBase+'G/50枚';
+    els.phaseRule.textContent='3 BET / BONUS 1/'+currentHitRate()+' / 天井 '+CONFIG.ceiling+'G / 約'+currentNormalBase()+'G/50枚';
     els.progressLabel.textContent='天井まで';
     els.progressValue.textContent=state.normalSinceHit+' / '+CONFIG.ceiling+'G';
     els.progressBar.style.width=Math.min(100,state.normalSinceHit/CONFIG.ceiling*100)+'%';
