@@ -6,7 +6,7 @@ const signed=(n)=>n>0?`+${format(n)}`:n<0?`−${format(-n)}`:'±0';
 const phaseMap={normal:'NORMAL MODE',cz:'DOLSIA CHALLENGE',bonus:'BONUS STAGE',rush:'REVOLUTION RUSH',upper:'SUPER REVOLUTION RUSH'};
 const texts={
   normal:{number:'20',unit:'BET',title:'通常時',overline:'NEXT: CZ CHALLENGE',desc:'1タップで次のCZまで一括消化',button:'通常時を消化する',upcoming:'CZまで一括消化',label:'NEXT ACTION',symbol:'R'},
-  cz:{number:'60',unit:'%',title:'ドルシア攻防戦',overline:'CHANCE ZONE / 11 GAMES',desc:'11Gを一括消化して60%に挑め',button:'CZに挑戦する',upcoming:'突破率60%',label:'CZ BATTLE',symbol:'C'},
+  cz:{number:'',unit:'%',title:'ドルシア攻防戦',overline:'CHANCE ZONE / 11 GAMES',desc:'直前の通常時G数によって突破率が変化',button:'CZに挑戦する',upcoming:'',label:'CZ BATTLE',symbol:'C'},
   bonus:{number:'',unit:'',title:'',overline:'BONUS GET',desc:'ボーナス獲得！ AT突入を抽選',button:'ボーナスを消化する',upcoming:'',label:'BONUS DRAW',symbol:'B'},
   rush:{number:'75',unit:'%',title:'革命RUSH',overline:'REVOLUTION RUSH / TRIPLE BREAK',desc:'75%を3回連続突破で超革命RUSHへ',button:'1セット消化・継続抽選',upcoming:'',label:'CURRENT SET',symbol:'R'},
   upper:{number:'',unit:'%',title:'超革命RUSH',overline:'SUPER REVOLUTION RUSH',desc:'継続するたびに継続率アップ / 最大95%',button:'上位ATを1セット消化',upcoming:'',label:'CONTINUE CHANCE',symbol:'S'}
@@ -38,6 +38,13 @@ function renderEvents(){const root=$('eventList');root.replaceChildren();if(!sta
 }
 function render(){
   const t={...texts[state.phase]};
+  if(state.phase==='cz'){
+    const games=state.lastNormal?.g ?? state.targetG;
+    const chance=CONFIG.czWinByNormalG[games] ?? CONFIG.czWin;
+    t.number=String(Math.round(chance*100));
+    t.desc=`${games}G到達 / CZ 11Gを一括消化`;
+    t.upcoming=`突破率${Math.round(chance*100)}%`;
+  }
   if(state.phase==='bonus'){
     const rev=state.bonus==='revolution';
     t.number=rev?'53':'46';t.unit='%';t.title=rev?'革命ボーナス':'決戦ボーナス';
