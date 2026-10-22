@@ -1,5 +1,5 @@
 import {CONFIG,createGame,nextAction,autoCycles,machineRate,continueChance,expectedStats} from './game-engine.mjs';
-const SAVE_KEY='revolt95-simulator-v2';
+const SAVE_KEY='revolt95-simulator-v3';
 const $=(id)=>document.getElementById(id);
 const format=(n)=>Number(n).toLocaleString('ja-JP');
 const signed=(n)=>n>0?`+${format(n)}`:n<0?`−${format(-n)}`:'±0';
@@ -14,7 +14,7 @@ const texts={
 function safeLoad(){try{
   const raw=localStorage.getItem(SAVE_KEY);if(!raw)return null;
   const s=JSON.parse(raw);
-  if(!s||s.version!==2||!phaseMap[s.phase]||!Array.isArray(s.events)||!Array.isArray(s.history)||!Number.isFinite(s.net)||!Number.isFinite(s.totalInput)||s.totalInput<0)return null;
+  if(!s||s.version!==3||!phaseMap[s.phase]||!Array.isArray(s.events)||!Array.isArray(s.history)||!Number.isFinite(s.net)||!Number.isFinite(s.totalInput)||s.totalInput<0)return null;
   return s;
 }catch{return null}}
 let state=safeLoad()||createGame();
