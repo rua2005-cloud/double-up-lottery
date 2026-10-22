@@ -2,8 +2,8 @@ import assert from 'node:assert/strict';
 import {test} from 'node:test';
 import {CONFIG,createGame,nextAction,autoCycles,continueChance,expectedStats,machineRate} from '../game-engine.mjs';
 function seeded(seed){let s=seed>>>0;return ()=>((s=(s*1664525+1013904223)>>>0)/2**32);}
-test('theoretical machine payout rate is 97.702%',()=>{
- const x=expectedStats();assert.ok(Math.abs(x.expectedRate-97.7023)<.0001);assert.equal(x.meanNormalGames,30);assert.ok(Math.abs(x.meanRushPayout-1061.795)<.001);
+test('theoretical machine payout rate rounds to 99.5%',()=>{
+ const x=expectedStats();assert.ok(Math.abs(x.expectedRate-99.51286423)<.0001);assert.equal(x.meanNormalGames,29.1);assert.ok(Math.abs(x.meanRushPayout-1061.795)<.001);
 });
 test('normal game is consumed in exactly one action and transfers to CZ',()=>{
  const s=createGame(()=>0); assert.equal(s.targetG,1);nextAction(s,()=>0);assert.equal(s.phase,'cz');assert.equal(s.gameCount,1);assert.equal(s.totalInput,20);assert.equal(s.net,-20);
@@ -20,5 +20,18 @@ test('every amount reconciles input, output and bankroll',()=>{
 });
 test('long-run simulation converges toward payout',()=>{
  const s=createGame(seeded(10));autoCycles(s,140000,seeded(98765));
- const rate=machineRate(s);assert.ok(Math.abs(rate-97.7023)<1.3,`observed ${rate}`);
+ const rate=machineRate(s);assert.ok(Math.abs(rate-99.51286423)<1.3,`observed ${rate}`);
+});
+
+
+test('new normal-mode G distribution totals 100%, keeps 20 BET and caps at 75G',()=>{
+ assert.ok(Math.abs(CONFIG.normalG.reduce((sum,x)=>sum+x.p,0)-1)<1e-12);
+ assert.equal(CONFIG.normalBet,20);
+ assert.equal(Math.max(...CONFIG.normalG.map(x=>x.g)),75);
+ assert.equal(CONFIG.upperCap,.95);
+});
+test('normal mode maximum draw is 75G and is still a single tap',()=>{
+ const s=createGame(()=>1-1e-15); assert.equal(s.targetG,75);
+ nextAction(s,()=>0); assert.equal(s.gameCount,75); assert.equal(s.phase,'cz');
+ assert.equal(s.totalInput,1500);
 });
