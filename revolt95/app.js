@@ -5,7 +5,7 @@ const format=(n)=>Number(n).toLocaleString('ja-JP');
 const signed=(n)=>n>0?`+${format(n)}`:n<0?`−${format(-n)}`:'±0';
 const phaseMap={normal:'NORMAL MODE',cz:'DOLSIA CHALLENGE',bonus:'BONUS STAGE',rush:'REVOLUTION RUSH',upper:'SUPER REVOLUTION RUSH'};
 const texts={
-  normal:{number:'20',unit:'BET',title:'通常時',overline:'NEXT: CZ CHALLENGE',desc:'1タップで次のCZまで一括消化',button:'通常時を消化する',upcoming:'CZまで一括消化',label:'NEXT ACTION',symbol:'R'},
+  normal:{number:'3',unit:'BET',title:'通常時',overline:'NEXT: CZ CHALLENGE',desc:'3BET/Gで次のCZまで自動消化',button:'通常時を消化する',upcoming:'CZまで自動消化',label:'NEXT ACTION',symbol:'R'},
   cz:{number:'',unit:'%',title:'ドルシア攻防戦',overline:'CHANCE ZONE / 11 GAMES',desc:'直前の通常時G数によって突破率が変化',button:'CZに挑戦する',upcoming:'',label:'CZ BATTLE',symbol:'C'},
   bonus:{number:'',unit:'',title:'',overline:'BONUS GET',desc:'ボーナス獲得！ AT突入を抽選',button:'ボーナスを消化する',upcoming:'',label:'BONUS DRAW',symbol:'B'},
   rush:{number:'75',unit:'%',title:'革命RUSH',overline:'REVOLUTION RUSH / TRIPLE BREAK',desc:'75%を3回連続突破で超革命RUSHへ',button:'1セット消化・継続抽選',upcoming:'',label:'CURRENT SET',symbol:'R'},
@@ -15,6 +15,10 @@ function safeLoad(){try{
   const raw=localStorage.getItem(SAVE_KEY);if(!raw)return null;
   const s=JSON.parse(raw);
   if(!s||s.version!==3||!phaseMap[s.phase]||!Array.isArray(s.events)||!Array.isArray(s.history)||!Number.isFinite(s.net)||!Number.isFinite(s.totalInput)||s.totalInput<0)return null;
+  // 旧ルールで抽選済みの通常時G数だけ、新しい振り分けで引き直す（累計記録は保持）。
+  if(s.phase==='normal'&&!CONFIG.normalG.some(x=>x.g===s.targetG)){
+    let remaining=Math.random();for(const item of CONFIG.normalG){remaining-=item.p;if(remaining<0){s.targetG=item.g;break;}}
+  }
   return s;
 }catch{return null}}
 let state=safeLoad()||createGame();
@@ -42,7 +46,7 @@ function render(){
     const games=state.lastNormal?.g ?? state.targetG;
     const chance=CONFIG.czWinByNormalG[games] ?? CONFIG.czWin;
     t.number=String(Math.round(chance*100));
-    t.desc=`${games}G到達 / CZ 11Gを一括消化`;
+    t.desc=`通常時${games}G消化済（3BET/G） / CZは11G・3BET/G`;
     t.upcoming=`突破率${Math.round(chance*100)}%`;
   }
   if(state.phase==='bonus'){
@@ -66,6 +70,8 @@ function render(){
   $('net').replaceChildren(document.createTextNode(`${signed(state.net)} `));let u=document.createElement('span');u.textContent='枚';$('net').append(u);
   $('net').className='large-number '+(state.net>0?'positive':state.net<0?'negative':'');
   $('bank').textContent=format(state.bank);$('games').textContent=`${format(state.gameCount)} G`;
+  $('hudTotalGames').textContent=`${format(state.gameCount)} G`;
+  $('hudLastGames').textContent=Number.isFinite(state.lastActionGames)&&state.lastActionGames>0?`+${format(state.lastActionGames)} G`:'—';
   const actual=machineRate(state);$('rate').textContent=actual===null?'—':actual.toFixed(2)+'%';
   for(const [el,field] of [['czCount','czCount'],['bonusCount','bonusCount'],['atCount','atCount'],['upperCount','upperCount'],['cycleCount','cycleCount']])$(el).textContent=format(state[field]);
   $('maxRush').textContent=`${format(state.maxRushGain)} 枚`;
