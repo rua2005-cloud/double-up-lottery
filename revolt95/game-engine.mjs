@@ -1,17 +1,17 @@
 /** REVOLT 95 — original arcade probability game engine.
  * Framework-free, deterministic when a seeded RNG is supplied.
- * 3 tokens = 1 unit of stake in all non-normal phases, 20 in normal.
+ * All game phases use a 3-token stake per paid game.
  */
 export const CONFIG = Object.freeze({
   initialBank: 10000,
-  normalBet: 20,
-  normalG: [{g:1,p:.15},{g:5,p:.15},{g:20,p:.31},{g:50,p:.29},{g:75,p:.10}],
-  normalReels: [{p:.752,paid:0,label:'ハズレ'},{p:.184,paid:10,label:'小役'},{p:.064,paid:30,label:'強小役'}],
+  normalBet: 3,
+  normalG: [{g:5,p:.15},{g:35,p:.15},{g:160,p:.31},{g:300,p:.29},{g:375,p:.10}],
+  normalReels: [{p:.752,paid:0,label:'ハズレ'},{p:.184,paid:1,label:'小役'},{p:.064,paid:3,label:'強小役'}],
   czGames:11,
   czBet:3,
   czPayThreeChance: 16.18/33,
   czWin: .60, // CZ突破率の加重平均
-  czWinByNormalG: {1:.45,5:.50,20:.55,50:.70,75:.84},
+  czWinByNormalG: {5:.45,35:.50,160:.55,300:.70,375:.84},
   revolutionBonusChance: .55,
   bonusAtChance: {revolution:.53, decisive:.46},
   normalRushContinue: .75,
@@ -56,13 +56,14 @@ export function createGame(rng=Math.random){
   normalWins:0,upperWins:0,atSetG:0,rushSets:0,rushTotalGain:0,
   maxRushGain:0,bestCycle:-Infinity,worstCycle:Infinity,maxBalance:CONFIG.initialBank,lowBalance:CONFIG.initialBank,
   currentRushGain:0, bonus:null,history:[],events:[],banner:{kind:'info',text:'1 TAPで運命を変えろ',sub:'通常時を一括消化してCZへ進む'},eventId:0,
-  cycleStart:0,lastCycle:0,targetG:0, lastNormal:null,lastCz:null,lastBonus:null, lastAt:null};
+  cycleStart:0,lastCycle:0,targetG:0,lastActionGames:0, lastNormal:null,lastCz:null,lastBonus:null, lastAt:null};
   prepareNormal(s,rng);return s;
 }
 export function continueChance(s){
   return s.phase==='upper' ? Math.min(CONFIG.upperCap,CONFIG.upperStart+s.upperWins*CONFIG.upperIncrement) : CONFIG.normalRushContinue;
 }
 export function nextAction(s,rng=Math.random){
+  const startGames=s.gameCount;
   if(s.phase==='normal'){
     let paid=0; const samples=[];
     for(let i=0;i<s.targetG;i++){const role=choice(CONFIG.normalReels,rng);paid+=role.paid;
@@ -76,7 +77,7 @@ export function nextAction(s,rng=Math.random){
   } else if(s.phase==='cz'){
     let paid=0;for(let i=0;i<CONFIG.czGames;i++)if(clampRng(rng)<CONFIG.czPayThreeChance)paid+=3;
     settle(s,CONFIG.czGames*CONFIG.czBet,paid,CONFIG.czGames);
-    const chance=CONFIG.czWinByNormalG[s.lastNormal.g];
+    const chance=CONFIG.czWinByNormalG[s.lastNormal.g] ?? CONFIG.czWin; // 旧保存データの進行中CZにも対応
     const success=clampRng(rng)<chance;
     s.lastCz={success,paid,net:paid-CONFIG.czGames*CONFIG.czBet,chance};
     if(success){
@@ -125,13 +126,16 @@ export function nextAction(s,rng=Math.random){
       finishCycle(s,rng,`${mode==='upper'?'超革命RUSH':'革命RUSH'}終了 — +${s.currentRushGain.toLocaleString('ja-JP')}枚`);
     }
   } else throw Error(`Unknown phase: ${s.phase}`);
+  s.lastActionGames=s.gameCount-startGames;
   return s;
 }
 export function autoCycles(s,count,rng=Math.random){
+  const startGames=s.gameCount;
   const target=s.cycleCount+count;
   let operations=0;
   while(s.cycleCount<target && operations<Math.max(100000,count*100)){nextAction(s,rng);operations++;}
   if(operations>=Math.max(100000,count*100))throw Error('Auto cycle safety limit');
+  s.lastActionGames=s.gameCount-startGames;
   return s;
 }
 export function machineRate(s){return s.totalInput>0?s.totalOutput/s.totalInput*100:null;}
