@@ -48,3 +48,7 @@ node --test tests/game-engine.test.mjs
 ```
 
 ロジックは `game-engine.mjs`、表示は `app.js`、画面は `index.html` / `style.css` に分割しています。
+
+## 単独HTML版
+
+`standalone.html` は外部ファイル不要です。ダブルクリックでローカルブラウザでも直接遊べます。
