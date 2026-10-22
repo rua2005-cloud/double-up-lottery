@@ -5,12 +5,13 @@
 export const CONFIG = Object.freeze({
   initialBank: 10000,
   normalBet: 20,
-  normalG: [{g:1,p:.20},{g:5,p:.20},{g:20,p:.22},{g:50,p:.20},{g:75,p:.18}],
+  normalG: [{g:1,p:.15},{g:5,p:.15},{g:20,p:.31},{g:50,p:.29},{g:75,p:.10}],
   normalReels: [{p:.752,paid:0,label:'ハズレ'},{p:.184,paid:10,label:'小役'},{p:.064,paid:30,label:'強小役'}],
   czGames:11,
   czBet:3,
   czPayThreeChance: 16.18/33,
-  czWin: .60,
+  czWin: .60, // CZ突破率の加重平均
+  czWinByNormalG: {1:.45,5:.50,20:.55,50:.70,75:.84},
   revolutionBonusChance: .55,
   bonusAtChance: {revolution:.53, decisive:.46},
   normalRushContinue: .75,
@@ -75,8 +76,9 @@ export function nextAction(s,rng=Math.random){
   } else if(s.phase==='cz'){
     let paid=0;for(let i=0;i<CONFIG.czGames;i++)if(clampRng(rng)<CONFIG.czPayThreeChance)paid+=3;
     settle(s,CONFIG.czGames*CONFIG.czBet,paid,CONFIG.czGames);
-    const success=clampRng(rng)<CONFIG.czWin;
-    s.lastCz={success,paid,net:paid-CONFIG.czGames*CONFIG.czBet};
+    const chance=CONFIG.czWinByNormalG[s.lastNormal.g];
+    const success=clampRng(rng)<chance;
+    s.lastCz={success,paid,net:paid-CONFIG.czGames*CONFIG.czBet,chance};
     if(success){
       s.bonus=clampRng(rng)<CONFIG.revolutionBonusChance?'revolution':'decisive';
       s.phase='bonus';s.bonusCount++;
@@ -137,16 +139,17 @@ export function expectedStats(){
   const topAvg=(()=>{let alive=1,total=0; for(let i=0;i<2000;i++){total+=alive;alive*=Math.min(CONFIG.upperCap,CONFIG.upperStart+i*CONFIG.upperIncrement);if(alive<1e-12)break;}return total;})();
   const meanSet=CONFIG.setLengths.reduce((a,x)=>a+x.g*x.p,0);
   const meanRush=(1+.75+.75**2)+.75**3*topAvg;
-  const pAt=CONFIG.czWin*(CONFIG.revolutionBonusChance*CONFIG.bonusAtChance.revolution+(1-CONFIG.revolutionBonusChance)*CONFIG.bonusAtChance.decisive);
+  const meanCzWin=CONFIG.normalG.reduce((sum,item)=>sum+item.p*CONFIG.czWinByNormalG[item.g],0);
+  const pAt=meanCzWin*(CONFIG.revolutionBonusChance*CONFIG.bonusAtChance.revolution+(1-CONFIG.revolutionBonusChance)*CONFIG.bonusAtChance.decisive);
   const meanNormalGames=CONFIG.normalG.reduce((sum,item)=>sum+item.g*item.p,0);
   const meanNormalPayout=CONFIG.normalReels.reduce((sum,item)=>sum+item.p*item.paid,0);
   const normalLoss=meanNormalGames*(CONFIG.normalBet-meanNormalPayout);
   const czLoss=CONFIG.czGames*CONFIG.czBet*(1-CONFIG.czPayThreeChance);
-  const bonusNet=CONFIG.czWin*(.55*460+.45*60);
+  const bonusNet=meanCzWin*(.55*460+.45*60);
   const rushNet=pAt*meanRush*meanSet*CONFIG.netPerAtGame;
   const expectedProfit=-normalLoss-czLoss+bonusNet+rushNet;
-  const inTotal=meanNormalGames*CONFIG.normalBet+CONFIG.czGames*3+CONFIG.czWin*(.55*(51+1/9)+.45*16)*3+pAt*meanRush*meanSet*3;
-  return {meanNormalGames,meanNormalLoss:normalLoss,meanCzLoss:czLoss,meanRushSets:meanRush,
+  const inTotal=meanNormalGames*CONFIG.normalBet+CONFIG.czGames*3+meanCzWin*(.55*(51+1/9)+.45*16)*3+pAt*meanRush*meanSet*3;
+  return {meanNormalGames,meanCzWin,meanNormalLoss:normalLoss,meanCzLoss:czLoss,meanRushSets:meanRush,
     meanUpperSets:topAvg,meanSetGames:meanSet,meanRushPayout:meanRush*meanSet*9,atChancePerCZ:pAt,
     expectedProfit,inputPerCycle:inTotal, expectedRate:100*(1+expectedProfit/inTotal)};
 }
