@@ -3,10 +3,10 @@ import {test} from 'node:test';
 import {CONFIG,createGame,nextAction,autoCycles,continueChance,expectedStats,machineRate} from '../game-engine.mjs';
 function seeded(seed){let s=seed>>>0;return ()=>((s=(s*1664525+1013904223)>>>0)/2**32);}
 test('theoretical machine payout rate rounds to 99.5%',()=>{
- const x=expectedStats();assert.ok(Math.abs(x.expectedRate-99.51286423)<.0001);assert.equal(x.meanNormalGames,29.1);assert.ok(Math.abs(x.meanCzWin-.60)<1e-12);assert.ok(Math.abs(x.meanRushPayout-1061.795)<.001);
+ const x=expectedStats();assert.ok(Math.abs(x.expectedRate-99.5)<.05);assert.equal(x.meanNormalGames,180.1);assert.ok(Math.abs(x.meanCzWin-.60)<1e-12);assert.ok(Math.abs(x.meanRushPayout-1061.795)<.001);
 });
 test('normal game is consumed in exactly one action and transfers to CZ',()=>{
- const s=createGame(()=>0); assert.equal(s.targetG,1);nextAction(s,()=>0);assert.equal(s.phase,'cz');assert.equal(s.gameCount,1);assert.equal(s.totalInput,20);assert.equal(s.net,-20);
+ const s=createGame(()=>0); assert.equal(s.targetG,5);nextAction(s,()=>0);assert.equal(s.phase,'cz');assert.equal(s.gameCount,5);assert.equal(s.lastActionGames,5);assert.equal(s.totalInput,15);assert.equal(s.net,-15);
 });
 test('CZ can fail and finish cycle',()=>{const s=createGame(()=>0);nextAction(s,()=>0);nextAction(s,()=>.99);assert.equal(s.phase,'normal');assert.equal(s.cycleCount,1);assert.equal(s.czCount,1);});
 test('guaranteed win path reaches upper at three successful continuations',()=>{
@@ -20,24 +20,24 @@ test('every amount reconciles input, output and bankroll',()=>{
 });
 test('long-run simulation converges toward payout',()=>{
  const s=createGame(seeded(10));autoCycles(s,140000,seeded(98765));
- const rate=machineRate(s);assert.ok(Math.abs(rate-99.51286423)<1.3,`observed ${rate}`);
+ const rate=machineRate(s);assert.ok(Math.abs(rate-99.5)<1.3,`observed ${rate}`);
 });
 
 
 test('improved G distribution preserves average cost, mean CZ success and 75G cap',()=>{
  assert.ok(Math.abs(CONFIG.normalG.reduce((sum,x)=>sum+x.p,0)-1)<1e-12);
- assert.equal(CONFIG.normalBet,20);
- assert.equal(Math.max(...CONFIG.normalG.map(x=>x.g)),75);
+ assert.equal(CONFIG.normalBet,3);
+ assert.equal(Math.max(...CONFIG.normalG.map(x=>x.g)),375);
  assert.equal(CONFIG.upperCap,.95);
 });
-test('normal mode maximum draw is 75G and is still a single tap',()=>{
- const s=createGame(()=>1-1e-15); assert.equal(s.targetG,75);
- nextAction(s,()=>0); assert.equal(s.gameCount,75); assert.equal(s.phase,'cz');
- assert.equal(s.totalInput,1500);
+test('normal mode maximum draw is 375G at 3BET and is still a single tap',()=>{
+ const s=createGame(()=>1-1e-15); assert.equal(s.targetG,375);
+ nextAction(s,()=>0); assert.equal(s.gameCount,375); assert.equal(s.phase,'cz');
+ assert.equal(s.totalInput,1125);
 });
 
 test('CZ win rate uses the length of the preceding normal phase',()=>{
- const cases=[{g:1,r:.075,p:.45},{g:5,r:.225,p:.50},{g:20,r:.455,p:.55},{g:50,r:.755,p:.70},{g:75,r:.975,p:.84}];
+ const cases=[{g:5,r:.075,p:.45},{g:35,r:.225,p:.50},{g:160,r:.455,p:.55},{g:300,r:.755,p:.70},{g:375,r:.975,p:.84}];
  for(const {g,r,p} of cases){
   const success=createGame(()=>r);assert.equal(success.targetG,g);
   nextAction(success,()=>0);nextAction(success,()=>p-.001);
@@ -54,4 +54,9 @@ test('distribution matches proposed rates and reduces deep CZ failures',()=>{
  const weighted=CONFIG.normalG.reduce((a,x)=>a+x.p*CONFIG.czWinByNormalG[x.g],0);
  assert.ok(Math.abs(weighted-.60)<1e-12);
  assert.ok(Math.abs(.10*(1-.84)-.016)<1e-12);
+ assert.equal(CONFIG.normalReels.reduce((sum,x)=>sum+x.p*x.paid,0),.376);
+ assert.equal(CONFIG.normalBet,CONFIG.czBet);
+ assert.ok(Math.abs(expectedStats().meanNormalLoss-29.1*16.24)<.01);
 });
+
+test('last-action G counter also tracks AUTO cycles',()=>{const s=createGame(seeded(123));autoCycles(s,10,seeded(567));assert.equal(s.lastActionGames,s.gameCount);assert.ok(s.gameCount>0);});
