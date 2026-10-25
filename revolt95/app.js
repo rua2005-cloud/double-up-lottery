@@ -54,8 +54,8 @@ function render(){
   }
   if(state.phase==='bonus'){
     const rev=state.bonus==='revolution';
-    t.number=rev?'53':'46';t.unit='%';t.title=rev?'革命ボーナス':'決戦ボーナス';
-    t.desc=rev?'平均+460枚 / AT突入期待度53%':'+60枚 / AT突入期待度46%';t.upcoming=rev?'革命ボーナスを消化':'決戦ボーナスを消化';
+    t.number=rev?'52':'45';t.unit='%';t.title=rev?'革命ボーナス':'決戦ボーナス';
+    t.desc=rev?'平均+460枚 / AT突入期待度52%':'+60枚 / AT突入期待度45%';t.upcoming=rev?'革命ボーナスを消化':'決戦ボーナスを消化';
   }
   if(state.phase==='rush'){t.upcoming=`${state.atSetG}G · 純増9枚/G`;}
   if(state.phase==='upper'){
