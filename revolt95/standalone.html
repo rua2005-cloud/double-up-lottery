@@ -22,6 +22,16 @@
 .machine[data-ultra="true"] .hud-overline{color:#ffda90}
 .machine[data-ultra="true"] .core-graphic{filter:drop-shadow(0 0 48px #ffc763a3)}
 
+/* One-tap ULTRA hunt: resumable, cancellable, and visually distinct. */
+.ultra-auto-button{display:block;width:100%;margin-top:12px;min-height:52px;cursor:pointer;border:1px solid #e5b964;border-radius:11px;background:linear-gradient(115deg,#6b4624,#ab7940 50%,#80508c);color:#fff7df;font-size:15px;font-weight:900;letter-spacing:.06em;box-shadow:0 5px 20px #f4c87628;transition:filter .16s,transform .12s}
+.ultra-auto-button:hover:not(:disabled){filter:brightness(1.14)}
+.ultra-auto-button:active:not(:disabled){transform:translateY(1px)}
+.ultra-auto-button[aria-pressed="true"]{background:linear-gradient(115deg,#743849,#a34b58);border-color:#f7a1ad;box-shadow:0 5px 20px #f37a9529}
+.ultra-auto-button:disabled{cursor:not-allowed;opacity:.6}
+.ultra-auto-status{margin:9px 3px 4px;font-size:11px;line-height:1.6;color:#e2c999;min-height:18px;overflow-wrap:anywhere}
+.play-button:disabled,.quick-actions button:disabled,.icon-button:disabled{cursor:not-allowed;opacity:.55;filter:saturate(.5)}
+@media(max-width:380px){.ultra-auto-button{font-size:13px;min-height:48px}.ultra-auto-status{font-size:10px}}
+
 </style>
   
 </head>
@@ -56,7 +66,7 @@
           <div class="streak" id="streak" aria-label="通常AT突破回数"><span class="streak-dot">I</span><span class="streak-dot">II</span><span class="streak-dot">III</span></div>
           <div class="machine-result" id="machineResult"><div class="result-kind" id="resultKind">SYSTEM READY</div><div class="result-text" id="resultText">挑戦を開始してください</div><div class="result-sub" id="resultSub">通常時は1タップでCZまで進みます。</div></div>
         </div>
-        <div class="machine-controls"><div class="current-bet"><span id="upcomingLabel">NEXT ACTION</span><strong id="upcomingValue">CZまで一括消化</strong></div><button class="play-button" id="playButton" type="button"><span class="button-icon">▶</span><span id="playButtonLabel">通常時を消化する</span><span class="button-arrow">→</span></button><div class="quick-actions"><button type="button" id="auto10">AUTO ×10 サイクル</button><button type="button" id="auto100">AUTO ×100 サイクル</button></div><p class="control-hint">全モード3BET/G。通常時はCZまで自動消化し、実際のG数を累計に加算。スペースキー・AUTO対応。</p></div>
+        <div class="machine-controls"><div class="current-bet"><span id="upcomingLabel">NEXT ACTION</span><strong id="upcomingValue">CZまで一括消化</strong></div><button class="play-button" id="playButton" type="button"><span class="button-icon">▶</span><span id="playButtonLabel">通常時を消化する</span><span class="button-arrow">→</span></button><div class="quick-actions"><button type="button" id="auto10">AUTO ×10 サイクル</button><button type="button" id="auto100">AUTO ×100 サイクル</button></div><button class="ultra-auto-button" id="autoUltra" type="button" aria-pressed="false">▶ 1タップでULTRAまで</button><p class="ultra-auto-status" id="ultraAutoStatus" role="status" aria-live="polite">通常抽選を維持したまま99%継続のULTRA突入時に自動停止。途中停止も可能です。</p><p class="control-hint">全モード3BET/G。通常時はCZまで自動消化し、実際のG数を累計に加算。スペースキー・AUTO対応。</p></div>
         <div class="machine-bottom"><span>RANDOM SEQUENCE ENGINE</span><span>ORIGINAL SIMULATION · NOT OFFICIAL</span></div>
       </main>
 
@@ -64,7 +74,7 @@
       <section class="panel chart-panel"><div class="panel-heading heading-split"><h2>直近の収支</h2><span>1 CZ CYCLE</span></div><div class="bar-chart" id="historyChart"><p class="empty-state">サイクルを終了すると表示されます</p></div><div class="chart-key"><span><i class="key-plus"></i>プラス</span><span><i class="key-minus"></i>マイナス</span></div></section>
       <section class="panel event-panel"><div class="panel-heading heading-split"><h2>履歴</h2><span>EVENT LOG</span></div><div id="eventList" class="event-list"><div class="empty-state">まだ履歴はありません</div></div></section></aside>
     </div>
-    <section class="rules panel"><details><summary><span>遊び方・すべての抽選確率</span><span class="accordion-sign">＋</span></summary><div class="rules-body"><p>このゲームは独自に設計した確率シミュレーターです。実機や公式メーカーとは関係ありません。実際のお金・景品は使用しません。</p><div class="rule-columns"><div><h3>通常時・CZ</h3><p>通常時も<strong>3枚BET/G</strong>。当選までのG数は通常時突入時に内部抽選され、1タップでまとめて消化します。</p><table><tr><th>ゲーム数</th><th>振り分け</th><th>CZ突破率</th></tr><tr><td>5G</td><td>15%</td><td>45%</td></tr><tr><td>35G</td><td>15%</td><td>50%</td></tr><tr><td>160G</td><td>31%</td><td>55%</td></tr><tr><td>300G</td><td>29%</td><td>70%</td></tr><tr><td>375G（最長）</td><td>10%</td><td>84%</td></tr></table><p>ハズレ75.2%（払出0）、小役18.4%（払出1枚）、強小役6.4%（払出3枚）。CZは11G・3枚BET、突破率は直前の通常時G数に連動（全体平均60%）。</p></div><div><h3>ボーナス</h3><p>CZ成功時に革命ボーナス55%、決戦ボーナス45%。</p><table><tr><th>種類</th><th>差枚</th><th>AT期待度</th></tr><tr><td>革命ボーナス</td><td>平均+460枚</td><td>52%</td></tr><tr><td>決戦ボーナス</td><td>+60枚</td><td>45%</td></tr></table><p>革命は51Gまたは52G、決戦は16G。ボーナス終了後にAT抽選を行います。</p></div><div><h3>革命RUSH / 超革命RUSH</h3><p>通常ATはセットごとに<strong>75%継続</strong>。3回連続成功すると超革命RUSHへ。</p><p>超革命RUSH突入時、<strong>99.43%</strong>で通常タイプ、<strong>0.57%</strong>でULTRAタイプを抽選します。通常タイプは90%から始まり、成功ごとに91%→92%→93%→94%→95%と上がり、95%で固定。ULTRAタイプは最初から<strong>99%継続で固定</strong>です。</p><table><tr><th>1セット</th><th>確率</th></tr><tr><td>10G</td><td>85%</td></tr><tr><td>20G</td><td>12.5%</td></tr><tr><td>50G</td><td>2.5%</td></tr></table><p>ATはすべて純増9枚/G。セットごとの抽選は独立です。</p></div></div><p class="fine-print">設計機械割99.493%（表示99.49%）は無制限試行時の理論値です。天井・有利区間・引き戻し・ストックはありません。所持コインが0未満でも続行できる無制限シミュレーションです。ゲームデータはこのブラウザに自動保存されます。</p></div></details></section>
+    <section class="rules panel"><details><summary><span>遊び方・すべての抽選確率</span><span class="accordion-sign">＋</span></summary><div class="rules-body"><p>このゲームは独自に設計した確率シミュレーターです。実機や公式メーカーとは関係ありません。実際のお金・景品は使用しません。</p><div class="rule-columns"><div><h3>通常時・CZ</h3><p>通常時も<strong>3枚BET/G</strong>。当選までのG数は通常時突入時に内部抽選され、1タップでまとめて消化します。</p><table><tr><th>ゲーム数</th><th>振り分け</th><th>CZ突破率</th></tr><tr><td>5G</td><td>15%</td><td>45%</td></tr><tr><td>35G</td><td>15%</td><td>50%</td></tr><tr><td>160G</td><td>31%</td><td>55%</td></tr><tr><td>300G</td><td>29%</td><td>70%</td></tr><tr><td>375G（最長）</td><td>10%</td><td>84%</td></tr></table><p>ハズレ75.2%（払出0）、小役18.4%（払出1枚）、強小役6.4%（払出3枚）。CZは11G・3枚BET、突破率は直前の通常時G数に連動（全体平均60%）。</p></div><div><h3>ボーナス</h3><p>CZ成功時に革命ボーナス55%、決戦ボーナス45%。</p><table><tr><th>種類</th><th>差枚</th><th>AT期待度</th></tr><tr><td>革命ボーナス</td><td>平均+460枚</td><td>52%</td></tr><tr><td>決戦ボーナス</td><td>+60枚</td><td>45%</td></tr></table><p>革命は51Gまたは52G、決戦は16G。ボーナス終了後にAT抽選を行います。</p></div><div><h3>革命RUSH / 超革命RUSH</h3><p>通常ATはセットごとに<strong>75%継続</strong>。3回連続成功すると超革命RUSHへ。</p><p>超革命RUSH突入時、<strong>99.43%</strong>で通常タイプ、<strong>0.57%</strong>でULTRAタイプを抽選します。通常タイプは90%から始まり、成功ごとに91%→92%→93%→94%→95%と上がり、95%で固定。ULTRAタイプは最初から<strong>99%継続で固定</strong>です。</p><table><tr><th>1セット</th><th>確率</th></tr><tr><td>10G</td><td>85%</td></tr><tr><td>20G</td><td>12.5%</td></tr><tr><td>50G</td><td>2.5%</td></tr></table><p>ATはすべて純増9枚/G。セットごとの抽選は独立です。</p><p><strong>1タップでULTRAまで</strong>は、通常時・CZ・ボーナス・RUSHを同じ確率で自動消化し、ULTRA 99%突入時にその最初のセットを消化せずに停止します。途中停止もでき、経過G数・差枚・履歴はすべて記録されます。突入確率は変わりません。</p></div></div><p class="fine-print">設計機械割99.493%（表示99.49%）は無制限試行時の理論値です。天井・有利区間・引き戻し・ストックはありません。所持コインが0未満でも続行できる無制限シミュレーションです。ゲームデータはこのブラウザに自動保存されます。</p></div></details></section>
     <footer>REVOLT 95 <span>© ORIGINAL FAN-MADE MECHANICS SIMULATOR</span></footer>
   </div>
 <script>
@@ -213,6 +223,21 @@ function autoCycles(s,count,rng=Math.random){
   s.lastActionGames=s.gameCount-startGames;
   return s;
 }
+/** Run genuine game draws until ULTRA is entered, or a bounded action budget is used.
+ * Designed for repeated small chunks so the browser remains responsive and cancellable.
+ * Does not consume even one ULTRA set after the transition.
+ */
+function autoUntilUltra(s,maxActions=600,rng=Math.random){
+  if(!Number.isSafeInteger(maxActions)||maxActions<1||maxActions>100000)throw RangeError('maxActions must be 1–100000');
+  const startGames=s.gameCount;
+  let actions=0;
+  while(actions<maxActions && !(s.phase==='upper' && s.ultraMode)){
+    nextAction(s,rng);
+    actions++;
+  }
+  s.lastActionGames=s.gameCount-startGames;
+  return {reached:s.phase==='upper'&&s.ultraMode,actions};
+}
 function machineRate(s){return s.totalInput>0?s.totalOutput/s.totalInput*100:null;}
 function expectedStats(){
   const topAvg=(()=>{let alive=1,total=0; for(let i=0;i<2000;i++){total+=alive;alive*=Math.min(CONFIG.upperCap,CONFIG.upperStart+i*CONFIG.upperIncrement);if(alive<1e-12)break;}return total;})();
@@ -264,6 +289,7 @@ function safeLoad(){try{
 }catch{return null}}
 let state=safeLoad()||createGame();
 let sound=false;
+let ultraRun=null; // In-memory session only; game progress remains saved after each chunk.
 let audio=null;
 function tone(f=500,d=.08,shape='sine',volume=.025){if(!sound)return;try{audio??=new (window.AudioContext||window.webkitAudioContext)();if(audio.state==='suspended')audio.resume();let osc=audio.createOscillator(),gain=audio.createGain(),t=audio.currentTime;osc.type=shape;osc.frequency.setValueAtTime(f,t);gain.gain.setValueAtTime(volume,t);gain.gain.exponentialRampToValueAtTime(.0001,t+d);osc.connect(gain);gain.connect(audio.destination);osc.start(t);osc.stop(t+d)}catch{}}
 function playSound(phase,kind){if(!sound)return;if(kind==='upper'){tone(830,.18,'triangle');setTimeout(()=>tone(1170,.22,'triangle'),95)}else if(kind==='success'||kind==='rush'){tone(610,.14);setTimeout(()=>tone(860,.14),90)}else if(kind==='lose'){tone(220,.18,'sawtooth',.012)}else tone(430,.09)}
@@ -321,17 +347,58 @@ function render(){
   for(const [el,field] of [['czCount','czCount'],['bonusCount','bonusCount'],['atCount','atCount'],['upperCount','upperCount'],['ultraCount','ultraCount'],['cycleCount','cycleCount']])$(el).textContent=format(state[field]);
   $('maxRush').textContent=`${format(state.maxRushGain)} 枚`;
   $('chanceCaption').textContent=state.phase==='upper'&&state.ultraMode?'ULTRA突入中！ 継続率99%で固定。':state.phase==='upper'?`現在${Math.round(continueChance(state)*100)}%。このセットを継続すると次回${Math.round(Math.min(CONFIG.upperCap,continueChance(state)+CONFIG.upperIncrement)*100)}%。`:'通常90〜95% / 上位突入時0.57%で99%固定のULTRAへ。';
+  const running=ultraRun!==null;
+  for(const id of ['playButton','auto10','auto100','resetButton'])$(id).disabled=running;
+  $('autoUltra').textContent=running?'■ ULTRA探索を停止':state.phase==='upper'&&state.ultraMode?'ULTRA突入中':'▶ 1タップでULTRAまで';
+  $('autoUltra').disabled=!running&&state.phase==='upper'&&state.ultraMode;
+  $('autoUltra').setAttribute('aria-pressed',String(running));
   renderEvents();renderChart();
   try{localStorage.setItem(SAVE_KEY,JSON.stringify(state))}catch{}
 }
-function act(){nextAction(state);playSound(state.phase,state.banner.kind);render();const box=$('machine');box.classList.remove('flash');void box.offsetWidth;box.classList.add('flash');}
-function auto(n){autoCycles(state,n);playSound(state.phase,state.banner.kind);render();const box=$('machine');box.classList.remove('flash');void box.offsetWidth;box.classList.add('flash');}
+function act(){if(ultraRun)return;nextAction(state);playSound(state.phase,state.banner.kind);render();const box=$('machine');box.classList.remove('flash');void box.offsetWidth;box.classList.add('flash');}
+function auto(n){if(ultraRun)return;autoCycles(state,n);playSound(state.phase,state.banner.kind);render();const box=$('machine');box.classList.remove('flash');void box.offsetWidth;box.classList.add('flash');}
+// Run normal draws in short chunks so STOP and other UI events remain responsive.
+function setUltraStatus(message){$('ultraAutoStatus').textContent=message;}
+function endUltraRun(run,status,found=false){
+  if(ultraRun!==run)return;
+  ultraRun=null;
+  state.lastActionGames=state.gameCount-run.startGames;
+  render();
+  const info=`${format(state.cycleCount-run.startCycles)}サイクル / +${format(state.gameCount-run.startGames)}G`;
+  setUltraStatus(`${status}（${info}）`);
+  if(found){playSound(state.phase,'upper');const box=$('machine');box.classList.remove('flash');void box.offsetWidth;box.classList.add('flash');}
+}
+function runUltraChunk(run){
+  if(ultraRun!==run)return;
+  try{
+    const result=autoUntilUltra(state,600);
+    run.actions+=result.actions;
+    // Show the full automatic run G total, not only the most recent chunk.
+    state.lastActionGames=state.gameCount-run.startGames;
+    if(result.reached){endUltraRun(run,'ULTRA 99% 突入！ このセットから手動操作できます',true);return;}
+    render();
+    setUltraStatus(`ULTRA抽選中… ${format(run.actions)}操作 / ${format(state.cycleCount-run.startCycles)}サイクル / +${format(state.gameCount-run.startGames)}G · 停止可能`);
+    requestAnimationFrame(()=>runUltraChunk(run));
+  }catch(error){
+    endUltraRun(run,'自動進行を中断しました');
+    console.error('ULTRA autoplay failed',error);
+  }
+}
+function toggleUltraAuto(){
+  if(ultraRun){endUltraRun(ultraRun,'探索を停止しました。現在の状態から再開できます');return;}
+  if(state.phase==='upper'&&state.ultraMode){setUltraStatus('すでにULTRA 99%に突入しています。');return;}
+  const run={startGames:state.gameCount,startCycles:state.cycleCount,actions:0};
+  ultraRun=run;
+  render();setUltraStatus('ULTRA 99%突入まで、通常抽選を自動消化中…');
+  requestAnimationFrame(()=>runUltraChunk(run));
+}
+$('autoUltra').addEventListener('click',toggleUltraAuto);
 $('playButton').addEventListener('click',act);
 $('auto10').addEventListener('click',()=>auto(10));
 $('auto100').addEventListener('click',()=>auto(100));
-$('resetButton').addEventListener('click',()=>{if(window.confirm('累計データをリセットして最初から始めますか？')){state=createGame();render();}});
+$('resetButton').addEventListener('click',()=>{if(ultraRun)return;if(window.confirm('累計データをリセットして最初から始めますか？')){state=createGame();render();}});
 $('soundButton').addEventListener('click',()=>{sound=!sound;$('soundButton').textContent=sound?'♪ ON':'♪ OFF';if(sound)tone(740,.11)});
-window.addEventListener('keydown',e=>{if(e.code==='Space'&&!e.repeat&&!e.altKey&&!e.ctrlKey&&!e.metaKey&&!['BUTTON','INPUT','TEXTAREA','SELECT','SUMMARY'].includes(document.activeElement?.tagName)){e.preventDefault();act();}});
+window.addEventListener('keydown',e=>{if(e.code==='Space'&&!e.repeat&&!e.altKey&&!e.ctrlKey&&!e.metaKey&&!['BUTTON','INPUT','TEXTAREA','SELECT','SUMMARY'].includes(document.activeElement?.tagName)){e.preventDefault();if(!ultraRun)act();}});
 render();
 
 })();
