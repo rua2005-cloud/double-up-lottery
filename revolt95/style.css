@@ -12,3 +12,13 @@
 .machine[data-ultra="true"] .play-button{background:linear-gradient(110deg,#ffe39d,#dca8ff);box-shadow:0 8px 30px #efc57166}
 .machine[data-ultra="true"] .hud-overline{color:#ffda90}
 .machine[data-ultra="true"] .core-graphic{filter:drop-shadow(0 0 48px #ffc763a3)}
+
+/* One-tap ULTRA hunt: resumable, cancellable, and visually distinct. */
+.ultra-auto-button{display:block;width:100%;margin-top:12px;min-height:52px;cursor:pointer;border:1px solid #e5b964;border-radius:11px;background:linear-gradient(115deg,#6b4624,#ab7940 50%,#80508c);color:#fff7df;font-size:15px;font-weight:900;letter-spacing:.06em;box-shadow:0 5px 20px #f4c87628;transition:filter .16s,transform .12s}
+.ultra-auto-button:hover:not(:disabled){filter:brightness(1.14)}
+.ultra-auto-button:active:not(:disabled){transform:translateY(1px)}
+.ultra-auto-button[aria-pressed="true"]{background:linear-gradient(115deg,#743849,#a34b58);border-color:#f7a1ad;box-shadow:0 5px 20px #f37a9529}
+.ultra-auto-button:disabled{cursor:not-allowed;opacity:.6}
+.ultra-auto-status{margin:9px 3px 4px;font-size:11px;line-height:1.6;color:#e2c999;min-height:18px;overflow-wrap:anywhere}
+.play-button:disabled,.quick-actions button:disabled,.icon-button:disabled{cursor:not-allowed;opacity:.55;filter:saturate(.5)}
+@media(max-width:380px){.ultra-auto-button{font-size:13px;min-height:48px}.ultra-auto-status{font-size:10px}}
