@@ -1,4 +1,4 @@
-import {CONFIG,createGame,nextAction,autoCycles,machineRate,continueChance,expectedStats} from './game-engine.mjs';
+import {CONFIG,createGame,nextAction,autoCycles,autoUntilUltra,machineRate,continueChance,expectedStats} from './game-engine.mjs';
 const SAVE_KEY='revolt95-simulator-v3';
 const $=(id)=>document.getElementById(id);
 const format=(n)=>Number(n).toLocaleString('ja-JP');
@@ -26,6 +26,7 @@ function safeLoad(){try{
 }catch{return null}}
 let state=safeLoad()||createGame();
 let sound=false;
+let ultraRun=null; // In-memory session only; game progress remains saved after each chunk.
 let audio=null;
 function tone(f=500,d=.08,shape='sine',volume=.025){if(!sound)return;try{audio??=new (window.AudioContext||window.webkitAudioContext)();if(audio.state==='suspended')audio.resume();let osc=audio.createOscillator(),gain=audio.createGain(),t=audio.currentTime;osc.type=shape;osc.frequency.setValueAtTime(f,t);gain.gain.setValueAtTime(volume,t);gain.gain.exponentialRampToValueAtTime(.0001,t+d);osc.connect(gain);gain.connect(audio.destination);osc.start(t);osc.stop(t+d)}catch{}}
 function playSound(phase,kind){if(!sound)return;if(kind==='upper'){tone(830,.18,'triangle');setTimeout(()=>tone(1170,.22,'triangle'),95)}else if(kind==='success'||kind==='rush'){tone(610,.14);setTimeout(()=>tone(860,.14),90)}else if(kind==='lose'){tone(220,.18,'sawtooth',.012)}else tone(430,.09)}
@@ -83,15 +84,56 @@ function render(){
   for(const [el,field] of [['czCount','czCount'],['bonusCount','bonusCount'],['atCount','atCount'],['upperCount','upperCount'],['ultraCount','ultraCount'],['cycleCount','cycleCount']])$(el).textContent=format(state[field]);
   $('maxRush').textContent=`${format(state.maxRushGain)} 枚`;
   $('chanceCaption').textContent=state.phase==='upper'&&state.ultraMode?'ULTRA突入中！ 継続率99%で固定。':state.phase==='upper'?`現在${Math.round(continueChance(state)*100)}%。このセットを継続すると次回${Math.round(Math.min(CONFIG.upperCap,continueChance(state)+CONFIG.upperIncrement)*100)}%。`:'通常90〜95% / 上位突入時0.57%で99%固定のULTRAへ。';
+  const running=ultraRun!==null;
+  for(const id of ['playButton','auto10','auto100','resetButton'])$(id).disabled=running;
+  $('autoUltra').textContent=running?'■ ULTRA探索を停止':state.phase==='upper'&&state.ultraMode?'ULTRA突入中':'▶ 1タップでULTRAまで';
+  $('autoUltra').disabled=!running&&state.phase==='upper'&&state.ultraMode;
+  $('autoUltra').setAttribute('aria-pressed',String(running));
   renderEvents();renderChart();
   try{localStorage.setItem(SAVE_KEY,JSON.stringify(state))}catch{}
 }
-function act(){nextAction(state);playSound(state.phase,state.banner.kind);render();const box=$('machine');box.classList.remove('flash');void box.offsetWidth;box.classList.add('flash');}
-function auto(n){autoCycles(state,n);playSound(state.phase,state.banner.kind);render();const box=$('machine');box.classList.remove('flash');void box.offsetWidth;box.classList.add('flash');}
+function act(){if(ultraRun)return;nextAction(state);playSound(state.phase,state.banner.kind);render();const box=$('machine');box.classList.remove('flash');void box.offsetWidth;box.classList.add('flash');}
+function auto(n){if(ultraRun)return;autoCycles(state,n);playSound(state.phase,state.banner.kind);render();const box=$('machine');box.classList.remove('flash');void box.offsetWidth;box.classList.add('flash');}
+// Run normal draws in short chunks so STOP and other UI events remain responsive.
+function setUltraStatus(message){$('ultraAutoStatus').textContent=message;}
+function endUltraRun(run,status,found=false){
+  if(ultraRun!==run)return;
+  ultraRun=null;
+  state.lastActionGames=state.gameCount-run.startGames;
+  render();
+  const info=`${format(state.cycleCount-run.startCycles)}サイクル / +${format(state.gameCount-run.startGames)}G`;
+  setUltraStatus(`${status}（${info}）`);
+  if(found){playSound(state.phase,'upper');const box=$('machine');box.classList.remove('flash');void box.offsetWidth;box.classList.add('flash');}
+}
+function runUltraChunk(run){
+  if(ultraRun!==run)return;
+  try{
+    const result=autoUntilUltra(state,600);
+    run.actions+=result.actions;
+    // Show the full automatic run G total, not only the most recent chunk.
+    state.lastActionGames=state.gameCount-run.startGames;
+    if(result.reached){endUltraRun(run,'ULTRA 99% 突入！ このセットから手動操作できます',true);return;}
+    render();
+    setUltraStatus(`ULTRA抽選中… ${format(run.actions)}操作 / ${format(state.cycleCount-run.startCycles)}サイクル / +${format(state.gameCount-run.startGames)}G · 停止可能`);
+    requestAnimationFrame(()=>runUltraChunk(run));
+  }catch(error){
+    endUltraRun(run,'自動進行を中断しました');
+    console.error('ULTRA autoplay failed',error);
+  }
+}
+function toggleUltraAuto(){
+  if(ultraRun){endUltraRun(ultraRun,'探索を停止しました。現在の状態から再開できます');return;}
+  if(state.phase==='upper'&&state.ultraMode){setUltraStatus('すでにULTRA 99%に突入しています。');return;}
+  const run={startGames:state.gameCount,startCycles:state.cycleCount,actions:0};
+  ultraRun=run;
+  render();setUltraStatus('ULTRA 99%突入まで、通常抽選を自動消化中…');
+  requestAnimationFrame(()=>runUltraChunk(run));
+}
+$('autoUltra').addEventListener('click',toggleUltraAuto);
 $('playButton').addEventListener('click',act);
 $('auto10').addEventListener('click',()=>auto(10));
 $('auto100').addEventListener('click',()=>auto(100));
-$('resetButton').addEventListener('click',()=>{if(window.confirm('累計データをリセットして最初から始めますか？')){state=createGame();render();}});
+$('resetButton').addEventListener('click',()=>{if(ultraRun)return;if(window.confirm('累計データをリセットして最初から始めますか？')){state=createGame();render();}});
 $('soundButton').addEventListener('click',()=>{sound=!sound;$('soundButton').textContent=sound?'♪ ON':'♪ OFF';if(sound)tone(740,.11)});
-window.addEventListener('keydown',e=>{if(e.code==='Space'&&!e.repeat&&!e.altKey&&!e.ctrlKey&&!e.metaKey&&!['BUTTON','INPUT','TEXTAREA','SELECT','SUMMARY'].includes(document.activeElement?.tagName)){e.preventDefault();act();}});
+window.addEventListener('keydown',e=>{if(e.code==='Space'&&!e.repeat&&!e.altKey&&!e.ctrlKey&&!e.metaKey&&!['BUTTON','INPUT','TEXTAREA','SELECT','SUMMARY'].includes(document.activeElement?.tagName)){e.preventDefault();if(!ultraRun)act();}});
 render();
