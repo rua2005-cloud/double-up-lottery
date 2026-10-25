@@ -142,6 +142,21 @@ export function autoCycles(s,count,rng=Math.random){
   s.lastActionGames=s.gameCount-startGames;
   return s;
 }
+/** Run genuine game draws until ULTRA is entered, or a bounded action budget is used.
+ * Designed for repeated small chunks so the browser remains responsive and cancellable.
+ * Does not consume even one ULTRA set after the transition.
+ */
+export function autoUntilUltra(s,maxActions=600,rng=Math.random){
+  if(!Number.isSafeInteger(maxActions)||maxActions<1||maxActions>100000)throw RangeError('maxActions must be 1–100000');
+  const startGames=s.gameCount;
+  let actions=0;
+  while(actions<maxActions && !(s.phase==='upper' && s.ultraMode)){
+    nextAction(s,rng);
+    actions++;
+  }
+  s.lastActionGames=s.gameCount-startGames;
+  return {reached:s.phase==='upper'&&s.ultraMode,actions};
+}
 export function machineRate(s){return s.totalInput>0?s.totalOutput/s.totalInput*100:null;}
 export function expectedStats(){
   const topAvg=(()=>{let alive=1,total=0; for(let i=0;i<2000;i++){total+=alive;alive*=Math.min(CONFIG.upperCap,CONFIG.upperStart+i*CONFIG.upperIncrement);if(alive<1e-12)break;}return total;})();
