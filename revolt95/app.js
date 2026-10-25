@@ -15,6 +15,9 @@ function safeLoad(){try{
   const raw=localStorage.getItem(SAVE_KEY);if(!raw)return null;
   const s=JSON.parse(raw);
   if(!s||s.version!==3||!phaseMap[s.phase]||!Array.isArray(s.events)||!Array.isArray(s.history)||!Number.isFinite(s.net)||!Number.isFinite(s.totalInput)||s.totalInput<0)return null;
+  // 既存の保存データは保持し、新たな99%モード情報だけ初期化する。
+  if(typeof s.ultraMode!=='boolean')s.ultraMode=false;
+  if(!Number.isSafeInteger(s.ultraCount)||s.ultraCount<0)s.ultraCount=0;
   // 旧ルールで抽選済みの通常時G数だけ、新しい振り分けで引き直す（累計記録は保持）。
   if(s.phase==='normal'&&!CONFIG.normalG.some(x=>x.g===s.targetG)){
     let remaining=Math.random();for(const item of CONFIG.normalG){remaining-=item.p;if(remaining<0){s.targetG=item.g;break;}}
@@ -55,9 +58,13 @@ function render(){
     t.desc=rev?'平均+460枚 / AT突入期待度53%':'+60枚 / AT突入期待度46%';t.upcoming=rev?'革命ボーナスを消化':'決戦ボーナスを消化';
   }
   if(state.phase==='rush'){t.upcoming=`${state.atSetG}G · 純増9枚/G`;}
-  if(state.phase==='upper'){t.number=String(Math.round(continueChance(state)*100));t.upcoming=`${state.atSetG}G · +${state.atSetG*9}枚`;}
+  if(state.phase==='upper'){
+    t.number=String(Math.round(continueChance(state)*100));t.upcoming=`${state.atSetG}G · +${state.atSetG*9}枚`;
+    if(state.ultraMode){t.title='超革命RUSH 99';t.overline='ULTRA REVOLUTION RUSH';t.desc='限界突破！ 99%継続で固定';t.symbol='99';}
+  }
   $('machine').dataset.phase=state.phase;
-  $('phaseEnglish').textContent=phaseMap[state.phase];
+  $('machine').dataset.ultra=state.phase==='upper'&&state.ultraMode?'true':'false';
+  $('phaseEnglish').textContent=state.phase==='upper'&&state.ultraMode?'ULTRA REVOLUTION RUSH':phaseMap[state.phase];
   $('phaseCounter').textContent=state.phase==='rush'?`BREAK ${state.normalWins}/3`:state.phase==='upper'?`UPPER SET ${state.upperWins+1}`:`CYCLE ${state.cycleCount+1}`;
   $('hudOverline').textContent=t.overline;$('phaseNumber').replaceChildren(document.createTextNode(t.number+' '));
   const unit=document.createElement('small');unit.textContent=t.unit;$('phaseNumber').append(unit);
@@ -73,9 +80,9 @@ function render(){
   $('hudTotalGames').textContent=`${format(state.gameCount)} G`;
   $('hudLastGames').textContent=Number.isFinite(state.lastActionGames)&&state.lastActionGames>0?`+${format(state.lastActionGames)} G`:'—';
   const actual=machineRate(state);$('rate').textContent=actual===null?'—':actual.toFixed(2)+'%';
-  for(const [el,field] of [['czCount','czCount'],['bonusCount','bonusCount'],['atCount','atCount'],['upperCount','upperCount'],['cycleCount','cycleCount']])$(el).textContent=format(state[field]);
+  for(const [el,field] of [['czCount','czCount'],['bonusCount','bonusCount'],['atCount','atCount'],['upperCount','upperCount'],['ultraCount','ultraCount'],['cycleCount','cycleCount']])$(el).textContent=format(state[field]);
   $('maxRush').textContent=`${format(state.maxRushGain)} 枚`;
-  $('chanceCaption').textContent=state.phase==='upper'?`現在${Math.round(continueChance(state)*100)}%。このセットを継続すると次回${Math.round(Math.min(.95,continueChance(state)+.01)*100)}%。`:'上位突入後、継続成功ごとに+1ポイント。上限95%。';
+  $('chanceCaption').textContent=state.phase==='upper'&&state.ultraMode?'ULTRA突入中！ 継続率99%で固定。':state.phase==='upper'?`現在${Math.round(continueChance(state)*100)}%。このセットを継続すると次回${Math.round(Math.min(CONFIG.upperCap,continueChance(state)+CONFIG.upperIncrement)*100)}%。`:'通常90〜95% / 上位突入時0.57%で99%固定のULTRAへ。';
   renderEvents();renderChart();
   try{localStorage.setItem(SAVE_KEY,JSON.stringify(state))}catch{}
 }
