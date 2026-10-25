@@ -13,11 +13,13 @@ export const CONFIG = Object.freeze({
   czWin: .60, // CZ突破率の加重平均
   czWinByNormalG: {5:.45,35:.50,160:.55,300:.70,375:.84},
   revolutionBonusChance: .55,
-  bonusAtChance: {revolution:.53, decisive:.46},
+  bonusAtChance: {revolution:.52, decisive:.45},
   normalRushContinue: .75,
   upperStart:.90,
   upperIncrement:.01,
   upperCap:.95,
+  ultraEntryChance:.0057, // 0.57% of Super Rush entries
+  ultraContinue:.99,     // Ultra Rush is permanently 99%
   setLengths: [{g:10,p:.85},{g:20,p:.125},{g:50,p:.025}],
   netPerAtGame: 9,
 });
@@ -36,7 +38,7 @@ function settle(s,bet,payout,g){
 }
 function prepareNormal(s,rng){
   s.phase='normal'; s.targetG=choice(CONFIG.normalG,rng).g;
-  s.bonus=null;s.atSetG=0;s.upperWins=0;s.normalWins=0;s.rushSets=0;s.rushTotalGain=0;
+  s.bonus=null;s.atSetG=0;s.upperWins=0;s.ultraMode=false;s.normalWins=0;s.rushSets=0;s.rushTotalGain=0;
   s.cycleStart=s.net;
 }
 function finishCycle(s,rng,message){
@@ -53,14 +55,14 @@ function finishCycle(s,rng,message){
 export function createGame(rng=Math.random){
   const s={version:3,phase:'normal',bank:CONFIG.initialBank,net:0,gameCount:0,
   totalInput:0,totalOutput:0,cycleCount:0,czCount:0,bonusCount:0,atCount:0,upperCount:0,
-  normalWins:0,upperWins:0,atSetG:0,rushSets:0,rushTotalGain:0,
+  normalWins:0,upperWins:0,ultraMode:false,ultraCount:0,atSetG:0,rushSets:0,rushTotalGain:0,
   maxRushGain:0,bestCycle:-Infinity,worstCycle:Infinity,maxBalance:CONFIG.initialBank,lowBalance:CONFIG.initialBank,
   currentRushGain:0, bonus:null,history:[],events:[],banner:{kind:'info',text:'1 TAPで運命を変えろ',sub:'通常時を一括消化してCZへ進む'},eventId:0,
   cycleStart:0,lastCycle:0,targetG:0,lastActionGames:0, lastNormal:null,lastCz:null,lastBonus:null, lastAt:null};
   prepareNormal(s,rng);return s;
 }
 export function continueChance(s){
-  return s.phase==='upper' ? Math.min(CONFIG.upperCap,CONFIG.upperStart+s.upperWins*CONFIG.upperIncrement) : CONFIG.normalRushContinue;
+  return s.phase==='upper' ? (s.ultraMode ? CONFIG.ultraContinue : Math.min(CONFIG.upperCap,CONFIG.upperStart+s.upperWins*CONFIG.upperIncrement)) : CONFIG.normalRushContinue;
 }
 export function nextAction(s,rng=Math.random){
   const startGames=s.gameCount;
@@ -110,8 +112,10 @@ export function nextAction(s,rng=Math.random){
         s.normalWins++;
         if(s.normalWins>=3){
           s.phase='upper';s.upperWins=0;s.upperCount++;
+          s.ultraMode=clampRng(rng)<CONFIG.ultraEntryChance;
+          if(s.ultraMode)s.ultraCount++;
           s.atSetG=choice(CONFIG.setLengths,rng).g;
-          log(s,'upper','超革命RUSH 突入！',`3連続成功 / 次回継続率90%`);
+          log(s,'upper',s.ultraMode?'超革命RUSH 99 突入！':'超革命RUSH 突入！',`3連続成功 / 次回継続率${s.ultraMode?'99%固定':'90%'}`);
         }else{
           s.atSetG=choice(CONFIG.setLengths,rng).g;
           log(s,'success',`${(chance*100).toFixed(0)}% 継続成功！`,`革命RUSH ${s.normalWins}/3突破 / +${net}枚`);
@@ -123,7 +127,7 @@ export function nextAction(s,rng=Math.random){
       }
     } else {
       s.maxRushGain=Math.max(s.maxRushGain,s.currentRushGain);
-      finishCycle(s,rng,`${mode==='upper'?'超革命RUSH':'革命RUSH'}終了 — +${s.currentRushGain.toLocaleString('ja-JP')}枚`);
+      finishCycle(s,rng,`${mode==='upper'?(s.ultraMode?'超革命RUSH 99':'超革命RUSH'):'革命RUSH'}終了 — +${s.currentRushGain.toLocaleString('ja-JP')}枚`);
     }
   } else throw Error(`Unknown phase: ${s.phase}`);
   s.lastActionGames=s.gameCount-startGames;
@@ -142,7 +146,10 @@ export function machineRate(s){return s.totalInput>0?s.totalOutput/s.totalInput*
 export function expectedStats(){
   const topAvg=(()=>{let alive=1,total=0; for(let i=0;i<2000;i++){total+=alive;alive*=Math.min(CONFIG.upperCap,CONFIG.upperStart+i*CONFIG.upperIncrement);if(alive<1e-12)break;}return total;})();
   const meanSet=CONFIG.setLengths.reduce((a,x)=>a+x.g*x.p,0);
-  const meanRush=(1+.75+.75**2)+.75**3*topAvg;
+  const ultraAvg=1/(1-CONFIG.ultraContinue);
+  const mixedUpperAvg=(1-CONFIG.ultraEntryChance)*topAvg+CONFIG.ultraEntryChance*ultraAvg;
+  const p=CONFIG.normalRushContinue;
+  const meanRush=(1+p+p**2)+p**3*mixedUpperAvg;
   const meanCzWin=CONFIG.normalG.reduce((sum,item)=>sum+item.p*CONFIG.czWinByNormalG[item.g],0);
   const pAt=meanCzWin*(CONFIG.revolutionBonusChance*CONFIG.bonusAtChance.revolution+(1-CONFIG.revolutionBonusChance)*CONFIG.bonusAtChance.decisive);
   const meanNormalGames=CONFIG.normalG.reduce((sum,item)=>sum+item.g*item.p,0);
@@ -154,6 +161,6 @@ export function expectedStats(){
   const expectedProfit=-normalLoss-czLoss+bonusNet+rushNet;
   const inTotal=meanNormalGames*CONFIG.normalBet+CONFIG.czGames*3+meanCzWin*(.55*(51+1/9)+.45*16)*3+pAt*meanRush*meanSet*3;
   return {meanNormalGames,meanCzWin,meanNormalLoss:normalLoss,meanCzLoss:czLoss,meanRushSets:meanRush,
-    meanUpperSets:topAvg,meanSetGames:meanSet,meanRushPayout:meanRush*meanSet*9,atChancePerCZ:pAt,
+    meanUpperSets:mixedUpperAvg,meanStandardUpperSets:topAvg,meanUltraUpperSets:ultraAvg,meanSetGames:meanSet,meanRushPayout:meanRush*meanSet*9,atChancePerCZ:pAt,
     expectedProfit,inputPerCycle:inTotal, expectedRate:100*(1+expectedProfit/inTotal)};
 }
