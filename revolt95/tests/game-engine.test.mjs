@@ -3,7 +3,7 @@ import {test} from 'node:test';
 import {CONFIG,createGame,nextAction,autoCycles,autoUntilUltra,continueChance,expectedStats,machineRate} from '../game-engine.mjs';
 function seeded(seed){let s=seed>>>0;return ()=>((s=(s*1664525+1013904223)>>>0)/2**32);}
 test('theoretical machine payout rate rounds to 99.5%',()=>{
- const x=expectedStats();assert.ok(Math.abs(x.expectedRate-99.5)<.05);assert.equal(x.meanNormalGames,180.1);assert.ok(Math.abs(x.meanCzWin-.60)<1e-12);assert.ok(Math.abs(x.meanRushPayout-1083.7074)<.001);
+ const x=expectedStats();assert.ok(Math.abs(x.expectedRate-99.5)<.05);assert.equal(x.meanNormalGames,180.1);assert.ok(Math.abs(x.meanCzWin-.60)<1e-12);assert.ok(Math.abs(x.meanRushPayout-1083.80188)<.001);
 });
 test('normal game is consumed in exactly one action and transfers to CZ',()=>{
  const s=createGame(()=>0); assert.equal(s.targetG,5);nextAction(s,()=>0);assert.equal(s.phase,'cz');assert.equal(s.gameCount,5);assert.equal(s.lastActionGames,5);assert.equal(s.totalInput,15);assert.equal(s.net,-15);
@@ -64,72 +64,104 @@ test('distribution matches proposed rates and reduces deep CZ failures',()=>{
 test('last-action G counter also tracks AUTO cycles',()=>{const s=createGame(seeded(123));autoCycles(s,10,seeded(567));assert.equal(s.lastActionGames,s.gameCount);assert.ok(s.gameCount>0);});
 
 
-test('99% Ultra Rush is selected independently on upper entry and remains fixed',()=>{
+// These deterministic helpers exercise the cross-cycle qualification rather than a random ULTRA hit.
+const superFromNormal=s=>{assert.equal(s.phase,'normal');nextAction(s,()=>0);nextAction(s,()=>0);nextAction(s,()=>0);for(let i=0;i<3;i++)nextAction(s,()=>0);assert.equal(s.phase,'upper');};
+const loseUpper=s=>{assert.equal(s.phase,'upper');nextAction(s,()=>.999);assert.equal(s.phase,'normal');};
+test('first SUPER never triggers ULTRA, second consecutive SUPER gets 25% draw',()=>{
  const s=createGame(()=>0);
- nextAction(s,()=>0);nextAction(s,()=>0);nextAction(s,()=>0);
- for(let i=0;i<3;i++)nextAction(s,()=>0);
- assert.equal(s.phase,'upper');
- assert.equal(s.ultraMode,true);
- assert.equal(s.ultraCount,1);
- assert.equal(continueChance(s),.99);
- for(let i=0;i<40;i++)nextAction(s,()=>0);
- assert.equal(s.phase,'upper');
- assert.equal(s.upperWins,40);
- assert.equal(continueChance(s),.99);
- assert.equal(s.ultraCount,1);
-});
-test('99% Ultra Rush can fail on its 1% loss outcome',()=>{
- const s=createGame(()=>0);s.phase='upper';s.ultraMode=true;s.atSetG=10;
- nextAction(s,()=>.995);
- assert.equal(s.phase,'normal');
- assert.equal(s.cycleCount,1);
- assert.equal(s.lastAt.chance,.99);
- assert.equal(s.lastAt.success,false);
+ superFromNormal(s);
+ assert.equal(s.cycleSuperEntered,true);
  assert.equal(s.ultraMode,false);
-});
-test('normal Super Rush keeps old 90–95% progression and Ultra entry is rare',()=>{
- assert.equal(CONFIG.ultraEntryChance,.0057);
- assert.equal(CONFIG.ultraContinue,.99);
- assert.deepEqual(CONFIG.bonusAtChance,{revolution:.52,decisive:.45});
- const s=createGame(()=>0);s.phase='upper';s.ultraMode=false;s.upperWins=0;
- assert.equal(continueChance(s),.90);
- s.upperWins=2;assert.equal(continueChance(s),.92);
- s.upperWins=10;assert.equal(continueChance(s),.95);
- const stats=expectedStats();
- assert.ok(Math.abs(stats.expectedRate-99.49272)<.0001);
- assert.ok(stats.meanUltraUpperSets===100 || Math.abs(stats.meanUltraUpperSets-100)<1e-9);
-});
-
-test('one tap advances through regular draws and stops before the first ULTRA set',()=>{
- const s=createGame(()=>0);
- const result=autoUntilUltra(s,200,()=>0);
- assert.deepEqual(result,{reached:true,actions:6});
- assert.equal(s.phase,'upper');
+ assert.equal(s.ultraCount,0);
+ assert.equal(s.previousCycleSuper,false);
+ loseUpper(s);
+ assert.equal(s.previousCycleSuper,true);
+ assert.equal(s.cycleSuperEntered,false);
+ superFromNormal(s);
  assert.equal(s.ultraMode,true);
- assert.equal(s.upperWins,0);
  assert.equal(s.ultraCount,1);
- assert.equal(s.lastAt.mode,'rush'); // the ULTRA first set has NOT been played
- assert.equal(s.rushSets,3);
- assert.equal(s.lastActionGames,s.gameCount);
+ assert.equal(s.upperWins,0);
+ assert.equal(s.atSetG,10);
+ assert.equal(continueChance(s),.95);
+ assert.equal(s.lastAt.mode,'rush');
+ assert.equal(s.lastAt.success,true);
  assert.equal(s.totalOutput-s.totalInput,s.net);
 });
-test('ULTRA autoplay pauses cleanly at a chunk limit and resumes without resetting',()=>{
+test('SUPER streak survives 3+ cycles and 25% lottery failure',()=>{
  const s=createGame(()=>0);
- let a=autoUntilUltra(s,2,()=>0);
- assert.deepEqual(a,{reached:false,actions:2});
- assert.equal(s.phase,'bonus');
- a=autoUntilUltra(s,2,()=>0);
- assert.deepEqual(a,{reached:false,actions:2});
- assert.equal(s.phase,'rush');
- a=autoUntilUltra(s,2,()=>0);
- assert.deepEqual(a,{reached:true,actions:2});
+ superFromNormal(s);loseUpper(s);
+ nextAction(s,()=>0);nextAction(s,()=>0);nextAction(s,()=>0);
+ nextAction(s,()=>0);nextAction(s,()=>0);
+ // third 75% draw, then 25% ULTRA lottery: 0.5 means lottery failure
+ let n=0;nextAction(s,()=>++n===2?.5:0);
+ assert.equal(s.phase,'upper');assert.equal(s.ultraMode,false);assert.equal(s.previousCycleSuper,true);
+ loseUpper(s);
+ assert.equal(s.previousCycleSuper,true);
+ superFromNormal(s);
+ assert.equal(s.ultraMode,true);
+});
+test('a cycle without SUPER resets ULTRA qualification',()=>{
+ const s=createGame(()=>0);
+ superFromNormal(s);loseUpper(s);
+ nextAction(s,()=>0);nextAction(s,()=>.999); // CZ fails this cycle
+ assert.equal(s.phase,'normal');
+ assert.equal(s.previousCycleSuper,false);
+ superFromNormal(s);
+ assert.equal(s.ultraMode,false);
+ assert.equal(s.ultraCount,0);
+});
+test('ULTRA has 95% continuation and its own 10/20/50/200G table',()=>{
+ const s=createGame(()=>0);
+ superFromNormal(s);loseUpper(s);superFromNormal(s);
+ assert.deepEqual(CONFIG.ultraSetLengths,[{g:10,p:.60},{g:20,p:.25},{g:50,p:.14},{g:200,p:.01}]);
+ assert.equal(CONFIG.ultraContinue,.95);
+ assert.equal(continueChance(s),.95);
+ // A continuation selects the 200G set only on a last-percentile length draw.
+ let n=0;nextAction(s,()=>++n===1?0:.999);
+ assert.equal(s.atSetG,200);
+ assert.equal(s.upperWins,1);
+ assert.equal(continueChance(s),.95);
+ const before=s.gameCount;nextAction(s,()=>.999);
+ assert.equal(s.gameCount-before,200);
+ assert.equal(s.lastAt.net,1800);
+ assert.equal(s.lastAt.chance,.95);
+ assert.equal(s.lastAt.success,false);
+ assert.equal(s.phase,'normal');
+ assert.equal(s.previousCycleSuper,true);
+});
+test('new theoretical machine rate and ULTRA frequency',()=>{
+ const x=expectedStats();
+ assert.equal(CONFIG.ultraEntryChance,.25);
+ assert.equal(CONFIG.ultraContinue,.95);
+ assert.ok(Math.abs(x.expectedRate-99.49645483956)<1e-8);
+ assert.ok(Math.abs(x.ultraChancePerCycle-0.00382242722717)<1e-10);
+ assert.ok(Math.abs(x.meanUltraSetGames-20)<1e-10);
+ assert.ok(Math.abs(x.meanUltraUpperSets-20)<1e-9);
+});
+test('one-tap AUTO stops before ULTRA first set after two consecutive SUPERs',()=>{
+ const s=createGame(()=>0);
+ const result=autoUntilUltra(s,40,()=>s.phase==='upper'&&s.lastAt?.mode==='upper'?.999:0);
+ assert.deepEqual(result,{reached:true,actions:14});
  assert.equal(s.phase,'upper');
+ assert.equal(s.ultraMode,true);
+ assert.equal(s.ultraCount,1);
+ assert.equal(s.upperCount,2);
  assert.equal(s.upperWins,0);
- const before={games:s.gameCount,net:s.net,phase:s.phase};
- assert.deepEqual(autoUntilUltra(s,600,()=>0),{reached:true,actions:0});
- assert.equal(s.gameCount,before.games);
- assert.equal(s.net,before.net);
- assert.equal(s.phase,before.phase);
+ assert.equal(s.lastAt.mode,'rush');
+ assert.equal(s.rushSets,3);
+ assert.equal(s.lastActionGames,s.gameCount);
+ const prev=s.gameCount;assert.deepEqual(autoUntilUltra(s,600,()=>0),{reached:true,actions:0});
+ assert.equal(s.gameCount,prev);
+});
+test('one-tap AUTO can pause and resume across the streak boundary',()=>{
+ const s=createGame(()=>0);
+ let last;
+ let count=0;
+ do{last=autoUntilUltra(s,2,()=>s.phase==='upper'&&s.lastAt?.mode==='upper'?.999:0);count+=last.actions;}while(!last.reached&&count<40);
+ assert.equal(count,14);
+ assert.equal(last.reached,true);
+ assert.equal(s.ultraCount,1);
+ assert.equal(s.lastAt.mode,'rush');
 });
 test('AUTO-to-ULTRA uses exactly the same random draws as manual play',()=>{
  const rngA=seeded(1234),rngB=seeded(1234);
