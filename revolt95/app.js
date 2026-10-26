@@ -15,9 +15,11 @@ function safeLoad(){try{
   const raw=localStorage.getItem(SAVE_KEY);if(!raw)return null;
   const s=JSON.parse(raw);
   if(!s||s.version!==3||!phaseMap[s.phase]||!Array.isArray(s.events)||!Array.isArray(s.history)||!Number.isFinite(s.net)||!Number.isFinite(s.totalInput)||s.totalInput<0)return null;
-  // 既存の保存データは保持し、新たな99%モード情報だけ初期化する。
+  // Previous version saves have no cross-cycle qualification flags. Keep counters and current game.
   if(typeof s.ultraMode!=='boolean')s.ultraMode=false;
   if(!Number.isSafeInteger(s.ultraCount)||s.ultraCount<0)s.ultraCount=0;
+  if(typeof s.previousCycleSuper!=='boolean')s.previousCycleSuper=false;
+  if(typeof s.cycleSuperEntered!=='boolean')s.cycleSuperEntered=s.phase==='upper';
   // 旧ルールで抽選済みの通常時G数だけ、新しい振り分けで引き直す（累計記録は保持）。
   if(s.phase==='normal'&&!CONFIG.normalG.some(x=>x.g===s.targetG)){
     let remaining=Math.random();for(const item of CONFIG.normalG){remaining-=item.p;if(remaining<0){s.targetG=item.g;break;}}
@@ -61,7 +63,7 @@ function render(){
   if(state.phase==='rush'){t.upcoming=`${state.atSetG}G · 純増9枚/G`;}
   if(state.phase==='upper'){
     t.number=String(Math.round(continueChance(state)*100));t.upcoming=`${state.atSetG}G · +${state.atSetG*9}枚`;
-    if(state.ultraMode){t.title='超革命RUSH 99';t.overline='ULTRA REVOLUTION RUSH';t.desc='限界突破！ 99%継続で固定';t.symbol='99';}
+    if(state.ultraMode){t.title='ULTRA革命RUSH';t.overline='ULTRA REVOLUTION RUSH';t.desc='2サイクル連続SUPER達成！ 95%固定 / 50G・200G強化';t.symbol='U';}
   }
   $('machine').dataset.phase=state.phase;
   $('machine').dataset.ultra=state.phase==='upper'&&state.ultraMode?'true':'false';
@@ -83,7 +85,8 @@ function render(){
   const actual=machineRate(state);$('rate').textContent=actual===null?'—':actual.toFixed(2)+'%';
   for(const [el,field] of [['czCount','czCount'],['bonusCount','bonusCount'],['atCount','atCount'],['upperCount','upperCount'],['ultraCount','ultraCount'],['cycleCount','cycleCount']])$(el).textContent=format(state[field]);
   $('maxRush').textContent=`${format(state.maxRushGain)} 枚`;
-  $('chanceCaption').textContent=state.phase==='upper'&&state.ultraMode?'ULTRA突入中！ 継続率99%で固定。':state.phase==='upper'?`現在${Math.round(continueChance(state)*100)}%。このセットを継続すると次回${Math.round(Math.min(CONFIG.upperCap,continueChance(state)+CONFIG.upperIncrement)*100)}%。`:'通常90〜95% / 上位突入時0.57%で99%固定のULTRAへ。';
+  $('chanceCaption').textContent=state.phase==='upper'&&state.ultraMode?'ULTRA突入中！ 95%固定・セットG数優遇。':state.phase==='upper'?`現在${Math.round(continueChance(state)*100)}%。このセットを継続すると次回${Math.round(Math.min(CONFIG.upperCap,continueChance(state)+CONFIG.upperIncrement)*100)}%。`:'前のサイクルと連続でSUPER突入したときのみ25%でULTRA抽選。';
+  $('superStreakCaption').textContent=state.phase==='upper'&&state.cycleSuperEntered&&state.previousCycleSuper?'2サイクル連続SUPER達成（ULTRA抽選済み）':state.cycleSuperEntered?'今回SUPER突入済み / 次サイクルもSUPERで25%抽選':state.previousCycleSuper?'前回SUPER達成 / 今回もSUPERで25%抽選':'SUPER連続条件：未達成';
   const running=ultraRun!==null;
   for(const id of ['playButton','auto10','auto100','resetButton'])$(id).disabled=running;
   $('autoUltra').textContent=running?'■ ULTRA探索を停止':state.phase==='upper'&&state.ultraMode?'ULTRA突入中':'▶ 1タップでULTRAまで';
@@ -112,7 +115,7 @@ function runUltraChunk(run){
     run.actions+=result.actions;
     // Show the full automatic run G total, not only the most recent chunk.
     state.lastActionGames=state.gameCount-run.startGames;
-    if(result.reached){endUltraRun(run,'ULTRA 99% 突入！ このセットから手動操作できます',true);return;}
+    if(result.reached){endUltraRun(run,'ULTRA 95% 突入！ このセットから手動操作できます',true);return;}
     render();
     setUltraStatus(`ULTRA抽選中… ${format(run.actions)}操作 / ${format(state.cycleCount-run.startCycles)}サイクル / +${format(state.gameCount-run.startGames)}G · 停止可能`);
     requestAnimationFrame(()=>runUltraChunk(run));
@@ -123,10 +126,10 @@ function runUltraChunk(run){
 }
 function toggleUltraAuto(){
   if(ultraRun){endUltraRun(ultraRun,'探索を停止しました。現在の状態から再開できます');return;}
-  if(state.phase==='upper'&&state.ultraMode){setUltraStatus('すでにULTRA 99%に突入しています。');return;}
+  if(state.phase==='upper'&&state.ultraMode){setUltraStatus('すでにULTRA 95%に突入しています。');return;}
   const run={startGames:state.gameCount,startCycles:state.cycleCount,actions:0};
   ultraRun=run;
-  render();setUltraStatus('ULTRA 99%突入まで、通常抽選を自動消化中…');
+  render();setUltraStatus('2サイクル連続SUPER→25%抽選を繰り返し、ULTRA 95%突入まで自動消化中…');
   requestAnimationFrame(()=>runUltraChunk(run));
 }
 $('autoUltra').addEventListener('click',toggleUltraAuto);
