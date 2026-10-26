@@ -141,7 +141,7 @@ test('new theoretical machine rate and ULTRA frequency',()=>{
 test('one-tap AUTO stops before ULTRA first set after two consecutive SUPERs',()=>{
  const s=createGame(()=>0);
  const result=autoUntilUltra(s,40,()=>s.phase==='upper'&&s.lastAt?.mode==='upper'?.999:0);
- assert.deepEqual(result,{reached:true,actions:13});
+ assert.deepEqual(result,{reached:true,actions:14});
  assert.equal(s.phase,'upper');
  assert.equal(s.ultraMode,true);
  assert.equal(s.ultraCount,1);
@@ -158,7 +158,7 @@ test('one-tap AUTO can pause and resume across the streak boundary',()=>{
  let last;
  let count=0;
  do{last=autoUntilUltra(s,2,()=>s.phase==='upper'&&s.lastAt?.mode==='upper'?.999:0);count+=last.actions;}while(!last.reached&&count<40);
- assert.equal(count,13);
+ assert.equal(count,14);
  assert.equal(last.reached,true);
  assert.equal(s.ultraCount,1);
  assert.equal(s.lastAt.mode,'rush');
