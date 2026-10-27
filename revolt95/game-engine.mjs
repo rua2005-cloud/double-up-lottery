@@ -18,7 +18,9 @@ export const CONFIG = Object.freeze({
   upperStart:.90,
   upperIncrement:.01,
   upperCap:.95,
-  superZeroChance:.25, // 2 consecutive SUPER cycles: 25% end before SUPER pays out
+  superZeroChance:.30, // 2 consecutive SUPER cycles: 30% end before SUPER pays out
+  specialAfterSuperG: [{g:5,p:.99},{g:22925,p:.01}],
+  specialAfterSuperCzWin: {5:.84,22925:.60},
   setLengths: [{g:10,p:.85},{g:20,p:.125},{g:50,p:.025}],
   netPerAtGame: 9,
 });
@@ -36,7 +38,9 @@ function settle(s,bet,payout,g){
   s.lowBalance=Math.min(s.lowBalance,s.bank);
 }
 function prepareNormal(s,rng){
-  s.phase='normal'; s.targetG=choice(CONFIG.normalG,rng).g;
+  s.phase='normal';
+  s.specialCycle=Boolean(s.previousCycleSuper);
+  s.targetG=choice(s.specialCycle?CONFIG.specialAfterSuperG:CONFIG.normalG,rng).g;
   s.bonus=null;s.atSetG=0;s.upperWins=0;s.normalWins=0;s.rushSets=0;s.rushTotalGain=0;
   s.cycleSuperEntered=false;
   s.cycleStart=s.net;
@@ -55,9 +59,9 @@ function finishCycle(s,rng,message){
   if(message)log(s,gain>=0?'win':'lose',message,`${gain>=0?'+':''}${gain.toLocaleString('ja-JP')}枚 / 次のCZまで通常時1タップ`);
 }
 export function createGame(rng=Math.random){
-  const s={version:4,phase:'normal',bank:CONFIG.initialBank,net:0,gameCount:0,
+  const s={version:5,phase:'normal',bank:CONFIG.initialBank,net:0,gameCount:0,
   totalInput:0,totalOutput:0,cycleCount:0,czCount:0,bonusCount:0,atCount:0,upperCount:0,
-  normalWins:0,upperWins:0,superZeroCount:0,previousCycleSuper:false,cycleSuperEntered:false,atSetG:0,rushSets:0,rushTotalGain:0,
+  normalWins:0,upperWins:0,superZeroCount:0,previousCycleSuper:false,cycleSuperEntered:false,specialCycle:false,atSetG:0,rushSets:0,rushTotalGain:0,
   maxRushGain:0,bestCycle:-Infinity,worstCycle:Infinity,maxBalance:CONFIG.initialBank,lowBalance:CONFIG.initialBank,
   currentRushGain:0, bonus:null,history:[],events:[],banner:{kind:'info',text:'1 TAPで運命を変えろ',sub:'通常時を一括消化してCZへ進む'},eventId:0,
   cycleStart:0,lastCycle:0,targetG:0,lastActionGames:0, lastNormal:null,lastCz:null,lastBonus:null, lastAt:null};
@@ -77,11 +81,11 @@ export function nextAction(s,rng=Math.random){
     settle(s,bet,paid,s.targetG);
     s.lastNormal={g:s.targetG,bet,paid,net:paid-bet};
     s.phase='cz';s.czCount++;
-    log(s,'cz','ドルシア攻防戦 突入',`${s.targetG}G消化 / 通常時 ${paid-bet>=0?'+':''}${paid-bet}枚`);
+    log(s,'cz',s.specialCycle?'SUPER後・特別CZ 突入！':'ドルシア攻防戦 突入',`undefinedG消化 / CZ突破率${Math.round(((s.specialCycle?CONFIG.specialAfterSuperCzWin:CONFIG.czWinByNormalG)[s.targetG] ?? CONFIG.czWin)*100)}% / 通常時 ${paid-bet>=0?'+':''}${paid-bet}枚`);
   } else if(s.phase==='cz'){
     let paid=0;for(let i=0;i<CONFIG.czGames;i++)if(clampRng(rng)<CONFIG.czPayThreeChance)paid+=3;
     settle(s,CONFIG.czGames*CONFIG.czBet,paid,CONFIG.czGames);
-    const chance=CONFIG.czWinByNormalG[s.lastNormal.g] ?? CONFIG.czWin; // 旧保存データの進行中CZにも対応
+    const chance=(s.specialCycle?CONFIG.specialAfterSuperCzWin:CONFIG.czWinByNormalG)[s.lastNormal.g] ?? CONFIG.czWin; // Special 5G CZ differs from normal 5G CZ
     const success=clampRng(rng)<chance;
     s.lastCz={success,paid,net:paid-CONFIG.czGames*CONFIG.czBet,chance};
     if(success){
@@ -120,10 +124,10 @@ export function nextAction(s,rng=Math.random){
           if(eligible && clampRng(rng)<CONFIG.superZeroChance){
             s.superZeroCount++;
             s.maxRushGain=Math.max(s.maxRushGain,s.currentRushGain);
-            finishCycle(s,rng,'2サイクル連続SUPER：25%の出玉抑制に当選 — SUPER獲得0枚で終了（通常AT分は保持）');
+            finishCycle(s,rng,'2サイクル連続SUPER：30%の出玉抑制に当選 — SUPER獲得0枚で終了（通常AT分は保持）');
           } else {
             s.atSetG=choice(CONFIG.setLengths,rng).g;
-            log(s,'upper','超革命RUSH 突入！',eligible?'2サイクル連続SUPER：75%で通常SUPERへ / 90%スタート':'SUPER突入 / 次サイクルもSUPERなら25%で0枚終了');
+            log(s,'upper','超革命RUSH 突入！',eligible?'2サイクル連続SUPER：70%で通常SUPERへ / 90%スタート':'SUPER突入 / 次サイクルもSUPERなら30%で0枚終了');
           }
         }else{
           s.atSetG=choice(CONFIG.setLengths,rng).g;
@@ -153,32 +157,44 @@ export function autoCycles(s,count,rng=Math.random){
 }
 export function machineRate(s){return s.totalInput>0?s.totalOutput/s.totalInput*100:null;}
 export function expectedStats(){
+  // A two-state Markov model is required: the special CZ raises the chance of
+  // SUPER in the following cycle, changing the frequency of special cycles.
   const topAvg=(()=>{let alive=1,total=0;for(let i=0;i<2000;i++){total+=alive;alive*=Math.min(CONFIG.upperCap,CONFIG.upperStart+i*CONFIG.upperIncrement);if(alive<1e-12)break;}return total;})();
   const meanSet=CONFIG.setLengths.reduce((a,x)=>a+x.g*x.p,0);
-  const meanCzWin=CONFIG.normalG.reduce((sum,item)=>sum+item.p*CONFIG.czWinByNormalG[item.g],0);
-  const pAt=meanCzWin*(CONFIG.revolutionBonusChance*CONFIG.bonusAtChance.revolution+(1-CONFIG.revolutionBonusChance)*CONFIG.bonusAtChance.decisive);
   const p=CONFIG.normalRushContinue;
-  // Overlapping consecutive SUPER entries remain eligible for repeated zero-award draws.
-  const pSuper=pAt*p**3;
-  const pSuperZeroGivenSuper=pSuper*CONFIG.superZeroChance;
-  const pSuperZeroPerCycle=pSuper*pSuperZeroGivenSuper;
-  const meanUpperSets=(1-pSuperZeroGivenSuper)*topAvg;
-  const meanRush=(1+p+p**2)+p**3*meanUpperSets;
-  const expectedRushGames=pAt*(1+p+p**2)*meanSet+(pSuper-pSuperZeroPerCycle)*topAvg*meanSet;
-  const meanNormalGames=CONFIG.normalG.reduce((sum,item)=>sum+item.g*item.p,0);
-  const meanNormalPayout=CONFIG.normalReels.reduce((sum,item)=>sum+item.p*item.paid,0);
-  const normalLoss=meanNormalGames*(CONFIG.normalBet-meanNormalPayout);
+  const pAtGivenCz=CONFIG.revolutionBonusChance*CONFIG.bonusAtChance.revolution
+    +(1-CONFIG.revolutionBonusChance)*CONFIG.bonusAtChance.decisive;
+  const meanCzWin=CONFIG.normalG.reduce((a,x)=>a+x.p*CONFIG.czWinByNormalG[x.g],0);
+  const specialCzWin=CONFIG.specialAfterSuperG.reduce((a,x)=>a+x.p*CONFIG.specialAfterSuperCzWin[x.g],0);
+  const pSuperNormal=meanCzWin*pAtGivenCz*p**3;
+  const pSuperSpecial=specialCzWin*pAtGivenCz*p**3;
+  const specialCycleShare=pSuperNormal/(1-pSuperSpecial+pSuperNormal);
+  const meanNormalGames=CONFIG.normalG.reduce((a,x)=>a+x.g*x.p,0);
+  const meanSpecialGames=CONFIG.specialAfterSuperG.reduce((a,x)=>a+x.g*x.p,0);
+  const normalPerGCost=CONFIG.normalBet-CONFIG.normalReels.reduce((a,x)=>a+x.p*x.paid,0);
   const czLoss=CONFIG.czGames*CONFIG.czBet*(1-CONFIG.czPayThreeChance);
-  const bonusNet=meanCzWin*(CONFIG.revolutionBonusChance*460+(1-CONFIG.revolutionBonusChance)*60);
-  const rushNet=expectedRushGames*CONFIG.netPerAtGame;
-  const expectedProfit=-normalLoss-czLoss+bonusNet+rushNet;
-  const inTotal=meanNormalGames*CONFIG.normalBet+CONFIG.czGames*CONFIG.czBet
-    +meanCzWin*(CONFIG.revolutionBonusChance*(51+1/9)+(1-CONFIG.revolutionBonusChance)*16)*3
-    +expectedRushGames*3;
-  return {meanNormalGames,meanCzWin,meanNormalLoss:normalLoss,meanCzLoss:czLoss,
-    meanRushSets:meanRush,meanUpperSets,meanStandardUpperSets:topAvg,
-    meanSetGames:meanSet,meanRushPayout:expectedRushGames/pAt*CONFIG.netPerAtGame,
-    atChancePerCZ:pAt,superChancePerCycle:pSuper,superZeroChancePerCycle:pSuperZeroPerCycle,
-    superZeroChanceGivenSuper:pSuperZeroGivenSuper,expectedProfit,inputPerCycle:inTotal,
-    expectedRate:100*(1+expectedProfit/inTotal)};
+  const bonusNetGivenCz=CONFIG.revolutionBonusChance*460+(1-CONFIG.revolutionBonusChance)*60;
+  const bonusBetGivenCz=CONFIG.revolutionBonusChance*(51+1/9)*3+(1-CONFIG.revolutionBonusChance)*16*3;
+  function byCycle(czWin,normalGames,previousSuper){
+    const atChance=czWin*pAtGivenCz;
+    const superChance=atChance*p**3;
+    const atGames=meanSet*(atChance*(1+p+p**2)
+      +superChance*topAvg*(previousSuper?1-CONFIG.superZeroChance:1));
+    const profit=-normalGames*normalPerGCost-czLoss+czWin*bonusNetGivenCz+atGames*CONFIG.netPerAtGame;
+    const input=normalGames*CONFIG.normalBet+CONFIG.czGames*CONFIG.czBet+czWin*bonusBetGivenCz+atGames*3;
+    return {profit,input,atGames,atChance,superChance};
+  }
+  const ordinary=byCycle(meanCzWin,meanNormalGames,false);
+  const special=byCycle(specialCzWin,meanSpecialGames,true);
+  const expectedProfit=(1-specialCycleShare)*ordinary.profit+specialCycleShare*special.profit;
+  const inputPerCycle=(1-specialCycleShare)*ordinary.input+specialCycleShare*special.input;
+  const superZeroChancePerCycle=specialCycleShare*pSuperSpecial*CONFIG.superZeroChance;
+  return {
+    meanNormalGames,meanSpecialGames,meanCzWin,specialCzWin,specialCycleShare,
+    meanNormalLoss:meanNormalGames*normalPerGCost,meanCzLoss:czLoss,
+    meanStandardUpperSets:topAvg,meanSetGames:meanSet,atChancePerCZ:ordinary.atChance,
+    superChancePerCycle:(1-specialCycleShare)*pSuperNormal+specialCycleShare*pSuperSpecial,
+    superZeroChancePerCycle,normalCycle:ordinary,specialCycle:special,
+    expectedProfit,inputPerCycle,expectedRate:100*(1+expectedProfit/inputPerCycle)
+  };
 }
