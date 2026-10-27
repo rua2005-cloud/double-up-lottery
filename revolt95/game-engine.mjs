@@ -18,10 +18,8 @@ export const CONFIG = Object.freeze({
   upperStart:.90,
   upperIncrement:.01,
   upperCap:.95,
-  ultraEntryChance:.25, // only when the previous cycle also reached Super Rush
-  ultraContinue:.95,   // ULTRA stays at 95% but has high-value set lengths
+  superZeroChance:.25, // 2 consecutive SUPER cycles: 25% end before SUPER pays out
   setLengths: [{g:10,p:.85},{g:20,p:.125},{g:50,p:.025}],
-  ultraSetLengths: [{g:10,p:.60},{g:20,p:.25},{g:50,p:.14},{g:200,p:.01}],
   netPerAtGame: 9,
 });
 const clampRng = (rng)=>Math.max(0, Math.min(1-Number.EPSILON,Number(rng())));
@@ -39,7 +37,7 @@ function settle(s,bet,payout,g){
 }
 function prepareNormal(s,rng){
   s.phase='normal'; s.targetG=choice(CONFIG.normalG,rng).g;
-  s.bonus=null;s.atSetG=0;s.upperWins=0;s.ultraMode=false;s.normalWins=0;s.rushSets=0;s.rushTotalGain=0;
+  s.bonus=null;s.atSetG=0;s.upperWins=0;s.normalWins=0;s.rushSets=0;s.rushTotalGain=0;
   s.cycleSuperEntered=false;
   s.cycleStart=s.net;
 }
@@ -51,22 +49,22 @@ function finishCycle(s,rng,message){
   s.worstCycle=Math.min(s.worstCycle,gain);
   s.history.unshift({number:s.cycleCount,net:gain});
   if(s.history.length>28)s.history.length=28;
-  // A streak counts Super entry (including ULTRA), not just being in RUSH.
+  // A streak counts reaching SUPER, including a zero-award termination.
   s.previousCycleSuper=Boolean(s.cycleSuperEntered);
   prepareNormal(s,rng);
   if(message)log(s,gain>=0?'win':'lose',message,`${gain>=0?'+':''}${gain.toLocaleString('ja-JP')}枚 / 次のCZまで通常時1タップ`);
 }
 export function createGame(rng=Math.random){
-  const s={version:3,phase:'normal',bank:CONFIG.initialBank,net:0,gameCount:0,
+  const s={version:4,phase:'normal',bank:CONFIG.initialBank,net:0,gameCount:0,
   totalInput:0,totalOutput:0,cycleCount:0,czCount:0,bonusCount:0,atCount:0,upperCount:0,
-  normalWins:0,upperWins:0,ultraMode:false,ultraCount:0,previousCycleSuper:false,cycleSuperEntered:false,atSetG:0,rushSets:0,rushTotalGain:0,
+  normalWins:0,upperWins:0,superZeroCount:0,previousCycleSuper:false,cycleSuperEntered:false,atSetG:0,rushSets:0,rushTotalGain:0,
   maxRushGain:0,bestCycle:-Infinity,worstCycle:Infinity,maxBalance:CONFIG.initialBank,lowBalance:CONFIG.initialBank,
   currentRushGain:0, bonus:null,history:[],events:[],banner:{kind:'info',text:'1 TAPで運命を変えろ',sub:'通常時を一括消化してCZへ進む'},eventId:0,
   cycleStart:0,lastCycle:0,targetG:0,lastActionGames:0, lastNormal:null,lastCz:null,lastBonus:null, lastAt:null};
   prepareNormal(s,rng);return s;
 }
 export function continueChance(s){
-  return s.phase==='upper' ? (s.ultraMode ? CONFIG.ultraContinue : Math.min(CONFIG.upperCap,CONFIG.upperStart+s.upperWins*CONFIG.upperIncrement)) : CONFIG.normalRushContinue;
+  return s.phase==='upper' ? Math.min(CONFIG.upperCap,CONFIG.upperStart+s.upperWins*CONFIG.upperIncrement) : CONFIG.normalRushContinue;
 }
 export function nextAction(s,rng=Math.random){
   const startGames=s.gameCount;
@@ -116,25 +114,29 @@ export function nextAction(s,rng=Math.random){
         s.normalWins++;
         if(s.normalWins>=3){
           s.phase='upper';s.upperWins=0;s.upperCount++;
-          // Eligible only if the immediately preceding completed cycle also reached SUPER.
+          // The first three 75% RUSH sets have already paid; only SUPER is suppressed.
           const eligible=Boolean(s.previousCycleSuper);
           s.cycleSuperEntered=true;
-          s.ultraMode=eligible && clampRng(rng)<CONFIG.ultraEntryChance;
-          if(s.ultraMode)s.ultraCount++;
-          s.atSetG=choice(s.ultraMode?CONFIG.ultraSetLengths:CONFIG.setLengths,rng).g;
-          log(s,'upper',s.ultraMode?'ULTRA革命RUSH 突入！':'超革命RUSH 突入！',s.ultraMode?'2サイクル連続SUPER達成 / 25%突破 / 95%固定':eligible?'2サイクル連続SUPER達成 / ULTRA抽選失敗 / 次回90%':'SUPER突入 / 連続記録1回 / 次回90%');
+          if(eligible && clampRng(rng)<CONFIG.superZeroChance){
+            s.superZeroCount++;
+            s.maxRushGain=Math.max(s.maxRushGain,s.currentRushGain);
+            finishCycle(s,rng,'2サイクル連続SUPER：25%の出玉抑制に当選 — SUPER獲得0枚で終了（通常AT分は保持）');
+          } else {
+            s.atSetG=choice(CONFIG.setLengths,rng).g;
+            log(s,'upper','超革命RUSH 突入！',eligible?'2サイクル連続SUPER：75%で通常SUPERへ / 90%スタート':'SUPER突入 / 次サイクルもSUPERなら25%で0枚終了');
+          }
         }else{
           s.atSetG=choice(CONFIG.setLengths,rng).g;
           log(s,'success',`${(chance*100).toFixed(0)}% 継続成功！`,`革命RUSH ${s.normalWins}/3突破 / +${net}枚`);
         }
       } else {
         s.upperWins++;
-        s.atSetG=choice(s.ultraMode?CONFIG.ultraSetLengths:CONFIG.setLengths,rng).g;
+        s.atSetG=choice(CONFIG.setLengths,rng).g;
         log(s,'upper',`${(chance*100).toFixed(0)}% 継続成功！`,`次回${Math.round(continueChance(s)*100)}% / +${net}枚`);
       }
     } else {
       s.maxRushGain=Math.max(s.maxRushGain,s.currentRushGain);
-      finishCycle(s,rng,`${mode==='upper'?(s.ultraMode?'ULTRA革命RUSH':'超革命RUSH'):'革命RUSH'}終了 — +${s.currentRushGain.toLocaleString('ja-JP')}枚`);
+      finishCycle(s,rng,`${mode==='upper'?'超革命RUSH':'革命RUSH'}終了 — +${s.currentRushGain.toLocaleString('ja-JP')}枚`);
     }
   } else throw Error(`Unknown phase: ${s.phase}`);
   s.lastActionGames=s.gameCount-startGames;
@@ -149,40 +151,20 @@ export function autoCycles(s,count,rng=Math.random){
   s.lastActionGames=s.gameCount-startGames;
   return s;
 }
-/** Run genuine game draws until ULTRA is entered, or a bounded action budget is used.
- * Designed for repeated small chunks so the browser remains responsive and cancellable.
- * Does not consume even one ULTRA set after the transition.
- */
-export function autoUntilUltra(s,maxActions=600,rng=Math.random){
-  if(!Number.isSafeInteger(maxActions)||maxActions<1||maxActions>100000)throw RangeError('maxActions must be 1–100000');
-  const startGames=s.gameCount;
-  let actions=0;
-  while(actions<maxActions && !(s.phase==='upper' && s.ultraMode)){
-    nextAction(s,rng);
-    actions++;
-  }
-  s.lastActionGames=s.gameCount-startGames;
-  return {reached:s.phase==='upper'&&s.ultraMode,actions};
-}
 export function machineRate(s){return s.totalInput>0?s.totalOutput/s.totalInput*100:null;}
 export function expectedStats(){
   const topAvg=(()=>{let alive=1,total=0;for(let i=0;i<2000;i++){total+=alive;alive*=Math.min(CONFIG.upperCap,CONFIG.upperStart+i*CONFIG.upperIncrement);if(alive<1e-12)break;}return total;})();
   const meanSet=CONFIG.setLengths.reduce((a,x)=>a+x.g*x.p,0);
-  const meanUltraSet=CONFIG.ultraSetLengths.reduce((a,x)=>a+x.g*x.p,0);
   const meanCzWin=CONFIG.normalG.reduce((sum,item)=>sum+item.p*CONFIG.czWinByNormalG[item.g],0);
   const pAt=meanCzWin*(CONFIG.revolutionBonusChance*CONFIG.bonusAtChance.revolution+(1-CONFIG.revolutionBonusChance)*CONFIG.bonusAtChance.decisive);
   const p=CONFIG.normalRushContinue;
-  // Independent cycle SUPER qualification. Adjacent successes overlap (AAA grants two eligible draws).
+  // Overlapping consecutive SUPER entries remain eligible for repeated zero-award draws.
   const pSuper=pAt*p**3;
-  const pUltraGivenSuper=pSuper*CONFIG.ultraEntryChance;
-  const pUltraPerCycle=pSuper*pUltraGivenSuper;
-  const ultraAvg=1/(1-CONFIG.ultraContinue);
-  const meanUpperSets=(1-pUltraGivenSuper)*topAvg+pUltraGivenSuper*ultraAvg;
+  const pSuperZeroGivenSuper=pSuper*CONFIG.superZeroChance;
+  const pSuperZeroPerCycle=pSuper*pSuperZeroGivenSuper;
+  const meanUpperSets=(1-pSuperZeroGivenSuper)*topAvg;
   const meanRush=(1+p+p**2)+p**3*meanUpperSets;
-  // Normal RUSH and standard SUPER use the base set draw; ULTRA uses its own draw.
-  const expectedRushGames=pAt*(1+p+p**2)*meanSet
-    +(pSuper-pUltraPerCycle)*topAvg*meanSet
-    +pUltraPerCycle*ultraAvg*meanUltraSet;
+  const expectedRushGames=pAt*(1+p+p**2)*meanSet+(pSuper-pSuperZeroPerCycle)*topAvg*meanSet;
   const meanNormalGames=CONFIG.normalG.reduce((sum,item)=>sum+item.g*item.p,0);
   const meanNormalPayout=CONFIG.normalReels.reduce((sum,item)=>sum+item.p*item.paid,0);
   const normalLoss=meanNormalGames*(CONFIG.normalBet-meanNormalPayout);
@@ -194,8 +176,9 @@ export function expectedStats(){
     +meanCzWin*(CONFIG.revolutionBonusChance*(51+1/9)+(1-CONFIG.revolutionBonusChance)*16)*3
     +expectedRushGames*3;
   return {meanNormalGames,meanCzWin,meanNormalLoss:normalLoss,meanCzLoss:czLoss,
-    meanRushSets:meanRush,meanUpperSets,meanStandardUpperSets:topAvg,meanUltraUpperSets:ultraAvg,
-    meanSetGames:meanSet,meanUltraSetGames:meanUltraSet,meanRushPayout:expectedRushGames/pAt*CONFIG.netPerAtGame,
-    atChancePerCZ:pAt,superChancePerCycle:pSuper,ultraChancePerCycle:pUltraPerCycle,ultraChanceGivenSuper:pUltraGivenSuper,
-    expectedProfit,inputPerCycle:inTotal,expectedRate:100*(1+expectedProfit/inTotal)};
+    meanRushSets:meanRush,meanUpperSets,meanStandardUpperSets:topAvg,
+    meanSetGames:meanSet,meanRushPayout:expectedRushGames/pAt*CONFIG.netPerAtGame,
+    atChancePerCZ:pAt,superChancePerCycle:pSuper,superZeroChancePerCycle:pSuperZeroPerCycle,
+    superZeroChanceGivenSuper:pSuperZeroGivenSuper,expectedProfit,inputPerCycle:inTotal,
+    expectedRate:100*(1+expectedProfit/inTotal)};
 }
