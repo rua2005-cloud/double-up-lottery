@@ -1,4 +1,4 @@
-import {CONFIG,createGame,nextAction,autoCycles,autoUntilUltra,machineRate,continueChance,expectedStats} from './game-engine.mjs';
+import {CONFIG,createGame,nextAction,autoCycles,machineRate,continueChance} from './game-engine.mjs';
 const SAVE_KEY='revolt95-simulator-v3';
 const $=(id)=>document.getElementById(id);
 const format=(n)=>Number(n).toLocaleString('ja-JP');
@@ -14,10 +14,19 @@ const texts={
 function safeLoad(){try{
   const raw=localStorage.getItem(SAVE_KEY);if(!raw)return null;
   const s=JSON.parse(raw);
-  if(!s||s.version!==3||!phaseMap[s.phase]||!Array.isArray(s.events)||!Array.isArray(s.history)||!Number.isFinite(s.net)||!Number.isFinite(s.totalInput)||s.totalInput<0)return null;
-  // Previous version saves have no cross-cycle qualification flags. Keep counters and current game.
-  if(typeof s.ultraMode!=='boolean')s.ultraMode=false;
-  if(!Number.isSafeInteger(s.ultraCount)||s.ultraCount<0)s.ultraCount=0;
+  if(!s||![3,4].includes(s.version)||!phaseMap[s.phase]||!Array.isArray(s.events)||!Array.isArray(s.history)||!Number.isFinite(s.net)||!Number.isFinite(s.totalInput)||s.totalInput<0)return null;
+  // Preserve prior data, but replace a saved old ULTRA set with a regular SUPER set.
+  if(s.version===3){
+    if(s.phase==='upper'&&s.ultraMode){
+      let remaining=Math.random();
+      for(const item of CONFIG.setLengths){remaining-=item.p;if(remaining<0){s.atSetG=item.g;break;}}
+    }
+    delete s.ultraMode;
+    delete s.ultraCount;
+    s.version=4;
+    s.superZeroCount=0;
+  }
+  if(!Number.isSafeInteger(s.superZeroCount)||s.superZeroCount<0)s.superZeroCount=0;
   if(typeof s.previousCycleSuper!=='boolean')s.previousCycleSuper=false;
   if(typeof s.cycleSuperEntered!=='boolean')s.cycleSuperEntered=s.phase==='upper';
   // 旧ルールで抽選済みの通常時G数だけ、新しい振り分けで引き直す（累計記録は保持）。
@@ -28,7 +37,6 @@ function safeLoad(){try{
 }catch{return null}}
 let state=safeLoad()||createGame();
 let sound=false;
-let ultraRun=null; // In-memory session only; game progress remains saved after each chunk.
 let audio=null;
 function tone(f=500,d=.08,shape='sine',volume=.025){if(!sound)return;try{audio??=new (window.AudioContext||window.webkitAudioContext)();if(audio.state==='suspended')audio.resume();let osc=audio.createOscillator(),gain=audio.createGain(),t=audio.currentTime;osc.type=shape;osc.frequency.setValueAtTime(f,t);gain.gain.setValueAtTime(volume,t);gain.gain.exponentialRampToValueAtTime(.0001,t+d);osc.connect(gain);gain.connect(audio.destination);osc.start(t);osc.stop(t+d)}catch{}}
 function playSound(phase,kind){if(!sound)return;if(kind==='upper'){tone(830,.18,'triangle');setTimeout(()=>tone(1170,.22,'triangle'),95)}else if(kind==='success'||kind==='rush'){tone(610,.14);setTimeout(()=>tone(860,.14),90)}else if(kind==='lose'){tone(220,.18,'sawtooth',.012)}else tone(430,.09)}
@@ -63,11 +71,9 @@ function render(){
   if(state.phase==='rush'){t.upcoming=`${state.atSetG}G · 純増9枚/G`;}
   if(state.phase==='upper'){
     t.number=String(Math.round(continueChance(state)*100));t.upcoming=`${state.atSetG}G · +${state.atSetG*9}枚`;
-    if(state.ultraMode){t.title='ULTRA革命RUSH';t.overline='ULTRA REVOLUTION RUSH';t.desc='2サイクル連続SUPER達成！ 95%固定 / 50G・200G強化';t.symbol='U';}
   }
   $('machine').dataset.phase=state.phase;
-  $('machine').dataset.ultra=state.phase==='upper'&&state.ultraMode?'true':'false';
-  $('phaseEnglish').textContent=state.phase==='upper'&&state.ultraMode?'ULTRA REVOLUTION RUSH':phaseMap[state.phase];
+  $('phaseEnglish').textContent=phaseMap[state.phase];
   $('phaseCounter').textContent=state.phase==='rush'?`BREAK ${state.normalWins}/3`:state.phase==='upper'?`UPPER SET ${state.upperWins+1}`:`CYCLE ${state.cycleCount+1}`;
   $('hudOverline').textContent=t.overline;$('phaseNumber').replaceChildren(document.createTextNode(t.number+' '));
   const unit=document.createElement('small');unit.textContent=t.unit;$('phaseNumber').append(unit);
@@ -83,60 +89,19 @@ function render(){
   $('hudTotalGames').textContent=`${format(state.gameCount)} G`;
   $('hudLastGames').textContent=Number.isFinite(state.lastActionGames)&&state.lastActionGames>0?`+${format(state.lastActionGames)} G`:'—';
   const actual=machineRate(state);$('rate').textContent=actual===null?'—':actual.toFixed(2)+'%';
-  for(const [el,field] of [['czCount','czCount'],['bonusCount','bonusCount'],['atCount','atCount'],['upperCount','upperCount'],['ultraCount','ultraCount'],['cycleCount','cycleCount']])$(el).textContent=format(state[field]);
+  for(const [el,field] of [['czCount','czCount'],['bonusCount','bonusCount'],['atCount','atCount'],['upperCount','upperCount'],['superZeroCount','superZeroCount'],['cycleCount','cycleCount']])$(el).textContent=format(state[field]);
   $('maxRush').textContent=`${format(state.maxRushGain)} 枚`;
-  $('chanceCaption').textContent=state.phase==='upper'&&state.ultraMode?'ULTRA突入中！ 95%固定・セットG数優遇。':state.phase==='upper'?`現在${Math.round(continueChance(state)*100)}%。このセットを継続すると次回${Math.round(Math.min(CONFIG.upperCap,continueChance(state)+CONFIG.upperIncrement)*100)}%。`:'前のサイクルと連続でSUPER突入したときのみ25%でULTRA抽選。';
-  $('superStreakCaption').textContent=state.phase==='upper'&&state.cycleSuperEntered&&state.previousCycleSuper?'2サイクル連続SUPER達成（ULTRA抽選済み）':state.cycleSuperEntered?'今回SUPER突入済み / 次サイクルもSUPERで25%抽選':state.previousCycleSuper?'前回SUPER達成 / 今回もSUPERで25%抽選':'SUPER連続条件：未達成';
-  const running=ultraRun!==null;
-  for(const id of ['playButton','auto10','auto100','resetButton'])$(id).disabled=running;
-  $('autoUltra').textContent=running?'■ ULTRA探索を停止':state.phase==='upper'&&state.ultraMode?'ULTRA突入中':'▶ 1タップでULTRAまで';
-  $('autoUltra').disabled=!running&&state.phase==='upper'&&state.ultraMode;
-  $('autoUltra').setAttribute('aria-pressed',String(running));
+  $('chanceCaption').textContent=state.phase==='upper'?`現在${Math.round(continueChance(state)*100)}%。継続すると次回${Math.round(Math.min(CONFIG.upperCap,continueChance(state)+CONFIG.upperIncrement)*100)}%。`:'2サイクル連続SUPER突入時の25%で、SUPER部分0枚・即終了。通常AT獲得分は維持。';
+  $('superStreakCaption').textContent=state.phase==='upper'&&state.cycleSuperEntered&&state.previousCycleSuper?'2サイクル連続SUPER達成（25%抽選済み）':state.cycleSuperEntered?'今回SUPER突入済み / 次サイクルもSUPERで25%抽選':state.previousCycleSuper?'前回SUPER達成 / 今回もSUPERで25%抽選':'SUPER連続条件：未達成';
   renderEvents();renderChart();
   try{localStorage.setItem(SAVE_KEY,JSON.stringify(state))}catch{}
 }
-function act(){if(ultraRun)return;nextAction(state);playSound(state.phase,state.banner.kind);render();const box=$('machine');box.classList.remove('flash');void box.offsetWidth;box.classList.add('flash');}
-function auto(n){if(ultraRun)return;autoCycles(state,n);playSound(state.phase,state.banner.kind);render();const box=$('machine');box.classList.remove('flash');void box.offsetWidth;box.classList.add('flash');}
-// Run normal draws in short chunks so STOP and other UI events remain responsive.
-function setUltraStatus(message){$('ultraAutoStatus').textContent=message;}
-function endUltraRun(run,status,found=false){
-  if(ultraRun!==run)return;
-  ultraRun=null;
-  state.lastActionGames=state.gameCount-run.startGames;
-  render();
-  const info=`${format(state.cycleCount-run.startCycles)}サイクル / +${format(state.gameCount-run.startGames)}G`;
-  setUltraStatus(`${status}（${info}）`);
-  if(found){playSound(state.phase,'upper');const box=$('machine');box.classList.remove('flash');void box.offsetWidth;box.classList.add('flash');}
-}
-function runUltraChunk(run){
-  if(ultraRun!==run)return;
-  try{
-    const result=autoUntilUltra(state,600);
-    run.actions+=result.actions;
-    // Show the full automatic run G total, not only the most recent chunk.
-    state.lastActionGames=state.gameCount-run.startGames;
-    if(result.reached){endUltraRun(run,'ULTRA 95% 突入！ このセットから手動操作できます',true);return;}
-    render();
-    setUltraStatus(`ULTRA抽選中… ${format(run.actions)}操作 / ${format(state.cycleCount-run.startCycles)}サイクル / +${format(state.gameCount-run.startGames)}G · 停止可能`);
-    requestAnimationFrame(()=>runUltraChunk(run));
-  }catch(error){
-    endUltraRun(run,'自動進行を中断しました');
-    console.error('ULTRA autoplay failed',error);
-  }
-}
-function toggleUltraAuto(){
-  if(ultraRun){endUltraRun(ultraRun,'探索を停止しました。現在の状態から再開できます');return;}
-  if(state.phase==='upper'&&state.ultraMode){setUltraStatus('すでにULTRA 95%に突入しています。');return;}
-  const run={startGames:state.gameCount,startCycles:state.cycleCount,actions:0};
-  ultraRun=run;
-  render();setUltraStatus('2サイクル連続SUPER→25%抽選を繰り返し、ULTRA 95%突入まで自動消化中…');
-  requestAnimationFrame(()=>runUltraChunk(run));
-}
-$('autoUltra').addEventListener('click',toggleUltraAuto);
+function act(){nextAction(state);playSound(state.phase,state.banner.kind);render();const box=$('machine');box.classList.remove('flash');void box.offsetWidth;box.classList.add('flash');}
+function auto(n){autoCycles(state,n);playSound(state.phase,state.banner.kind);render();const box=$('machine');box.classList.remove('flash');void box.offsetWidth;box.classList.add('flash');}
 $('playButton').addEventListener('click',act);
 $('auto10').addEventListener('click',()=>auto(10));
 $('auto100').addEventListener('click',()=>auto(100));
-$('resetButton').addEventListener('click',()=>{if(ultraRun)return;if(window.confirm('累計データをリセットして最初から始めますか？')){state=createGame();render();}});
+$('resetButton').addEventListener('click',()=>{if(window.confirm('累計データをリセットして最初から始めますか？')){state=createGame();render();}});
 $('soundButton').addEventListener('click',()=>{sound=!sound;$('soundButton').textContent=sound?'♪ ON':'♪ OFF';if(sound)tone(740,.11)});
-window.addEventListener('keydown',e=>{if(e.code==='Space'&&!e.repeat&&!e.altKey&&!e.ctrlKey&&!e.metaKey&&!['BUTTON','INPUT','TEXTAREA','SELECT','SUMMARY'].includes(document.activeElement?.tagName)){e.preventDefault();if(!ultraRun)act();}});
+window.addEventListener('keydown',e=>{if(e.code==='Space'&&!e.repeat&&!e.altKey&&!e.ctrlKey&&!e.metaKey&&!['BUTTON','INPUT','TEXTAREA','SELECT','SUMMARY'].includes(document.activeElement?.tagName)){e.preventDefault();act();}});
 render();
