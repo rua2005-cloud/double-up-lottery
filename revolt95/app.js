@@ -14,7 +14,7 @@ const texts={
 function safeLoad(){try{
   const raw=localStorage.getItem(SAVE_KEY);if(!raw)return null;
   const s=JSON.parse(raw);
-  if(!s||![3,4].includes(s.version)||!phaseMap[s.phase]||!Array.isArray(s.events)||!Array.isArray(s.history)||!Number.isFinite(s.net)||!Number.isFinite(s.totalInput)||s.totalInput<0)return null;
+  if(!s||![3,4,5].includes(s.version)||!phaseMap[s.phase]||!Array.isArray(s.events)||!Array.isArray(s.history)||!Number.isFinite(s.net)||!Number.isFinite(s.totalInput)||s.totalInput<0)return null;
   // Preserve prior data, but replace a saved old ULTRA set with a regular SUPER set.
   if(s.version===3){
     if(s.phase==='upper'&&s.ultraMode){
@@ -29,9 +29,23 @@ function safeLoad(){try{
   if(!Number.isSafeInteger(s.superZeroCount)||s.superZeroCount<0)s.superZeroCount=0;
   if(typeof s.previousCycleSuper!=='boolean')s.previousCycleSuper=false;
   if(typeof s.cycleSuperEntered!=='boolean')s.cycleSuperEntered=s.phase==='upper';
-  // 旧ルールで抽選済みの通常時G数だけ、新しい振り分けで引き直す（累計記録は保持）。
-  if(s.phase==='normal'&&!CONFIG.normalG.some(x=>x.g===s.targetG)){
-    let remaining=Math.random();for(const item of CONFIG.normalG){remaining-=item.p;if(remaining<0){s.targetG=item.g;break;}}
+  // Old in-progress CZ/AT retains its existing draw. A saved normal phase
+  // is redrawn into the new table, including the SUPER-after benefit.
+  if(s.version<5){
+    s.specialCycle=s.phase==='normal'&&s.previousCycleSuper;
+    if(s.phase==='normal'){
+      const dist=s.specialCycle?CONFIG.specialAfterSuperG:CONFIG.normalG;
+      let remaining=Math.random();
+      for(const item of dist){remaining-=item.p;if(remaining<0){s.targetG=item.g;break;}}
+    }
+    s.version=5;
+  }
+  if(typeof s.specialCycle!=='boolean')s.specialCycle=false;
+  if(s.phase==='normal'){
+    const dist=s.specialCycle?CONFIG.specialAfterSuperG:CONFIG.normalG;
+    if(!dist.some(x=>x.g===s.targetG)){
+      let remaining=Math.random();for(const item of dist){remaining-=item.p;if(remaining<0){s.targetG=item.g;break;}}
+    }
   }
   return s;
 }catch{return null}}
@@ -56,12 +70,20 @@ function renderEvents(){const root=$('eventList');root.replaceChildren();if(!sta
 }
 function render(){
   const t={...texts[state.phase]};
+  if(state.phase==='normal'&&state.specialCycle){
+    t.overline='AFTER SUPER / SPECIAL CZ';
+    t.desc='SUPER後の特別抽選！ 99%で5G・CZ突破率84% / 1%で22,925G';
+    t.upcoming=`特別CZまで${format(state.targetG)}G`;
+    t.symbol='S';
+  }
   if(state.phase==='cz'){
     const games=state.lastNormal?.g ?? state.targetG;
-    const chance=CONFIG.czWinByNormalG[games] ?? CONFIG.czWin;
+    const table=state.specialCycle?CONFIG.specialAfterSuperCzWin:CONFIG.czWinByNormalG;
+    const chance=table[games] ?? CONFIG.czWin;
     t.number=String(Math.round(chance*100));
-    t.desc=`通常時${games}G消化済（3BET/G） / CZは11G・3BET/G`;
+    t.desc=`通常時${format(games)}G消化済 / CZは11G・3BET/G${state.specialCycle?'（SUPER後特別抽選）':''}`;
     t.upcoming=`突破率${Math.round(chance*100)}%`;
+    if(state.specialCycle){t.title='SUPER後・特別CZ';t.overline='SPECIAL CHANCE ZONE';t.symbol='S';}
   }
   if(state.phase==='bonus'){
     const rev=state.bonus==='revolution';
@@ -73,8 +95,9 @@ function render(){
     t.number=String(Math.round(continueChance(state)*100));t.upcoming=`${state.atSetG}G · +${state.atSetG*9}枚`;
   }
   $('machine').dataset.phase=state.phase;
+  $('machine').dataset.special=state.specialCycle&&(state.phase==='normal'||state.phase==='cz')?'true':'false';
   $('phaseEnglish').textContent=phaseMap[state.phase];
-  $('phaseCounter').textContent=state.phase==='rush'?`BREAK ${state.normalWins}/3`:state.phase==='upper'?`UPPER SET ${state.upperWins+1}`:`CYCLE ${state.cycleCount+1}`;
+  $('phaseCounter').textContent=state.phase==='rush'?`BREAK ${state.normalWins}/3`:state.phase==='upper'?`UPPER SET ${state.upperWins+1}`:(state.specialCycle&&(state.phase==='normal'||state.phase==='cz')?'AFTER SUPER / SPECIAL':`CYCLE ${state.cycleCount+1}`);
   $('hudOverline').textContent=t.overline;$('phaseNumber').replaceChildren(document.createTextNode(t.number+' '));
   const unit=document.createElement('small');unit.textContent=t.unit;$('phaseNumber').append(unit);
   $('phaseTitle').textContent=t.title;$('phaseDesc').textContent=t.desc;$('coreSymbol').textContent=t.symbol;
@@ -91,8 +114,8 @@ function render(){
   const actual=machineRate(state);$('rate').textContent=actual===null?'—':actual.toFixed(2)+'%';
   for(const [el,field] of [['czCount','czCount'],['bonusCount','bonusCount'],['atCount','atCount'],['upperCount','upperCount'],['superZeroCount','superZeroCount'],['cycleCount','cycleCount']])$(el).textContent=format(state[field]);
   $('maxRush').textContent=`${format(state.maxRushGain)} 枚`;
-  $('chanceCaption').textContent=state.phase==='upper'?`現在${Math.round(continueChance(state)*100)}%。継続すると次回${Math.round(Math.min(CONFIG.upperCap,continueChance(state)+CONFIG.upperIncrement)*100)}%。`:'2サイクル連続SUPER突入時の25%で、SUPER部分0枚・即終了。通常AT獲得分は維持。';
-  $('superStreakCaption').textContent=state.phase==='upper'&&state.cycleSuperEntered&&state.previousCycleSuper?'2サイクル連続SUPER達成（25%抽選済み）':state.cycleSuperEntered?'今回SUPER突入済み / 次サイクルもSUPERで25%抽選':state.previousCycleSuper?'前回SUPER達成 / 今回もSUPERで25%抽選':'SUPER連続条件：未達成';
+  $('chanceCaption').textContent=state.phase==='upper'?`現在${Math.round(continueChance(state)*100)}%。継続すると次回${Math.round(Math.min(CONFIG.upperCap,continueChance(state)+CONFIG.upperIncrement)*100)}%。`:'2サイクル連続SUPER突入時の30%で、SUPER部分0枚・即終了。通常AT獲得分は維持。';
+  $('superStreakCaption').textContent=state.specialCycle&&(state.phase==='normal'||state.phase==='cz')?'SUPER直後の特別CZ：5G 99%（突破84%）/ 22,925G 1%（突破60%）':state.phase==='upper'&&state.cycleSuperEntered&&state.previousCycleSuper?'2サイクル連続SUPER達成（30%抽選済み）':state.cycleSuperEntered?'今回SUPER突入済み / 次サイクルもSUPERで30%抽選':state.previousCycleSuper?'前回SUPER達成 / 今回もSUPERで30%抽選':'SUPER連続条件：未達成';
   renderEvents();renderChart();
   try{localStorage.setItem(SAVE_KEY,JSON.stringify(state))}catch{}
 }
