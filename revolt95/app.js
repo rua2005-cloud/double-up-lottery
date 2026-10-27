@@ -9,44 +9,33 @@ const texts={
   cz:{number:'',unit:'%',title:'ドルシア攻防戦',overline:'CHANCE ZONE / 11 GAMES',desc:'直前の通常時G数によって突破率が変化',button:'CZに挑戦する',upcoming:'',label:'CZ BATTLE',symbol:'C'},
   bonus:{number:'',unit:'',title:'',overline:'BONUS GET',desc:'ボーナス獲得！ AT突入を抽選',button:'ボーナスを消化する',upcoming:'',label:'BONUS DRAW',symbol:'B'},
   rush:{number:'75',unit:'%',title:'革命RUSH',overline:'REVOLUTION RUSH / TRIPLE BREAK',desc:'75%を3回連続突破で超革命RUSHへ',button:'1セット消化・継続抽選',upcoming:'',label:'CURRENT SET',symbol:'R'},
-  upper:{number:'',unit:'%',title:'超革命RUSH',overline:'SUPER REVOLUTION RUSH',desc:'継続するたびに継続率アップ / 最大95%',button:'上位ATを1セット消化',upcoming:'',label:'CONTINUE CHANCE',symbol:'S'}
+  upper:{number:'',unit:'%',title:'超革命RUSH',overline:'SUPER REVOLUTION RUSH',desc:'継続率90%から上昇 / 94%か95%で打ち止め',button:'上位ATを1セット消化',upcoming:'',label:'CONTINUE CHANCE',symbol:'S'}
 };
 function safeLoad(){try{
   const raw=localStorage.getItem(SAVE_KEY);if(!raw)return null;
   const s=JSON.parse(raw);
-  if(!s||![3,4,5].includes(s.version)||!phaseMap[s.phase]||!Array.isArray(s.events)||!Array.isArray(s.history)||!Number.isFinite(s.net)||!Number.isFinite(s.totalInput)||s.totalInput<0)return null;
-  // Preserve prior data, but replace a saved old ULTRA set with a regular SUPER set.
-  if(s.version===3){
-    if(s.phase==='upper'&&s.ultraMode){
-      let remaining=Math.random();
-      for(const item of CONFIG.setLengths){remaining-=item.p;if(remaining<0){s.atSetG=item.g;break;}}
+  if(!s||![3,4,5,6].includes(s.version)||!phaseMap[s.phase]||!Array.isArray(s.events)||!Array.isArray(s.history)||!Number.isFinite(s.net)||!Number.isFinite(s.totalInput)||s.totalInput<0)return null;
+  // Retain prior totals; restore in-progress normal phases to the new G distribution.
+  if(s.version<6){
+    if(s.version===3&&s.phase==='upper'&&s.ultraMode){
+      let left=Math.random();for(const x of CONFIG.setLengths){left-=x.p;if(left<0){s.atSetG=x.g;break;}}
     }
-    delete s.ultraMode;
-    delete s.ultraCount;
-    s.version=4;
-    s.superZeroCount=0;
-  }
-  if(!Number.isSafeInteger(s.superZeroCount)||s.superZeroCount<0)s.superZeroCount=0;
-  if(typeof s.previousCycleSuper!=='boolean')s.previousCycleSuper=false;
-  if(typeof s.cycleSuperEntered!=='boolean')s.cycleSuperEntered=s.phase==='upper';
-  // Old in-progress CZ/AT retains its existing draw. A saved normal phase
-  // is redrawn into the new table, including the SUPER-after benefit.
-  if(s.version<5){
-    s.specialCycle=s.phase==='normal'&&s.previousCycleSuper;
     if(s.phase==='normal'){
-      const dist=s.specialCycle?CONFIG.specialAfterSuperG:CONFIG.normalG;
-      let remaining=Math.random();
-      for(const item of dist){remaining-=item.p;if(remaining<0){s.targetG=item.g;break;}}
+      let left=Math.random();for(const x of CONFIG.normalG){left-=x.p;if(left<0){s.targetG=x.g;break;}}
     }
-    s.version=5;
+    s.upperCap=s.phase==='upper'?(Math.random()<CONFIG.upperCap95Chance?CONFIG.upperCap95:CONFIG.upperCap94):null;
+    s.cap94Count=0;s.cap95Count=0;s.version=6;
   }
-  if(typeof s.specialCycle!=='boolean')s.specialCycle=false;
-  if(s.phase==='normal'){
-    const dist=s.specialCycle?CONFIG.specialAfterSuperG:CONFIG.normalG;
-    if(!dist.some(x=>x.g===s.targetG)){
-      let remaining=Math.random();for(const item of dist){remaining-=item.p;if(remaining<0){s.targetG=item.g;break;}}
-    }
+  if(!Number.isSafeInteger(s.cap94Count)||s.cap94Count<0)s.cap94Count=0;
+  if(!Number.isSafeInteger(s.cap95Count)||s.cap95Count<0)s.cap95Count=0;
+  if(s.phase==='upper'&&![CONFIG.upperCap94,CONFIG.upperCap95].includes(s.upperCap)){
+    s.upperCap=Math.random()<CONFIG.upperCap95Chance?CONFIG.upperCap95:CONFIG.upperCap94;
   }
+  if(s.phase==='normal'&&!CONFIG.normalG.some(x=>x.g===s.targetG)){
+    let left=Math.random();for(const x of CONFIG.normalG){left-=x.p;if(left<0){s.targetG=x.g;break;}}
+  }
+  delete s.ultraMode;delete s.ultraCount;delete s.superZeroCount;
+  delete s.specialCycle;delete s.previousCycleSuper;delete s.cycleSuperEntered;
   return s;
 }catch{return null}}
 let state=safeLoad()||createGame();
@@ -70,20 +59,12 @@ function renderEvents(){const root=$('eventList');root.replaceChildren();if(!sta
 }
 function render(){
   const t={...texts[state.phase]};
-  if(state.phase==='normal'&&state.specialCycle){
-    t.overline='AFTER SUPER / SPECIAL CZ';
-    t.desc='SUPER後の特別抽選！ 99%で5G・CZ突破率84% / 1%で22,925G';
-    t.upcoming=`特別CZまで${format(state.targetG)}G`;
-    t.symbol='S';
-  }
   if(state.phase==='cz'){
     const games=state.lastNormal?.g ?? state.targetG;
-    const table=state.specialCycle?CONFIG.specialAfterSuperCzWin:CONFIG.czWinByNormalG;
-    const chance=table[games] ?? CONFIG.czWin;
+    const chance=CONFIG.czWinByNormalG[games] ?? CONFIG.czWin;
     t.number=String(Math.round(chance*100));
-    t.desc=`通常時${format(games)}G消化済 / CZは11G・3BET/G${state.specialCycle?'（SUPER後特別抽選）':''}`;
+    t.desc=`通常時${format(games)}G消化済 / CZは11G・3BET/G`;
     t.upcoming=`突破率${Math.round(chance*100)}%`;
-    if(state.specialCycle){t.title='SUPER後・特別CZ';t.overline='SPECIAL CHANCE ZONE';t.symbol='S';}
   }
   if(state.phase==='bonus'){
     const rev=state.bonus==='revolution';
@@ -95,9 +76,8 @@ function render(){
     t.number=String(Math.round(continueChance(state)*100));t.upcoming=`${state.atSetG}G · +${state.atSetG*9}枚`;
   }
   $('machine').dataset.phase=state.phase;
-  $('machine').dataset.special=state.specialCycle&&(state.phase==='normal'||state.phase==='cz')?'true':'false';
   $('phaseEnglish').textContent=phaseMap[state.phase];
-  $('phaseCounter').textContent=state.phase==='rush'?`BREAK ${state.normalWins}/3`:state.phase==='upper'?`UPPER SET ${state.upperWins+1}`:(state.specialCycle&&(state.phase==='normal'||state.phase==='cz')?'AFTER SUPER / SPECIAL':`CYCLE ${state.cycleCount+1}`);
+  $('phaseCounter').textContent=state.phase==='rush'?`BREAK ${state.normalWins}/3`:state.phase==='upper'?`UPPER SET ${state.upperWins+1}`:`CYCLE ${state.cycleCount+1}`;
   $('hudOverline').textContent=t.overline;$('phaseNumber').replaceChildren(document.createTextNode(t.number+' '));
   const unit=document.createElement('small');unit.textContent=t.unit;$('phaseNumber').append(unit);
   $('phaseTitle').textContent=t.title;$('phaseDesc').textContent=t.desc;$('coreSymbol').textContent=t.symbol;
@@ -112,10 +92,10 @@ function render(){
   $('hudTotalGames').textContent=`${format(state.gameCount)} G`;
   $('hudLastGames').textContent=Number.isFinite(state.lastActionGames)&&state.lastActionGames>0?`+${format(state.lastActionGames)} G`:'—';
   const actual=machineRate(state);$('rate').textContent=actual===null?'—':actual.toFixed(2)+'%';
-  for(const [el,field] of [['czCount','czCount'],['bonusCount','bonusCount'],['atCount','atCount'],['upperCount','upperCount'],['superZeroCount','superZeroCount'],['cycleCount','cycleCount']])$(el).textContent=format(state[field]);
+  for(const [el,field] of [['czCount','czCount'],['bonusCount','bonusCount'],['atCount','atCount'],['upperCount','upperCount'],['cap94Count','cap94Count'],['cap95Count','cap95Count'],['cycleCount','cycleCount']])$(el).textContent=format(state[field]);
   $('maxRush').textContent=`${format(state.maxRushGain)} 枚`;
-  $('chanceCaption').textContent=state.phase==='upper'?`現在${Math.round(continueChance(state)*100)}%。継続すると次回${Math.round(Math.min(CONFIG.upperCap,continueChance(state)+CONFIG.upperIncrement)*100)}%。`:'2サイクル連続SUPER突入時の30%で、SUPER部分0枚・即終了。通常AT獲得分は維持。';
-  $('superStreakCaption').textContent=state.specialCycle&&(state.phase==='normal'||state.phase==='cz')?'SUPER直後の特別CZ：5G 99%（突破84%）/ 22,925G 1%（突破60%）':state.phase==='upper'&&state.cycleSuperEntered&&state.previousCycleSuper?'2サイクル連続SUPER達成（30%抽選済み）':state.cycleSuperEntered?'今回SUPER突入済み / 次サイクルもSUPERで30%抽選':state.previousCycleSuper?'前回SUPER達成 / 今回もSUPERで30%抽選':'SUPER連続条件：未達成';
+  $('chanceCaption').textContent=state.phase==='upper'?`現在${Math.round(continueChance(state)*100)}%。上限は94%（20%）または95%（80%）。`:'SUPER突入時に継続率上限を抽選：80%で95%まで成長、20%で94%打ち止め。';
+  $('superStreakCaption').textContent=state.phase==='upper'&&state.upperWins>=5?(state.upperCap===CONFIG.upperCap95?'95%継続に到達！':'94%で打ち止め。以後も94%継続。'):'SUPERは90%から成長。上限に達すると継続率は固定されます。';
   renderEvents();renderChart();
   try{localStorage.setItem(SAVE_KEY,JSON.stringify(state))}catch{}
 }
