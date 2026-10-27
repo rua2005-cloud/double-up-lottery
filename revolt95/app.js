@@ -1,4 +1,4 @@
-import {CONFIG,createGame,nextAction,autoCycles,machineRate,continueChance} from './game-engine.mjs';
+import {CONFIG,createGame,nextAction,autoCycles,machineRate,continueChance} from './game-engine.mjs?v=7';
 const SAVE_KEY='revolt95-simulator-v3';
 const $=(id)=>document.getElementById(id);
 const format=(n)=>Number(n).toLocaleString('ja-JP');
