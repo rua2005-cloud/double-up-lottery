@@ -6,8 +6,8 @@
   <meta name="theme-color" content="#090d1a">
   <meta name="description" content="1タップで通常時を突破。75%を3回通し、SUPERは90%から継続率が成長、20%で94%打ち止め・80%で95%到達を目指す確率シミュレーションゲーム。">
   <title>REVOLT 95 — 1 TAP RUSH</title>
-  <link rel="stylesheet" href="./style.css?v=8">
-  <script type="module" src="./app.js?v=8"></script>
+  <link rel="stylesheet" href="./style.css?v=9">
+  <script type="module" src="./app.js?v=9"></script>
 </head>
 <body>
   <div class="background-grid" aria-hidden="true"></div>
@@ -48,7 +48,45 @@
       <section class="panel chart-panel"><div class="panel-heading heading-split"><h2>直近の収支</h2><span>1 CZ CYCLE</span></div><div class="bar-chart" id="historyChart"><p class="empty-state">サイクルを終了すると表示されます</p></div><div class="chart-key"><span><i class="key-plus"></i>プラス</span><span><i class="key-minus"></i>マイナス</span></div></section>
       <section class="panel event-panel"><div class="panel-heading heading-split"><h2>履歴</h2><span>EVENT LOG</span></div><div id="eventList" class="event-list"><div class="empty-state">まだ履歴はありません</div></div></section></aside>
     </div>
-    <section class="rules panel"><details><summary><span>遊び方・すべての抽選確率</span><span class="accordion-sign">＋</span></summary><div class="rules-body"><p>このゲームは独自に設計した確率シミュレーターです。実機や公式メーカーとは関係ありません。実際のお金・景品は使用しません。</p><div class="rule-columns"><div><h3>通常時・CZ</h3><p>通常時も<strong>3枚BET/G</strong>。当選までのG数は通常時突入時に内部抽選され、1タップでまとめて消化します。</p><table><tr><th>ゲーム数</th><th>振り分け</th><th>CZ突破率</th></tr><tr><td>5G</td><td>15%</td><td>45%</td></tr><tr><td>35G</td><td>15%</td><td>50%</td></tr><tr><td>160G</td><td>31%</td><td>55%</td></tr><tr><td>300G</td><td>29%</td><td>70%</td></tr><tr><td>375G（最長）</td><td>10%</td><td>84%</td></tr></table><p>ハズレ75.2%（払出0）、小役18.4%（払出1枚）、強小役6.4%（払出3枚）。CZは11G・3枚BET、突破率は直前の通常時G数に連動（全体平均60%）。</p></div><div><h3>ボーナス</h3><p>CZ成功時に革命ボーナス55%、決戦ボーナス45%。</p><table><tr><th>種類</th><th>差枚</th><th>AT期待度</th></tr><tr><td>革命ボーナス</td><td>平均+460枚</td><td>52%</td></tr><tr><td>決戦ボーナス</td><td>+60枚</td><td>45%</td></tr></table><p>革命は51Gまたは52G、決戦は16G。ボーナス終了後にAT抽選を行います。</p></div><div><h3>革命RUSH / 超革命RUSH</h3><p>通常ATはセットごとに<strong>75%継続</strong>。3回連続成功すると超革命RUSHへ。</p><p>SUPER革命RUSHは90%継続で開始し、セット継続成功ごとに91%・92%・93%・94%と成長します。SUPER突入時に上限を独立抽選し、<strong>80%で95%まで成長</strong>、<strong>20%で94%打ち止め</strong>となります。どちらも上限到達後はその継続率を維持します。連続SUPER時の獲得0枚終了や、SUPER後の特別CZ・特大ハマりはありません。</p><table><tr><th>1セット</th><th>確率</th></tr><tr><td>10G</td><td>85%</td></tr><tr><td>20G</td><td>12.5%</td></tr><tr><td>50G</td><td>2.5%</td></tr></table><p>上表は通常AT・SUPER共通のセットG数です。ATはすべて純増9枚/G。セット継続やSUPER上限の抽選はそれぞれ独立です。</p></div></div><p class="fine-print">設計機械割97.8098%（表示97.81%）は無制限試行時の理論値です。天井・有利区間・引き戻し・ストックはありません。所持コインが0未満でも続行できる無制限シミュレーションです。ゲームデータはこのブラウザに自動保存されます。</p></div></details></section>
+    <section class="analytics-panel panel" aria-label="詳細分析データ">
+      <details id="analyticsDetails">
+        <summary class="analytics-heading"><span><span class="panel-eyebrow">PERFORMANCE ANALYTICS</span><strong>詳細データ・収支分析</strong><small>CZ / BONUS / RUSH / SUPER / CSV</small></span><span class="analytics-chevron">開く ＋</span></summary>
+        <div class="analytics-body">
+          <div class="analytics-tools"><p id="analyticsCoverage" class="analytics-note">詳細データを読み込みます。</p><button type="button" id="exportDetails" class="export-button">詳細データをCSV保存</button></div>
+          <div class="analysis-metrics" id="analyticsSummary"></div>
+          <div class="analysis-sections">
+            <section class="analysis-section">
+              <h3>CZのゲーム数別成績</h3><p>CZの深さによって当選率やサイクル収支が変化しているか比較します。</p>
+              <div class="analysis-scroll"><table id="czAnalysis"></table></div>
+            </section>
+            <section class="analysis-section">
+              <h3>ボーナスとAT突入</h3><p>革命ボーナス・決戦ボーナス別の実績です。</p>
+              <div class="analysis-scroll"><table id="bonusAnalysis"></table></div>
+            </section>
+            <section class="analysis-section">
+              <h3>SUPERの94% / 95%上限</h3><p>上限の抽選結果と、実際にその継続率に到達した回数は別々に集計します。</p>
+              <div class="analysis-scroll"><table id="superAnalysis"></table></div>
+            </section>
+            <section class="analysis-section">
+              <h3>継続抽選の実測結果</h3><p id="rushContinuation"></p>
+              <div class="analysis-scroll"><table id="continuationAnalysis"></table></div>
+            </section>
+            <section class="analysis-section">
+              <h3>ATセットG数の分布</h3><div class="analysis-scroll"><table id="setLengthAnalysis"></table></div>
+            </section>
+            <section class="analysis-section">
+              <h3>収支の内訳</h3><p>どの部分で理論値から上振れ・下振れしたのかを確認できます。</p>
+              <div class="analysis-scroll"><table id="netAnalysis"></table></div>
+            </section>
+          </div>
+          <section class="analysis-section analysis-recent">
+            <h3>直近40サイクルの詳細</h3><p>CSVには保存済みの詳細サイクルをすべて出力します（最大3,000件）。</p>
+            <div class="analysis-scroll"><table id="recentCycleAnalysis"></table></div>
+          </section>
+        </div>
+      </details>
+    </section>
+    <section class="rules panel"><details><summary><span>遊び方・すべての抽選確率</span><span class="accordion-sign">＋</span></summary><div class="rules-body"><p>このゲームは独自に設計した確率シミュレーターです。実機や公式メーカーとは関係ありません。実際のお金・景品は使用しません。</p><div class="rule-columns"><div><h3>通常時・CZ</h3><p>通常時も<strong>3枚BET/G</strong>。当選までのG数は通常時突入時に内部抽選され、1タップでまとめて消化します。</p><table><tr><th>ゲーム数</th><th>振り分け</th><th>CZ突破率</th></tr><tr><td>5G</td><td>15%</td><td>45%</td></tr><tr><td>35G</td><td>15%</td><td>50%</td></tr><tr><td>160G</td><td>31%</td><td>55%</td></tr><tr><td>300G</td><td>29%</td><td>70%</td></tr><tr><td>375G（最長）</td><td>10%</td><td>84%</td></tr></table><p>ハズレ75.2%（払出0）、小役18.4%（払出1枚）、強小役6.4%（払出3枚）。CZは11G・3枚BET、突破率は直前の通常時G数に連動（全体平均60%）。</p></div><div><h3>ボーナス</h3><p>CZ成功時に革命ボーナス55%、決戦ボーナス45%。</p><table><tr><th>種類</th><th>差枚</th><th>AT期待度</th></tr><tr><td>革命ボーナス</td><td>平均+460枚</td><td>52%</td></tr><tr><td>決戦ボーナス</td><td>+60枚</td><td>45%</td></tr></table><p>革命は51Gまたは52G、決戦は16G。ボーナス終了後にAT抽選を行います。</p></div><div><h3>革命RUSH / 超革命RUSH</h3><p>通常ATはセットごとに<strong>75%継続</strong>。3回連続成功すると超革命RUSHへ。</p><p>SUPER革命RUSHは90%継続で開始し、セット継続成功ごとに91%・92%・93%・94%と成長します。SUPER突入時に上限を独立抽選し、<strong>80%で95%まで成長</strong>、<strong>20%で94%打ち止め</strong>となります。どちらも上限到達後はその継続率を維持します。連続SUPER時の獲得0枚終了や、SUPER後の特別CZ・特大ハマりはありません。</p><table><tr><th>1セット</th><th>確率</th></tr><tr><td>10G</td><td>85%</td></tr><tr><td>20G</td><td>12.5%</td></tr><tr><td>50G</td><td>2.5%</td></tr></table><p>上表は通常AT・SUPER共通のセットG数です。ATはすべて純増9枚/G。セット継続やSUPER上限の抽選はそれぞれ独立です。</p></div></div><p class="fine-print">設計機械割97.8098%（表示97.81%）は無制限試行時の理論値です。天井・有利区間・引き戻し・ストックはありません。所持コインが0未満でも続行できる無制限シミュレーションです。ゲームデータはこのブラウザに自動保存されます。詳細分析は導入後の完了サイクルから記録し、直近最大3,000サイクルを保存・CSV出力できます。</p></div></details></section>
     <footer>REVOLT 95 <span>© ORIGINAL FAN-MADE MECHANICS SIMULATOR</span></footer>
   </div>
 </body>
