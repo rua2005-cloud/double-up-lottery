@@ -23,6 +23,27 @@ export const CONFIG = Object.freeze({
   setLengths: [{g:10,p:.85},{g:20,p:.125},{g:50,p:.025}],
   netPerAtGame: 9,
 });
+export const DETAIL_LIMIT=3000;
+function startDetail(s){
+  if(!Array.isArray(s.detailRows))return;
+  s.detailCurrent={
+    number:s.cycleCount+1,startGames:s.gameCount,startInput:s.totalInput,startOutput:s.totalOutput,
+    normalG:s.targetG,normalNet:0,czWin:null,czRate:null,czNet:0,
+    bonusType:'',bonusNet:0,bonusToRush:false,rushSets:0,rushNet:0,
+    superSets:0,superNet:0,superWins:0,superCap:0,
+    set10:0,set20:0,set50:0
+  };
+}
+function finishDetail(s,gain){
+  const d=s.detailCurrent;
+  if(!d||!Array.isArray(s.detailRows))return;
+  const {startInput,startOutput,...rest}=d;
+  const row={...rest,games:s.gameCount-d.startGames,input:s.totalInput-startInput,
+    output:s.totalOutput-startOutput,net:gain,endNet:s.net,
+    superReached:d.superCap===94?d.superWins>=4:d.superCap===95?d.superWins>=5:false};
+  s.detailRows.push(row);
+  if(s.detailRows.length>DETAIL_LIMIT)s.detailRows.splice(0,s.detailRows.length-DETAIL_LIMIT);
+}
 const clampRng = (rng)=>Math.max(0, Math.min(1-Number.EPSILON,Number(rng())));
 function choice(items,rng) { const r=clampRng(rng); let a=0; for (const x of items) {a+=x.p;if(r<a)return x;}return items.at(-1); }
 function log(s,kind,text,sub='') {
@@ -41,6 +62,7 @@ function prepareNormal(s,rng){
   s.targetG=choice(CONFIG.normalG,rng).g;
   s.bonus=null;s.atSetG=0;s.upperWins=0;s.upperCap=null;s.normalWins=0;s.rushSets=0;s.rushTotalGain=0;
   s.cycleStart=s.net;
+  startDetail(s);
 }
 function finishCycle(s,rng,message){
   const gain=s.net-s.cycleStart;
@@ -50,15 +72,16 @@ function finishCycle(s,rng,message){
   s.worstCycle=Math.min(s.worstCycle,gain);
   s.history.unshift({number:s.cycleCount,net:gain});
   if(s.history.length>28)s.history.length=28;
+  finishDetail(s,gain);
   prepareNormal(s,rng);
   if(message)log(s,gain>=0?'win':'lose',message,`${gain>=0?'+':''}${gain.toLocaleString('ja-JP')}枚 / 次のCZまで通常時1タップ`);
 }
 export function createGame(rng=Math.random){
-  const s={version:6,phase:'normal',bank:CONFIG.initialBank,net:0,gameCount:0,
+  const s={version:7,phase:'normal',bank:CONFIG.initialBank,net:0,gameCount:0,
   totalInput:0,totalOutput:0,cycleCount:0,czCount:0,bonusCount:0,atCount:0,upperCount:0,
   normalWins:0,upperWins:0,upperCap:null,cap94Count:0,cap95Count:0,atSetG:0,rushSets:0,rushTotalGain:0,
   maxRushGain:0,bestCycle:-Infinity,worstCycle:Infinity,maxBalance:CONFIG.initialBank,lowBalance:CONFIG.initialBank,
-  currentRushGain:0, bonus:null,history:[],events:[],banner:{kind:'info',text:'1 TAPで運命を変えろ',sub:'通常時を一括消化してCZへ進む'},eventId:0,
+  currentRushGain:0, bonus:null,history:[],detailRows:[],detailCurrent:null,events:[],banner:{kind:'info',text:'1 TAPで運命を変えろ',sub:'通常時を一括消化してCZへ進む'},eventId:0,
   cycleStart:0,lastCycle:0,targetG:0,lastActionGames:0, lastNormal:null,lastCz:null,lastBonus:null, lastAt:null};
   prepareNormal(s,rng);return s;
 }
@@ -75,6 +98,7 @@ export function nextAction(s,rng=Math.random){
     const bet=s.targetG*CONFIG.normalBet;
     settle(s,bet,paid,s.targetG);
     s.lastNormal={g:s.targetG,bet,paid,net:paid-bet};
+    if(s.detailCurrent)s.detailCurrent.normalNet=paid-bet;
     s.phase='cz';s.czCount++;
     log(s,'cz','ドルシア攻防戦 突入',`${s.targetG}G消化 / CZ突破率${Math.round((CONFIG.czWinByNormalG[s.targetG]??CONFIG.czWin)*100)}% / 通常時 ${paid-bet>=0?'+':''}${paid-bet}枚`);
   } else if(s.phase==='cz'){
@@ -83,6 +107,7 @@ export function nextAction(s,rng=Math.random){
     const chance=CONFIG.czWinByNormalG[s.lastNormal.g] ?? CONFIG.czWin;
     const success=clampRng(rng)<chance;
     s.lastCz={success,paid,net:paid-CONFIG.czGames*CONFIG.czBet,chance};
+    if(s.detailCurrent){s.detailCurrent.czWin=success;s.detailCurrent.czRate=chance;s.detailCurrent.czNet=s.lastCz.net;}
     if(success){
       s.bonus=clampRng(rng)<CONFIG.revolutionBonusChance?'revolution':'decisive';
       s.phase='bonus';s.bonusCount++;
@@ -95,6 +120,7 @@ export function nextAction(s,rng=Math.random){
     settle(s,g*3,g*3+net,g);
     const success=clampRng(rng)<CONFIG.bonusAtChance[type];
     s.lastBonus={type,g,net,success};
+    if(s.detailCurrent){s.detailCurrent.bonusType=type;s.detailCurrent.bonusNet=net;s.detailCurrent.bonusToRush=success;}
     if(success){
       s.phase='rush';s.normalWins=0;s.upperWins=0;s.rushSets=0;
       s.rushTotalGain=0;s.currentRushGain=0;s.atCount++;
@@ -105,6 +131,11 @@ export function nextAction(s,rng=Math.random){
     const mode=s.phase, g=s.atSetG,net=g*CONFIG.netPerAtGame;
     settle(s,g*3,g*(3+CONFIG.netPerAtGame),g);
     s.rushSets++;s.rushTotalGain+=net;s.currentRushGain+=net;
+    if(s.detailCurrent){
+      if(g===10)s.detailCurrent.set10++;else if(g===20)s.detailCurrent.set20++;else if(g===50)s.detailCurrent.set50++;
+      if(mode==='rush'){s.detailCurrent.rushSets++;s.detailCurrent.rushNet+=net;}
+      else {s.detailCurrent.superSets++;s.detailCurrent.superNet+=net;}
+    }
     const chance=continueChance(s);
     const success=clampRng(rng)<chance;
     s.lastAt={mode,g,net,chance,success,set:s.rushSets};
@@ -116,6 +147,7 @@ export function nextAction(s,rng=Math.random){
           // The continuation ceiling is selected once per SUPER entry.
           s.upperCap=clampRng(rng)<CONFIG.upperCap95Chance?CONFIG.upperCap95:CONFIG.upperCap94;
           if(s.upperCap===CONFIG.upperCap95)s.cap95Count++;else s.cap94Count++;
+          if(s.detailCurrent)s.detailCurrent.superCap=Math.round(s.upperCap*100);
           s.atSetG=choice(CONFIG.setLengths,rng).g;
           log(s,'upper','超革命RUSH 突入！','90%から継続率が成長 / 94%で打ち止め or 95%まで成長');
         }else{
@@ -124,6 +156,7 @@ export function nextAction(s,rng=Math.random){
         }
       } else {
         s.upperWins++;
+        if(s.detailCurrent)s.detailCurrent.superWins++;
         s.atSetG=choice(CONFIG.setLengths,rng).g;
         log(s,'upper',`${(chance*100).toFixed(0)}% 継続成功！`,`次回${Math.round(continueChance(s)*100)}% / +${net}枚`);
       }
