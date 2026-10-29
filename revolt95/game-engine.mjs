@@ -31,6 +31,8 @@ function startDetail(s){
     normalG:s.targetG,normalNet:0,czWin:null,czRate:null,czNet:0,
     bonusType:'',bonusNet:0,bonusToRush:false,rushSets:0,rushNet:0,
     superSets:0,superNet:0,superWins:0,superCap:0,
+    rushAttempts:0,rushSuccesses:0,
+    superAttempts:[0,0,0,0,0,0],superSuccesses:[0,0,0,0,0,0],
     set10:0,set20:0,set50:0
   };
 }
@@ -138,6 +140,14 @@ export function nextAction(s,rng=Math.random){
     }
     const chance=continueChance(s);
     const success=clampRng(rng)<chance;
+    if(s.detailCurrent){
+      if(mode==='rush'){s.detailCurrent.rushAttempts++;if(success)s.detailCurrent.rushSuccesses++;}
+      else {
+        const i=Math.max(0,Math.min(5,Math.round(chance*100)-90));
+        s.detailCurrent.superAttempts[i]++;
+        if(success)s.detailCurrent.superSuccesses[i]++;
+      }
+    }
     s.lastAt={mode,g,net,chance,success,set:s.rushSets};
     if(success){
       if(mode==='rush'){
