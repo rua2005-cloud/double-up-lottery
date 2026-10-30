@@ -4,10 +4,10 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#090d1a">
-  <meta name="description" content="1タップで通常時を突破。75%を3回通し、SUPERは90%から継続率が成長、20%で94%打ち止め・80%で95%到達を目指す確率シミュレーションゲーム。">
+  <meta name="description" content="1タップで通常時を突破。75%を3回通すとSUPERへ。SUPERは85%から最大90%に成長し、100G・200Gセット搭載。AT最大80セット、設計機械割98.00%の確率シミュレーションゲーム。">
   <title>REVOLT 95 — 1 TAP RUSH</title>
-  <link rel="stylesheet" href="./style.css?v=10">
-  <script type="module" src="./app.js?v=10"></script>
+  <link rel="stylesheet" href="./style.css?v=11">
+  <script type="module" src="./app.js?v=11"></script>
 </head>
 <body>
   <div class="background-grid" aria-hidden="true"></div>
@@ -18,13 +18,13 @@
       <div class="top-actions"><span class="live-dot">SIMULATOR ONLINE</span><button class="icon-button" id="soundButton" type="button" aria-label="サウンドを切り替える" title="サウンド">♪ OFF</button><button class="icon-button" id="resetButton" type="button">↻ リセット</button></div>
     </header>
 
-    <div class="page-title"><div class="eyebrow">ARCADE / PROBABILITY GAME / 2026</div><h1>その一撃で、<span>運命を塗り替えろ。</span></h1><p>通常時は1タップ。SUPERは90%から成長。80%で95%まで、20%で94%打ち止め。</p></div>
+    <div class="page-title"><div class="eyebrow">ARCADE / PROBABILITY GAME / 2026</div><h1>その一撃で、<span>運命を塗り替えろ。</span></h1><p>通常時は1タップ。SUPERは85%→90%。100G・200G搭載、AT最大80セット。</p></div>
 
     <div class="dashboard">
       <aside class="sidebar leftbar">
         <section class="panel wallet-panel"><div class="panel-eyebrow">SESSION ACCOUNT</div><div class="panel-heading">累計差枚 <span class="tiny-circle">●</span></div><div id="net" class="large-number" aria-live="polite">±0 <span>枚</span></div><div class="wallet-rule"></div><div class="pair-stat"><span>所持コイン</span><strong id="bank">10,000</strong></div><div class="pair-stat"><span>累計消化（全モード）</span><strong id="games">0 G</strong></div><div class="pair-stat"><span>実測機械割</span><strong id="rate">—</strong></div></section>
-        <section class="panel"><div class="panel-eyebrow">PLAY STATISTICS</div><h2>実戦データ</h2><div class="stat-grid"><div><span>CZ</span><strong id="czCount">0</strong></div><div><span>BONUS</span><strong id="bonusCount">0</strong></div><div><span>RUSH</span><strong id="atCount">0</strong></div><div><span>SUPER</span><strong id="upperCount">0</strong></div><div><span>94%上限</span><strong id="cap94Count">0</strong></div><div><span>95%上限</span><strong id="cap95Count">0</strong></div></div><div class="pair-stat"><span>完了サイクル</span><strong id="cycleCount">0</strong></div><div class="pair-stat"><span>最高AT獲得</span><strong id="maxRush">0 枚</strong></div></section>
-        <section class="theory-panel"><div class="panel-eyebrow">THEORETICAL SPEC</div><div class="theory-main"><strong>97.81<span>%</span></strong><span>設計機械割</span></div><div class="theory-bar"><span></span></div><p>全モード3BET / CZ平均180.1G・最長375G / SUPERは94%上限20%・95%上限80%</p></section>
+        <section class="panel"><div class="panel-eyebrow">PLAY STATISTICS</div><h2>実戦データ</h2><div class="stat-grid"><div><span>CZ</span><strong id="czCount">0</strong></div><div><span>BONUS</span><strong id="bonusCount">0</strong></div><div><span>RUSH</span><strong id="atCount">0</strong></div><div><span>SUPER</span><strong id="upperCount">0</strong></div><div><span>90%到達</span><strong id="super90Count">0</strong></div><div><span>80連到達</span><strong id="max80Count">0</strong></div></div><div class="pair-stat"><span>完了サイクル</span><strong id="cycleCount">0</strong></div><div class="pair-stat"><span>最高AT獲得</span><strong id="maxRush">0 枚</strong></div></section>
+        <section class="theory-panel"><div class="panel-eyebrow">THEORETICAL SPEC</div><div class="theory-main"><strong>98.00<span>%</span></strong><span>設計機械割</span></div><div class="theory-bar"><span></span></div><p>全モード3BET / CZ平均180.1G / SUPER 85〜90% / 最大80セット / SUPER専用100G・200G</p></section>
       </aside>
 
       <main class="machine" id="machine" data-phase="normal">
@@ -44,7 +44,7 @@
         <div class="machine-bottom"><span>RANDOM SEQUENCE ENGINE</span><span>ORIGINAL SIMULATION · NOT OFFICIAL</span></div>
       </main>
 
-      <aside class="sidebar rightbar"><section class="panel meter-panel"><div class="panel-eyebrow">RUSH PROGRESSION</div><h2>継続システム</h2><div class="rate-line"><span>NORMAL RUSH</span><strong>75<small>%</small></strong></div><div class="small-rate-track"><span style="width:75%"></span></div><div class="rate-line top-rate"><span>SUPER RUSH</span><strong>90–95<small>%</small></strong></div><div class="small-rate-track upper-track"><span style="width:95%"></span></div><div class="rate-line top-rate"><span>95%まで成長</span><strong>80<small>%</small></strong></div><div class="small-rate-track upper-track"><span style="width:80%"></span></div><p class="tiny-note" id="chanceCaption">20%で94%打ち止め、80%で95%まで成長。SUPER突入時に上限を抽選。</p><p class="tiny-note" id="superStreakCaption">SUPER突入時に上限継続率を抽選します。</p></section>
+      <aside class="sidebar rightbar"><section class="panel meter-panel"><div class="panel-eyebrow">RUSH PROGRESSION</div><h2>継続システム</h2><div class="rate-line"><span>NORMAL RUSH</span><strong>75<small>%</small></strong></div><div class="small-rate-track"><span style="width:75%"></span></div><div class="rate-line top-rate"><span>SUPER RUSH</span><strong>85–90<small>%</small></strong></div><div class="small-rate-track upper-track"><span style="width:90%"></span></div><div class="rate-line top-rate"><span>AT MAX SETS</span><strong>80<small>連</small></strong></div><div class="small-rate-track upper-track"><span style="width:80%"></span></div><p class="tiny-note" id="chanceCaption">SUPERは85%から最大90%。ATは通常RUSHを含め最大80セット。</p><p class="tiny-note" id="superStreakCaption">100G・200Gのロングセットも抽選。</p></section>
       <section class="panel chart-panel"><div class="panel-heading heading-split"><h2>直近の収支</h2><span>1 CZ CYCLE</span></div><div class="bar-chart" id="historyChart"><p class="empty-state">サイクルを終了すると表示されます</p></div><div class="chart-key"><span><i class="key-plus"></i>プラス</span><span><i class="key-minus"></i>マイナス</span></div></section>
       <section class="panel event-panel"><div class="panel-heading heading-split"><h2>履歴</h2><span>EVENT LOG</span></div><div id="eventList" class="event-list"><div class="empty-state">まだ履歴はありません</div></div></section></aside>
     </div>
@@ -64,7 +64,7 @@
               <div class="analysis-scroll"><table id="bonusAnalysis"></table></div>
             </section>
             <section class="analysis-section">
-              <h3>SUPERの94% / 95%上限</h3><p>上限の抽選結果と、実際にその継続率に到達した回数は別々に集計します。</p>
+              <h3>SUPER 90%到達・AT最大80セット</h3><p>SUPERの突入回数・90%継続への到達・80セット上限達成を集計します。</p>
               <div class="analysis-scroll"><table id="superAnalysis"></table></div>
             </section>
             <section class="analysis-section">
@@ -72,7 +72,7 @@
               <div class="analysis-scroll"><table id="continuationAnalysis"></table></div>
             </section>
             <section class="analysis-section">
-              <h3>ATセットG数の分布</h3><div class="analysis-scroll"><table id="setLengthAnalysis"></table></div>
+              <h3>通常RUSH / SUPER別セットG数の分布</h3><div class="analysis-scroll"><table id="setLengthAnalysis"></table></div>
             </section>
             <section class="analysis-section">
               <h3>収支の内訳</h3><p>どの部分で理論値から上振れ・下振れしたのかを確認できます。</p>
@@ -86,7 +86,7 @@
         </div>
       </details>
     </section>
-    <section class="rules panel"><details><summary><span>遊び方・すべての抽選確率</span><span class="accordion-sign">＋</span></summary><div class="rules-body"><p>このゲームは独自に設計した確率シミュレーターです。実機や公式メーカーとは関係ありません。実際のお金・景品は使用しません。</p><div class="rule-columns"><div><h3>通常時・CZ</h3><p>通常時も<strong>3枚BET/G</strong>。当選までのG数は通常時突入時に内部抽選され、1タップでまとめて消化します。</p><table><tr><th>ゲーム数</th><th>振り分け</th><th>CZ突破率</th></tr><tr><td>5G</td><td>15%</td><td>45%</td></tr><tr><td>35G</td><td>15%</td><td>50%</td></tr><tr><td>160G</td><td>31%</td><td>55%</td></tr><tr><td>300G</td><td>29%</td><td>70%</td></tr><tr><td>375G（最長）</td><td>10%</td><td>84%</td></tr></table><p>ハズレ75.2%（払出0）、小役18.4%（払出1枚）、強小役6.4%（払出3枚）。CZは11G・3枚BET、突破率は直前の通常時G数に連動（全体平均60%）。</p></div><div><h3>ボーナス</h3><p>CZ成功時に革命ボーナス55%、決戦ボーナス45%。</p><table><tr><th>種類</th><th>差枚</th><th>AT期待度</th></tr><tr><td>革命ボーナス</td><td>平均+460枚</td><td>52%</td></tr><tr><td>決戦ボーナス</td><td>+60枚</td><td>45%</td></tr></table><p>革命は51Gまたは52G、決戦は16G。ボーナス終了後にAT抽選を行います。</p></div><div><h3>革命RUSH / 超革命RUSH</h3><p>通常ATはセットごとに<strong>75%継続</strong>。3回連続成功すると超革命RUSHへ。</p><p>SUPER革命RUSHは90%継続で開始し、セット継続成功ごとに91%・92%・93%・94%と成長します。SUPER突入時に上限を独立抽選し、<strong>80%で95%まで成長</strong>、<strong>20%で94%打ち止め</strong>となります。どちらも上限到達後はその継続率を維持します。連続SUPER時の獲得0枚終了や、SUPER後の特別CZ・特大ハマりはありません。</p><table><tr><th>1セット</th><th>確率</th></tr><tr><td>10G</td><td>85%</td></tr><tr><td>20G</td><td>12.5%</td></tr><tr><td>50G</td><td>2.5%</td></tr></table><p>上表は通常AT・SUPER共通のセットG数です。ATはすべて純増9枚/G。セット継続やSUPER上限の抽選はそれぞれ独立です。</p></div></div><p class="fine-print">設計機械割97.8098%（表示97.81%）は無制限試行時の理論値です。天井・有利区間・引き戻し・ストックはありません。所持コインが0未満でも続行できる無制限シミュレーションです。ゲームデータはこのブラウザに自動保存されます。詳細分析は導入後の完了サイクルから記録し、直近最大3,000サイクルを保存・CSV出力できます。</p></div></details></section>
+    <section class="rules panel"><details><summary><span>遊び方・すべての抽選確率</span><span class="accordion-sign">＋</span></summary><div class="rules-body"><p>このゲームは独自に設計した確率シミュレーターです。実機や公式メーカーとは関係ありません。実際のお金・景品は使用しません。</p><div class="rule-columns"><div><h3>通常時・CZ</h3><p>通常時も<strong>3枚BET/G</strong>。当選までのG数は通常時突入時に内部抽選され、1タップでまとめて消化します。</p><table><tr><th>ゲーム数</th><th>振り分け</th><th>CZ突破率</th></tr><tr><td>5G</td><td>15%</td><td>45%</td></tr><tr><td>35G</td><td>15%</td><td>50%</td></tr><tr><td>160G</td><td>31%</td><td>55%</td></tr><tr><td>300G</td><td>29%</td><td>70%</td></tr><tr><td>375G（最長）</td><td>10%</td><td>84%</td></tr></table><p>ハズレ75.2%（払出0）、小役18.4%（払出1枚）、強小役6.4%（払出3枚）。CZは11G・3枚BET、突破率は直前の通常時G数に連動（全体平均60%）。</p></div><div><h3>ボーナス</h3><p>CZ成功時に革命ボーナス55%、決戦ボーナス45%。</p><table><tr><th>種類</th><th>差枚</th><th>AT期待度</th></tr><tr><td>革命ボーナス</td><td>平均+460枚</td><td>52%</td></tr><tr><td>決戦ボーナス</td><td>+60枚</td><td>45%</td></tr></table><p>革命は51Gまたは52G、決戦は16G。ボーナス終了後にAT抽選を行います。</p></div><div><h3>革命RUSH / 超革命RUSH</h3><p>通常ATはセットごとに<strong>75%継続</strong>。3回連続成功すると超革命RUSHへ。</p><p>SUPERは85%継続から開始し、継続成功ごとに86%・87%・88%・89%・90%へ成長します。90%到達後は固定です。通常RUSHの3セットも含め、<strong>AT全体は最大80セット</strong>です。80セット目の払い出し後に継続抽選なしで終了します。</p><h3>通常RUSHセット振り分け</h3><table><tr><th>G数</th><th>確率</th></tr><tr><td>10G</td><td>85%</td></tr><tr><td>20G</td><td>12.5%</td></tr><tr><td>50G</td><td>2.5%</td></tr></table><h3>SUPERセット振り分け</h3><table><tr><th>G数</th><th>確率</th></tr><tr><td>10G</td><td>60.5%</td></tr><tr><td>20G</td><td>15%</td></tr><tr><td>50G</td><td>20.5%</td></tr><tr><td>100G</td><td>3.5%</td></tr><tr><td>200G</td><td>0.5%</td></tr></table><p>すべて純増9枚/G。通常RUSHの平均セット12.25G、SUPERは23.8Gです。セット長は継続確率の抽選と独立です。</p></div></div><p class="fine-print">設計機械割97.998966%（表示98.00%）は長期試行での理論値です。天井・有利区間・引き戻し・ストックはありません。所持コインが0未満でも続行できる無制限シミュレーションです。ゲームデータはこのブラウザに自動保存されます。詳細分析は現行ルールの完了サイクルから記録し、直近最大3,000サイクルを保存・CSV出力できます。旧バージョンから更新した際は累計差枚とゲーム数は保持し、旧仕様の詳細行だけをクリアします。</p></div></details></section>
     <footer>REVOLT 95 <span>© ORIGINAL FAN-MADE MECHANICS SIMULATOR</span></footer>
   </div>
 </body>
