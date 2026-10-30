@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
+import {readFileSync} from 'node:fs';
+import {buildStandalone} from '../build-standalone.mjs';
 import {CONFIG,createGame,nextAction,autoCycles,continueChance,expectedStats,machineRate} from '../game-engine.mjs';
 function seeded(seed){let s=seed>>>0;return ()=>((s=(Math.imul(s,1664525)+1013904223)>>>0)/4294967296);}
 function near(a,b,eps=1e-8){assert.ok(Math.abs(a-b)<eps,`${a} differs from ${b}`);}
@@ -124,4 +126,14 @@ test('long-run results approach 98% on seeded runs',()=>{
  autoCycles(s,140000,seeded(98765));
  const r=machineRate(s);
  assert.ok(Math.abs(r-97.99896605024216)<1.5,`observed ${r}`);
+});
+
+test('offline HTML contains exactly the current game and executes only after DOM markup',()=>{
+  const html=readFileSync(new URL('../standalone.html',import.meta.url),'utf8');
+  assert.equal(html,buildStandalone());
+  const bodyStart=html.indexOf('<body'),jsStart=html.indexOf('<script>'),bodyEnd=html.lastIndexOf('</body>');
+  assert.ok(bodyStart>=0&&bodyStart<jsStart&&jsStart<bodyEnd,'script must be inside the end of body');
+  assert.ok(html.indexOf('id="playButton"')<jsStart,'all controls must exist before app starts');
+  assert.ok(html.includes('maxAtSets:80')&&html.includes('upperStart:.85'),'the current game engine must be embedded');
+  assert.equal((html.match(/<script>/g)||[]).length,1,'exactly one executable inline script');
 });

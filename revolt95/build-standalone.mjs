@@ -12,8 +12,13 @@ export function buildStandalone(){
   const script=html.match(/<script type="module" src="[^"]+"><\/script>/)?.[0];
   if(!link?.includes('style.css')||!script?.includes('app.js'))throw Error('Missing module assets');
   if(css.includes('</style>')||engine.includes('</script>')||app.includes('</script>'))throw Error('Inline terminator in sources');
+  // Inline scripts run immediately; keep execution after the page's DOM exists.
+  // The live edition uses a deferred module in <head>, but the offline edition
+  // must place its classic inline script immediately before </body>.
+  if(!html.includes('</body>'))throw Error('Closing body tag missing');
   return html.replace(link,'<style>\n'+css+'\n</style>')
-    .replace(script,'<script>\n'+engine+'\n\n'+app+'\n</script>');
+    .replace(script,'')
+    .replace('</body>','<script>\n'+engine+'\n\n'+app+'\n</script>\n</body>');
 }
 if(process.argv[1]?.endsWith('build-standalone.mjs')){
   const output=buildStandalone(),target=new URL('standalone.html',import.meta.url);
