@@ -24,6 +24,16 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Verify current REVOLT 95 rules and offline build
+        run: |
+          node --test revolt95/tests/game-engine.test.mjs
+          node revolt95/build-standalone.mjs --check
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
 

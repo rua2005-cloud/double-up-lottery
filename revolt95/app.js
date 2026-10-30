@@ -1,4 +1,4 @@
-import {CONFIG,createGame,nextAction,autoCycles,machineRate,continueChance} from './game-engine.mjs?v=9';
+import {CONFIG,createGame,nextAction,autoCycles,machineRate,continueChance} from './game-engine.mjs?v=10';
 const SAVE_KEY='revolt95-simulator-v3';
 const $=(id)=>document.getElementById(id);
 const format=(n)=>Number(n).toLocaleString('ja-JP');
@@ -229,8 +229,8 @@ function render(){
   const actual=machineRate(state);$('rate').textContent=actual===null?'—':actual.toFixed(2)+'%';
   for(const [el,field] of [['czCount','czCount'],['bonusCount','bonusCount'],['atCount','atCount'],['upperCount','upperCount'],['cap94Count','cap94Count'],['cap95Count','cap95Count'],['cycleCount','cycleCount']])$(el).textContent=format(state[field]);
   $('maxRush').textContent=`${format(state.maxRushGain)} 枚`;
-  $('chanceCaption').textContent=state.phase==='upper'?`現在${Math.round(continueChance(state)*100)}%。上限は94%（20%）または95%（80%）。`:'SUPER突入時に継続率上限を抽選：80%で95%まで成長、20%で94%打ち止め。';
-  $('superStreakCaption').textContent=state.phase==='upper'&&state.upperWins>=5?(state.upperCap===CONFIG.upperCap95?'95%継続に到達！':'94%で打ち止め。以後も94%継続。'):'SUPERは90%から成長。上限に達すると継続率は固定されます。';
+  $('chanceCaption').textContent=state.phase==='upper'?`現在${Math.round(continueChance(state)*100)}%継続・今回の上限${Math.round(state.upperCap*100)}%。`:'SUPER突入時に継続率上限を抽選：80%で95%まで成長、20%で94%打ち止め。';
+  $('superStreakCaption').textContent=state.phase==='upper'&&continueChance(state)===state.upperCap?`${Math.round(state.upperCap*100)}%上限到達。以降はこの継続率で固定。`:'SUPERは90%から成長し、上限到達後は継続率を固定します。';
   renderEvents();renderChart();
   if($('analyticsDetails').open)renderAnalytics();
   try{localStorage.setItem(SAVE_KEY,JSON.stringify(state))}catch{}

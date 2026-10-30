@@ -35,6 +35,8 @@ index.html はES Modulesを使うため、HTTP配信してください。
 ```sh
 python3 -m http.server 8000
 # http://localhost:8000/revolt95/
+node revolt95/build-standalone.mjs
+node revolt95/build-standalone.mjs --check
 node --test revolt95/tests/game-engine.test.mjs
 ```
 
