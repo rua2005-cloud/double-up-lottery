@@ -1,4 +1,4 @@
-import {CONFIG,createGame,nextAction,autoCycles,machineRate,continueChance} from './game-engine.mjs?v=10';
+import {CONFIG,createGame,nextAction,autoCycles,machineRate,continueChance} from './game-engine.mjs?v=11';
 const SAVE_KEY='revolt95-simulator-v3';
 const $=(id)=>document.getElementById(id);
 const format=(n)=>Number(n).toLocaleString('ja-JP');
@@ -9,39 +9,42 @@ const texts={
   cz:{number:'',unit:'%',title:'ドルシア攻防戦',overline:'CHANCE ZONE / 11 GAMES',desc:'直前の通常時G数によって突破率が変化',button:'CZに挑戦する',upcoming:'',label:'CZ BATTLE',symbol:'C'},
   bonus:{number:'',unit:'',title:'',overline:'BONUS GET',desc:'ボーナス獲得！ AT突入を抽選',button:'ボーナスを消化する',upcoming:'',label:'BONUS DRAW',symbol:'B'},
   rush:{number:'75',unit:'%',title:'革命RUSH',overline:'REVOLUTION RUSH / TRIPLE BREAK',desc:'75%を3回連続突破で超革命RUSHへ',button:'1セット消化・継続抽選',upcoming:'',label:'CURRENT SET',symbol:'R'},
-  upper:{number:'',unit:'%',title:'超革命RUSH',overline:'SUPER REVOLUTION RUSH',desc:'継続率90%から上昇 / 94%か95%で打ち止め',button:'上位ATを1セット消化',upcoming:'',label:'CONTINUE CHANCE',symbol:'S'}
+  upper:{number:'',unit:'%',title:'超革命RUSH',overline:'SUPER REVOLUTION RUSH',desc:'継続率85%から上昇 / 最大90%・100G・200Gセット搭載',button:'上位ATを1セット消化',upcoming:'',label:'CONTINUE CHANCE',symbol:'S'}
 };
 function safeLoad(){try{
   const raw=localStorage.getItem(SAVE_KEY);if(!raw)return null;
   const s=JSON.parse(raw);
-  if(!s||![3,4,5,6,7].includes(s.version)||!phaseMap[s.phase]||!Array.isArray(s.events)||!Array.isArray(s.history)||!Number.isFinite(s.net)||!Number.isFinite(s.totalInput)||s.totalInput<0)return null;
-  // Retain prior totals; restore in-progress normal phases to the new G distribution.
-  if(s.version<6){
-    if(s.version===3&&s.phase==='upper'&&s.ultraMode){
-      let left=Math.random();for(const x of CONFIG.setLengths){left-=x.p;if(left<0){s.atSetG=x.g;break;}}
-    }
+  if(!s||![3,4,5,6,7,8].includes(s.version)||!phaseMap[s.phase]||!Array.isArray(s.events)||!Array.isArray(s.history)||!Number.isFinite(s.net)||!Number.isFinite(s.totalInput)||s.totalInput<0)return null;
+  if(s.version<8){
+    // Keep old medals, G counters and history, but do not mix old 94/95% detail
+    // records with new 85-90% analysis.
     if(s.phase==='normal'){
-      let left=Math.random();for(const x of CONFIG.normalG){left-=x.p;if(left<0){s.targetG=x.g;break;}}
+      const u=Math.random();let a=0;
+      if(!CONFIG.normalG.some(x=>x.g===s.targetG)||s.version<6){
+        s.targetG=CONFIG.normalG.find(x=>(a+=x.p)>u)?.g??375;
+      }
     }
-    s.upperCap=s.phase==='upper'?(Math.random()<CONFIG.upperCap95Chance?CONFIG.upperCap95:CONFIG.upperCap94):null;
-    s.cap94Count=0;s.cap95Count=0;s.version=6;
+    if(s.phase==='upper'){
+      // Preserve an in-progress AT; future draws follow the new SUPER rules.
+      s.upperCap=CONFIG.upperCap;
+      if(!CONFIG.upperSetLengths.some(x=>x.g===s.atSetG))s.atSetG=10;
+    }
+    s.super90Count=0;s.max80Count=0;
+    s.detailRows=[];s.detailCurrent=null;
+    delete s.cap94Count;delete s.cap95Count;
+    delete s.ultraMode;delete s.ultraCount;delete s.superZeroCount;
+    delete s.specialCycle;delete s.previousCycleSuper;delete s.cycleSuperEntered;
+    s.version=8;
   }
-  if(!Number.isSafeInteger(s.cap94Count)||s.cap94Count<0)s.cap94Count=0;
-  if(!Number.isSafeInteger(s.cap95Count)||s.cap95Count<0)s.cap95Count=0;
-  if(s.phase==='upper'&&![CONFIG.upperCap94,CONFIG.upperCap95].includes(s.upperCap)){
-    s.upperCap=Math.random()<CONFIG.upperCap95Chance?CONFIG.upperCap95:CONFIG.upperCap94;
-  }
-  if(s.phase==='normal'&&!CONFIG.normalG.some(x=>x.g===s.targetG)){
-    let left=Math.random();for(const x of CONFIG.normalG){left-=x.p;if(left<0){s.targetG=x.g;break;}}
-  }
-  delete s.ultraMode;delete s.ultraCount;delete s.superZeroCount;
-  delete s.specialCycle;delete s.previousCycleSuper;delete s.cycleSuperEntered;
-  // Older versions did not store per-cycle details. Preserve balances and counters,
-  // start recording full details from the next freshly prepared cycle.
+  if(!Number.isSafeInteger(s.super90Count)||s.super90Count<0)s.super90Count=0;
+  if(!Number.isSafeInteger(s.max80Count)||s.max80Count<0)s.max80Count=0;
   if(!Array.isArray(s.detailRows))s.detailRows=[];
-  if(!s.detailCurrent||typeof s.detailCurrent!=='object')s.detailCurrent=null;
   if(s.detailRows.length>3000)s.detailRows=s.detailRows.slice(-3000);
-  s.version=7;
+  if(!s.detailCurrent||typeof s.detailCurrent!=='object')s.detailCurrent=null;
+  if(s.phase==='upper')s.upperCap=CONFIG.upperCap;
+  if(s.phase==='normal'&&!CONFIG.normalG.some(x=>x.g===s.targetG)){
+    const u=Math.random();let a=0;s.targetG=CONFIG.normalG.find(x=>(a+=x.p)>u)?.g??375;
+  }
   return s;
 }catch{return null}}
 let state=safeLoad()||createGame();
@@ -101,7 +104,7 @@ function renderAnalytics(){
     summary.append(analysisMetric('詳細データ','未計測','既存の累計データは保持されます'));
   }else{
     const input=sum(rows,'input'),output=sum(rows,'output'),net=sum(rows,'net');
-    const superRows=rows.filter(r=>r.superCap===94||r.superCap===95);
+    const superRows=rows.filter(r=>r.superCap===90);
     const positives=rows.filter(r=>r.net>0).length;
     const best=rows.reduce((a,r)=>Math.max(a,r.net),-Infinity);
     const worst=rows.reduce((a,r)=>Math.min(a,r.net),Infinity);
@@ -111,7 +114,7 @@ function renderAnalytics(){
       ['サイクル勝率',pct(positives,rows.length),`${format(positives)} / ${format(rows.length)}`],
       ['CZ突破率',pct(rows.filter(r=>r.czWin===true).length,rows.length),'理論平均60%'],
       ['SUPER平均獲得',average(superRows,'superNet')+'枚','SUPER部分のみ'],
-      ['SUPER最多セット',superRows.length?format(Math.max(...superRows.map(r=>r.superSets)))+'セット':'—','1セット10/20/50G'],
+      ['SUPER最多セット',superRows.length?format(Math.max(...superRows.map(r=>r.superSets)))+'セット':'—','通常10/20/50G・SUPER最大200G'],
       ['最大プラス',`+${format(best)}枚`,'1サイクル'],
       ['最大マイナス',`${format(worst)}枚`,'1サイクル']
     ];
@@ -129,36 +132,41 @@ function renderAnalytics(){
       const r=rows.filter(x=>x.bonusType===type),at=r.filter(x=>x.bonusToRush===true).length;
       return [label,format(r.length),format(at),pct(at,r.length),Math.round(theory*100)+'%',r.length?average(r,'bonusNet')+'枚':'—'];
     }));
-  const superRows=rows.filter(r=>r.superCap===94||r.superCap===95);
-  fillAnalysisTable('superAnalysis',['上限型','突入回数','実際に到達','到達率','平均SUPER純増','平均セット'],
-    [94,95].map(cap=>{
-      const r=superRows.filter(x=>x.superCap===cap),reached=r.filter(x=>x.superReached).length;
-      return [cap+'%（抽選'+(cap===94?'20':'80')+'%）',format(r.length),format(reached),pct(reached,r.length),
-        r.length?average(r,'superNet')+'枚':'—',
-        r.length?(sum(r,'superSets')/r.length).toFixed(2):'—'];
-    }));
+  const superRows=rows.filter(r=>r.superCap===90);
+  const max80Rows=rows.filter(r=>r.max80Reached);
+  const reached90=superRows.filter(r=>r.superReached);
+  fillAnalysisTable('superAnalysis',
+    ['SUPER突入','90%到達','90%到達率','80セット完走','SUPER平均純増','平均SUPERセット'],
+    [[format(superRows.length),format(reached90.length),pct(reached90.length,superRows.length),
+      format(max80Rows.length),superRows.length?average(superRows,'superNet')+'枚':'—',
+      superRows.length?(sum(superRows,'superSets')/superRows.length).toFixed(2):'—']]);
   fillAnalysisTable('continuationAnalysis',['継続率','抽選回数','継続成功','実測継続率','理論値'],
-    [90,91,92,93,94,95].map((rate,i)=>{
+    [85,86,87,88,89,90].map((rate,i)=>{
       const attempts=rows.reduce((a,r)=>a+(r.superAttempts?.[i]||0),0);
       const wins=rows.reduce((a,r)=>a+(r.superSuccesses?.[i]||0),0);
       return [rate+'%',format(attempts),format(wins),pct(wins,attempts),rate+'%'];
     }));
   const rushAttempt=sum(rows,'rushAttempts'),rushWin=sum(rows,'rushSuccesses');
   $('rushContinuation').textContent=`通常RUSH・75%抽選：${format(rushWin)} / ${format(rushAttempt)}（実測${pct(rushWin,rushAttempt)}）`;
-  const countSet=sum(rows,'set10')+sum(rows,'set20')+sum(rows,'set50');
-  fillAnalysisTable('setLengthAnalysis',['セットG数','出現回数','実測比率','理論比率'],
-    [[10,'set10','85%'],[20,'set20','12.5%'],[50,'set50','2.5%']].map(([g,key,theory])=>[g+'G',format(sum(rows,key)),pct(sum(rows,key),countSet),theory]));
+  fillAnalysisTable('setLengthAnalysis',
+    ['AT種別','セットG数','出現回数','実測比率','理論比率'],
+    [['通常RUSH',CONFIG.setLengths,'rushSet','rushSets'],
+     ['SUPER',CONFIG.upperSetLengths,'superSet','superSets']].flatMap(([mode,dist,prefix,total])=>
+      dist.map(item=>{
+        const count=sum(rows,prefix+item.g),den=sum(rows,total);
+        return [mode,item.g+'G',format(count),pct(count,den),(item.p*100).toFixed(1)+'%'];
+      })));
   fillAnalysisTable('netAnalysis',['収支区分','合計差枚','1サイクル平均'],
     [['通常時','normalNet'],['CZ','czNet'],['ボーナス','bonusNet'],['通常RUSH','rushNet'],['SUPER','superNet']].map(([label,key])=>[
       label,(sum(rows,key)>=0?'+':'')+format(sum(rows,key))+'枚',
       rows.length?((sum(rows,key)>=0?'+':'')+average(rows,key)+'枚'):'—'
     ]));
   fillAnalysisTable('recentCycleAnalysis',
-    ['No.','累計G','通常G','CZ','ボーナス','AT','SUPER上限','SUPERセット','SUPER純増','収支'],
+    ['No.','累計G','通常G','CZ','ボーナス','ATセット','SUPER','80連到達','SUPER純増','収支'],
     rows.slice(-40).reverse().map(r=>[
       r.number,format(r.startGames+r.games),r.normalG+'G',r.czWin?'成功':'失敗',
       r.bonusType==='revolution'?'革命':r.bonusType==='decisive'?'決戦':'—',
-      r.rushSets+r.superSets,r.superCap?r.superCap+'%':'—',r.superSets,
+      r.rushSets+r.superSets,r.superCap?'90%上限':'—',r.max80Reached?'達成':'—',
       r.superNet?('+'+format(r.superNet)):'0',(r.net>0?'+':'')+format(r.net)
     ]));
 }
@@ -173,9 +181,13 @@ function exportDetailsCsv(){
     ['rushSuccesses','通常RUSH継続成功数'],['superCap','SUPER上限'],['superReached','SUPER上限到達'],
     ['superSets','SUPERセット'],['superWins','SUPER継続成功'],['superNet','SUPER純増'],
     ['set10','10Gセット'],['set20','20Gセット'],['set50','50Gセット'],
+    ['set100','100Gセット'],['set200','200Gセット'],['max80Reached','80連到達'],
+    ['rushSet10','通常10G'],['rushSet20','通常20G'],['rushSet50','通常50G'],
+    ['superSet10','SUPER10G'],['superSet20','SUPER20G'],['superSet50','SUPER50G'],
+    ['superSet100','SUPER100G'],['superSet200','SUPER200G'],
     ['input','投入枚数'],['output','払出枚数'],['net','サイクル差枚'],['endNet','終了時累計差枚']
   ];
-  for(let p=90;p<=95;p++){
+  for(let p=85;p<=90;p++){
     fields.push(['superAttempts'+p,p+'%抽選回数'],['superSuccesses'+p,p+'%継続成功']);
   }
   const cell=value=>'"'+String(value??'').replace(/"/g,'""')+'"';
@@ -183,7 +195,7 @@ function exportDetailsCsv(){
   for(const row of rows){
     lines.push(fields.map(([field])=>{
       const match=field.match(/^super(Attempts|Successes)(\d+)$/);
-      const value=match?row['super'+match[1]]?.[Number(match[2])-90]:row[field];
+      const value=match?row['super'+match[1]]?.[Number(match[2])-85]:row[field];
       return cell(value);
     }).join(','));
   }
@@ -212,7 +224,7 @@ function render(){
   }
   $('machine').dataset.phase=state.phase;
   $('phaseEnglish').textContent=phaseMap[state.phase];
-  $('phaseCounter').textContent=state.phase==='rush'?`BREAK ${state.normalWins}/3`:state.phase==='upper'?`UPPER SET ${state.upperWins+1}`:`CYCLE ${state.cycleCount+1}`;
+  $('phaseCounter').textContent=state.phase==='rush'?`BREAK ${state.normalWins}/3`:state.phase==='upper'?`AT SET ${state.rushSets+1}/${CONFIG.maxAtSets}`:`CYCLE ${state.cycleCount+1}`;
   $('hudOverline').textContent=t.overline;$('phaseNumber').replaceChildren(document.createTextNode(t.number+' '));
   const unit=document.createElement('small');unit.textContent=t.unit;$('phaseNumber').append(unit);
   $('phaseTitle').textContent=t.title;$('phaseDesc').textContent=t.desc;$('coreSymbol').textContent=t.symbol;
@@ -227,10 +239,10 @@ function render(){
   $('hudTotalGames').textContent=`${format(state.gameCount)} G`;
   $('hudLastGames').textContent=Number.isFinite(state.lastActionGames)&&state.lastActionGames>0?`+${format(state.lastActionGames)} G`:'—';
   const actual=machineRate(state);$('rate').textContent=actual===null?'—':actual.toFixed(2)+'%';
-  for(const [el,field] of [['czCount','czCount'],['bonusCount','bonusCount'],['atCount','atCount'],['upperCount','upperCount'],['cap94Count','cap94Count'],['cap95Count','cap95Count'],['cycleCount','cycleCount']])$(el).textContent=format(state[field]);
+  for(const [el,field] of [['czCount','czCount'],['bonusCount','bonusCount'],['atCount','atCount'],['upperCount','upperCount'],['super90Count','super90Count'],['max80Count','max80Count'],['cycleCount','cycleCount']])$(el).textContent=format(state[field]);
   $('maxRush').textContent=`${format(state.maxRushGain)} 枚`;
-  $('chanceCaption').textContent=state.phase==='upper'?`現在${Math.round(continueChance(state)*100)}%継続・今回の上限${Math.round(state.upperCap*100)}%。`:'SUPER突入時に継続率上限を抽選：80%で95%まで成長、20%で94%打ち止め。';
-  $('superStreakCaption').textContent=state.phase==='upper'&&continueChance(state)===state.upperCap?`${Math.round(state.upperCap*100)}%上限到達。以降はこの継続率で固定。`:'SUPERは90%から成長し、上限到達後は継続率を固定します。';
+  $('chanceCaption').textContent=state.phase==='upper'?`現在${Math.round(continueChance(state)*100)}%継続・AT ${state.rushSets}/${CONFIG.maxAtSets}セット消化済。`:'SUPERは85%から最大90%へ成長。ATは通常RUSHを含め最大80セット。';
+  $('superStreakCaption').textContent=state.phase==='upper'&&continueChance(state)>=CONFIG.upperCap?'90%継続に到達！ 以後は90%固定。':'85%→86%→87%→88%→89%→90%。100G・200Gも抽選対象。';
   renderEvents();renderChart();
   if($('analyticsDetails').open)renderAnalytics();
   try{localStorage.setItem(SAVE_KEY,JSON.stringify(state))}catch{}
