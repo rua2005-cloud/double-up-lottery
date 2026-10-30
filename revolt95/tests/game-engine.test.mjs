@@ -1,74 +1,127 @@
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
 import {CONFIG,createGame,nextAction,autoCycles,continueChance,expectedStats,machineRate} from '../game-engine.mjs';
-function seeded(seed){let s=seed>>>0;return ()=>((s=(s*1664525+1013904223)>>>0)/2**32);}
-test('current design RTP and SUPER expectations',()=>{
+function seeded(seed){let s=seed>>>0;return ()=>((s=(Math.imul(s,1664525)+1013904223)>>>0)/4294967296);}
+function near(a,b,eps=1e-8){assert.ok(Math.abs(a-b)<eps,`${a} differs from ${b}`);}
+function superEntry(s,nextGDraw=0){
+ nextAction(s,()=>0); // normal
+ nextAction(s,()=>0); // CZ succeeds
+ nextAction(s,()=>0); // revolution bonus enters AT
+ for(let i=0;i<2;i++)nextAction(s,()=>0); // first two 75% continuations
+ let n=0;nextAction(s,()=>++n===2?nextGDraw:0); // third win -> SUPER and select first SUPER set
+ assert.equal(s.phase,'upper');
+ assert.equal(s.rushSets,3);
+ assert.equal(s.upperCap,.90);
+}
+test('theoretical RTP is exactly the new target at the 80-set limit',()=>{
  const x=expectedStats();
- assert.ok(Math.abs(x.expectedRate-97.80980581709773)<1e-8);
- assert.ok(Math.abs(x.meanNormalGames-180.1)<1e-9);
- assert.ok(Math.abs(x.atChancePerCZ-.2931)<1e-9);
- assert.ok(Math.abs(x.superChancePerCycle-.1236515625)<1e-9);
- assert.ok(Math.abs(x.meanUpperSetsAt94-15.15142)<1e-5);
- assert.ok(Math.abs(x.meanUpperSetsAt95-17.34706072)<1e-5);
+ near(x.expectedRate,97.99896605024216,1e-9);
+ near(x.meanNormalSetGames,12.25);
+ near(x.meanSuperSetGames,23.8);
+ near(x.meanUpperSets,8.755012681221242);
+ near(x.atChancePerCZ,.2931);
+ near(x.superChancePerCycle,.1236515625);
+ assert.equal(CONFIG.maxAtSets,80);
 });
-test('current CZ and set distributions',()=>{
+test('normal game and CZ probabilities remain unchanged',()=>{
  assert.deepEqual(CONFIG.normalG,[{g:5,p:.15},{g:35,p:.15},{g:160,p:.31},{g:300,p:.29},{g:375,p:.10}]);
  assert.deepEqual(CONFIG.normalG.map(x=>CONFIG.czWinByNormalG[x.g]),[.45,.5,.55,.7,.84]);
- assert.deepEqual(CONFIG.setLengths,[{g:10,p:.85},{g:20,p:.125},{g:50,p:.025}]);
- assert.equal(CONFIG.upperCap94,.94);
- assert.equal(CONFIG.upperCap95,.95);
- assert.equal(CONFIG.upperCap95Chance,.8);
+ const s=createGame(()=>0);
+ nextAction(s,()=>0);
+ assert.equal(s.phase,'cz');
+ assert.equal(s.totalInput,15);
+ assert.equal(s.gameCount,5);
+ nextAction(s,()=>.999);
+ assert.equal(s.phase,'normal');
+ assert.equal(s.cycleCount,1);
+});
+test('normal RUSH remains 75% with 10/20/50G sets',()=>{
  assert.equal(CONFIG.normalRushContinue,.75);
+ assert.deepEqual(CONFIG.setLengths,[{g:10,p:.85},{g:20,p:.125},{g:50,p:.025}]);
  assert.equal(CONFIG.netPerAtGame,9);
 });
-test('one normal action consumes its G and 3BET',()=>{
- const s=createGame(()=>0);nextAction(s,()=>0);
- assert.equal(s.phase,'cz');assert.equal(s.gameCount,5);assert.equal(s.totalInput,15);
- assert.equal(s.net,-15);
- const deep=createGame(()=>1-1e-15);nextAction(deep,()=>0);
- assert.equal(deep.gameCount,375);assert.equal(deep.totalInput,1125);
+test('SUPER uses 85-90% and 10/20/50/100/200G sets',()=>{
+ assert.equal(CONFIG.upperStart,.85);
+ assert.equal(CONFIG.upperCap,.90);
+ assert.equal(CONFIG.upperIncrement,.01);
+ assert.deepEqual(CONFIG.upperSetLengths,[
+  {g:10,p:.605},{g:20,p:.15},{g:50,p:.205},{g:100,p:.035},{g:200,p:.005}
+ ]);
+ near(CONFIG.upperSetLengths.reduce((a,x)=>a+x.p,0),1);
+ const s=createGame(()=>0);superEntry(s);
+ const rates=[.85,.86,.87,.88,.89,.90,.90];
+ for(let i=0;i<rates.length;i++){
+  near(continueChance(s),rates[i]);
+  nextAction(s,()=>0);
+ }
+ assert.equal(s.super90Count,1);
+ assert.equal(s.upperWins,7);
 });
-function reachSuper(s,cap){
- nextAction(s,()=>0);nextAction(s,()=>0);nextAction(s,()=>0);
- for(let i=0;i<2;i++)nextAction(s,()=>0);
- let n=0;nextAction(s,()=>++n===2?cap:0);
- assert.equal(s.phase,'upper');
-}
-test('SUPER 95% ceiling selected 80% of draws and reached after five successes',()=>{
- const s=createGame(()=>0);reachSuper(s,.79);
- assert.equal(s.upperCap,.95);assert.equal(s.cap95Count,1);
- assert.equal(continueChance(s),.90);assert.equal('ultraMode' in s,false);
- for(let i=0;i<6;i++)nextAction(s,()=>0);
- assert.equal(continueChance(s),.95);
+test('SUPER 100G and 200G are actually playable and pay +9 coins per G',()=>{
+ for(const [draw,g] of [[.97,100],[.999,200]]){
+  const s=createGame(()=>0);superEntry(s,draw);
+  assert.equal(s.atSetG,g);
+  const before=s.gameCount,bet=s.totalInput,out=s.totalOutput;
+  nextAction(s,()=>.999); // no continuation
+  assert.equal(s.gameCount-before,g);
+  assert.equal(s.totalInput-bet,3*g);
+  assert.equal(s.totalOutput-out,12*g);
+  assert.equal(s.lastAt.net,9*g);
+  assert.equal(s.detailRows[0]['superSet'+g],1);
+ }
 });
-test('SUPER 94% ceiling selected 20% of draws and reached after four successes',()=>{
- const s=createGame(()=>0);reachSuper(s,.8);
- assert.equal(s.upperCap,.94);assert.equal(s.cap94Count,1);
- for(let i=0;i<5;i++)nextAction(s,()=>0);
- assert.equal(continueChance(s),.94);
- nextAction(s,()=>.999);assert.equal(s.phase,'normal');
- assert.equal(s.detailRows[0].superReached,true);
+test('80th AT set pays out and forcibly ends without a continuation draw',()=>{
+ const s=createGame(()=>0);superEntry(s);
+ for(let i=0;i<77;i++)nextAction(s,()=>0);
+ assert.equal(s.phase,'normal');
+ assert.equal(s.cycleCount,1);
+ assert.equal(s.max80Count,1);
+ assert.equal(s.super90Count,1);
+ assert.equal(s.maxRushGain,80*10*9);
+ assert.equal(s.lastAt.set,80);
+ assert.equal(s.lastAt.capReached,true);
+ assert.equal(s.lastAt.success,false);
+ assert.equal(s.detailRows[0].rushSets,3);
+ assert.equal(s.detailRows[0].superSets,77);
+ assert.equal(s.detailRows[0].max80Reached,true);
+ assert.equal(s.detailRows[0].superAttempts.reduce((a,b)=>a+b,0),76);
 });
-test('95% cap selection is distinct from reaching the ceiling',()=>{
- const s=createGame(()=>0);reachSuper(s,0);nextAction(s,()=>.999);
- assert.equal(s.detailRows[0].superCap,95);
- assert.equal(s.detailRows[0].superReached,false);
+test('a loaded old 80+ set state cannot play an 81st set',()=>{
+ const s=createGame(()=>0);superEntry(s);
+ s.rushSets=83;
+ const before=s.gameCount;
+ nextAction(s,()=>0);
+ assert.equal(s.gameCount,before);
+ assert.equal(s.phase,'normal');
+ assert.equal(s.max80Count,1);
 });
-test('AUTO reconciles detailed records, stakes, payouts and bankroll',()=>{
- const s=createGame(seeded(8));autoCycles(s,300,seeded(123));
- assert.equal(s.cycleCount,300);assert.equal(s.totalOutput-s.totalInput,s.net);
+test('AUTO preserves bets, payouts, bankroll, G, cycle details, and set counts',()=>{
+ const s=createGame(seeded(8));autoCycles(s,600,seeded(123));
+ assert.equal(s.cycleCount,600);
+ assert.equal(s.totalOutput-s.totalInput,s.net);
  assert.equal(s.bank,CONFIG.initialBank+s.net);
  assert.equal(s.lastActionGames,s.gameCount);
- assert.equal(s.detailRows.reduce((a,x)=>a+x.net,0),s.net);
- assert.equal(s.detailRows.reduce((a,x)=>a+x.input,0),s.totalInput);
- assert.equal(s.detailRows.reduce((a,x)=>a+x.output,0),s.totalOutput);
+ for(const k of ['input','output','net']){
+  const field=k==='input'?'totalInput':k==='output'?'totalOutput':'net';
+  assert.equal(s.detailRows.reduce((a,r)=>a+r[k],0),s[field]);
+ }
+ for(const row of s.detailRows){
+  assert.equal(row.rushSets+row.superSets,
+    [10,20,50,100,200].reduce((a,g)=>a+(row['set'+g]||0),0));
+  assert.ok(row.rushSets+row.superSets<=80);
+ }
 });
-test('AUTO and manual draw paths agree for identical seeded random inputs',()=>{
- const r1=seeded(19),r2=seeded(19),a=createGame(r1),b=createGame(r2);
- autoCycles(a,200,r1);while(b.cycleCount<200)nextAction(b,r2);
- for(const k of ['gameCount','cycleCount','net','totalInput','totalOutput','cap94Count','cap95Count'])assert.equal(a[k],b[k]);
+test('AUTO is exactly reproducible by manual play with the same seeded RNG',()=>{
+ const aRand=seeded(456),bRand=seeded(456),a=createGame(aRand),b=createGame(bRand);
+ autoCycles(a,500,aRand);
+ while(b.cycleCount<500)nextAction(b,bRand);
+ for(const key of ['gameCount','cycleCount','net','totalInput','totalOutput','upperCount','super90Count','max80Count']){
+  assert.equal(a[key],b[key],key);
+ }
 });
-test('long-run observed machine payout approaches 97.81%',()=>{
- const s=createGame(seeded(10));autoCycles(s,140000,seeded(98765));
- assert.ok(Math.abs(machineRate(s)-97.8098)<1.5);
+test('long-run results approach 98% on seeded runs',()=>{
+ const s=createGame(seeded(10));
+ autoCycles(s,140000,seeded(98765));
+ const r=machineRate(s);
+ assert.ok(Math.abs(r-97.99896605024216)<1.5,`observed ${r}`);
 });
