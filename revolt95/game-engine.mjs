@@ -15,12 +15,12 @@ export const CONFIG = Object.freeze({
   revolutionBonusChance: .55,
   bonusAtChance: {revolution:.52, decisive:.45},
   normalRushContinue: .75,
-  upperStart:.90,
+  upperStart:.85,
   upperIncrement:.01,
-  upperCap95:.95,
-  upperCap94:.94,
-  upperCap95Chance:.80, // 80% reach 95% and 20% stop growing at 94%
-  setLengths: [{g:10,p:.85},{g:20,p:.125},{g:50,p:.025}],
+  upperCap:.90,
+  maxAtSets:80,
+  setLengths: [{g:10,p:.85},{g:20,p:.125},{g:50,p:.025}], // normal RUSH
+  upperSetLengths: [{g:10,p:.605},{g:20,p:.15},{g:50,p:.205},{g:100,p:.035},{g:200,p:.005}], // SUPER
   netPerAtGame: 9,
 });
 export const DETAIL_LIMIT=3000;
@@ -33,7 +33,10 @@ function startDetail(s){
     superSets:0,superNet:0,superWins:0,superCap:0,
     rushAttempts:0,rushSuccesses:0,
     superAttempts:[0,0,0,0,0,0],superSuccesses:[0,0,0,0,0,0],
-    set10:0,set20:0,set50:0
+    set10:0,set20:0,set50:0,set100:0,set200:0,
+    rushSet10:0,rushSet20:0,rushSet50:0,
+    superSet10:0,superSet20:0,superSet50:0,superSet100:0,superSet200:0,
+    max80Reached:false
   };
 }
 function finishDetail(s,gain){
@@ -42,7 +45,7 @@ function finishDetail(s,gain){
   const {startInput,startOutput,...rest}=d;
   const row={...rest,games:s.gameCount-d.startGames,input:s.totalInput-startInput,
     output:s.totalOutput-startOutput,net:gain,endNet:s.net,
-    superReached:d.superCap===94?d.superWins>=4:d.superCap===95?d.superWins>=5:false};
+    superReached:d.superCap===90&&d.superWins>=5};
   s.detailRows.push(row);
   if(s.detailRows.length>DETAIL_LIMIT)s.detailRows.splice(0,s.detailRows.length-DETAIL_LIMIT);
 }
@@ -79,16 +82,16 @@ function finishCycle(s,rng,message){
   if(message)log(s,gain>=0?'win':'lose',message,`${gain>=0?'+':''}${gain.toLocaleString('ja-JP')}枚 / 次のCZまで通常時1タップ`);
 }
 export function createGame(rng=Math.random){
-  const s={version:7,phase:'normal',bank:CONFIG.initialBank,net:0,gameCount:0,
+  const s={version:8,phase:'normal',bank:CONFIG.initialBank,net:0,gameCount:0,
   totalInput:0,totalOutput:0,cycleCount:0,czCount:0,bonusCount:0,atCount:0,upperCount:0,
-  normalWins:0,upperWins:0,upperCap:null,cap94Count:0,cap95Count:0,atSetG:0,rushSets:0,rushTotalGain:0,
+  normalWins:0,upperWins:0,upperCap:null,super90Count:0,max80Count:0,atSetG:0,rushSets:0,rushTotalGain:0,
   maxRushGain:0,bestCycle:-Infinity,worstCycle:Infinity,maxBalance:CONFIG.initialBank,lowBalance:CONFIG.initialBank,
   currentRushGain:0, bonus:null,history:[],detailRows:[],detailCurrent:null,events:[],banner:{kind:'info',text:'1 TAPで運命を変えろ',sub:'通常時を一括消化してCZへ進む'},eventId:0,
   cycleStart:0,lastCycle:0,targetG:0,lastActionGames:0, lastNormal:null,lastCz:null,lastBonus:null, lastAt:null};
   prepareNormal(s,rng);return s;
 }
 export function continueChance(s){
-  return s.phase==='upper' ? Math.min(s.upperCap??CONFIG.upperCap95,CONFIG.upperStart+s.upperWins*CONFIG.upperIncrement) : CONFIG.normalRushContinue;
+  return s.phase==='upper' ? Math.min(CONFIG.upperCap,CONFIG.upperStart+s.upperWins*CONFIG.upperIncrement) : CONFIG.normalRushContinue;
 }
 export function nextAction(s,rng=Math.random){
   const startGames=s.gameCount;
@@ -130,36 +133,50 @@ export function nextAction(s,rng=Math.random){
       log(s,'rush','革命RUSH 突入！',`ボーナス +${net}枚 / 75%を3連続突破せよ`);
     } else { finishCycle(s,rng,'ボーナス終了 — AT非当選'); }
   } else if(s.phase==='rush'||s.phase==='upper'){
+    // Guard old saved sessions that may already have 80 or more sets.
+    if(s.rushSets>=CONFIG.maxAtSets){
+      s.max80Count++;
+      s.maxRushGain=Math.max(s.maxRushGain,s.currentRushGain);
+      finishCycle(s,rng,'最大80セット到達 — AT終了');
+      s.lastActionGames=0;
+      return s;
+    }
     const mode=s.phase, g=s.atSetG,net=g*CONFIG.netPerAtGame;
     settle(s,g*3,g*(3+CONFIG.netPerAtGame),g);
     s.rushSets++;s.rushTotalGain+=net;s.currentRushGain+=net;
     if(s.detailCurrent){
-      if(g===10)s.detailCurrent.set10++;else if(g===20)s.detailCurrent.set20++;else if(g===50)s.detailCurrent.set50++;
+      s.detailCurrent['set'+g]++;
+      s.detailCurrent[(mode==='rush'?'rushSet':'superSet')+g]++;
       if(mode==='rush'){s.detailCurrent.rushSets++;s.detailCurrent.rushNet+=net;}
       else {s.detailCurrent.superSets++;s.detailCurrent.superNet+=net;}
     }
     const chance=continueChance(s);
-    const success=clampRng(rng)<chance;
-    if(s.detailCurrent){
+    const capReached=s.rushSets>=CONFIG.maxAtSets;
+    // The final set pays normally; no further continuation lottery is run.
+    const success=!capReached&&clampRng(rng)<chance;
+    if(s.detailCurrent&&!capReached){
       if(mode==='rush'){s.detailCurrent.rushAttempts++;if(success)s.detailCurrent.rushSuccesses++;}
       else {
-        const i=Math.max(0,Math.min(5,Math.round(chance*100)-90));
+        const i=Math.max(0,Math.min(5,Math.round(chance*100)-85));
         s.detailCurrent.superAttempts[i]++;
         if(success)s.detailCurrent.superSuccesses[i]++;
       }
     }
-    s.lastAt={mode,g,net,chance,success,set:s.rushSets};
-    if(success){
+    s.lastAt={mode,g,net,chance,success,set:s.rushSets,capReached};
+    if(capReached){
+      s.max80Count++;
+      if(s.detailCurrent)s.detailCurrent.max80Reached=true;
+      s.maxRushGain=Math.max(s.maxRushGain,s.currentRushGain);
+      finishCycle(s,rng,`最大80セット到達！ AT終了 — +${s.currentRushGain.toLocaleString('ja-JP')}枚`);
+    } else if(success){
       if(mode==='rush'){
         s.normalWins++;
         if(s.normalWins>=3){
           s.phase='upper';s.upperWins=0;s.upperCount++;
-          // The continuation ceiling is selected once per SUPER entry.
-          s.upperCap=clampRng(rng)<CONFIG.upperCap95Chance?CONFIG.upperCap95:CONFIG.upperCap94;
-          if(s.upperCap===CONFIG.upperCap95)s.cap95Count++;else s.cap94Count++;
-          if(s.detailCurrent)s.detailCurrent.superCap=Math.round(s.upperCap*100);
-          s.atSetG=choice(CONFIG.setLengths,rng).g;
-          log(s,'upper','超革命RUSH 突入！','90%から継続率が成長 / 94%で打ち止め or 95%まで成長');
+          s.upperCap=CONFIG.upperCap;
+          if(s.detailCurrent)s.detailCurrent.superCap=90;
+          s.atSetG=choice(CONFIG.upperSetLengths,rng).g;
+          log(s,'upper','超革命RUSH 突入！','85%から継続率が成長 / 最大90%・AT最大80セット');
         }else{
           s.atSetG=choice(CONFIG.setLengths,rng).g;
           log(s,'success',`${(chance*100).toFixed(0)}% 継続成功！`,`革命RUSH ${s.normalWins}/3突破 / +${net}枚`);
@@ -167,7 +184,8 @@ export function nextAction(s,rng=Math.random){
       } else {
         s.upperWins++;
         if(s.detailCurrent)s.detailCurrent.superWins++;
-        s.atSetG=choice(CONFIG.setLengths,rng).g;
+        if(s.upperWins===5)s.super90Count++;
+        s.atSetG=choice(CONFIG.upperSetLengths,rng).g;
         log(s,'upper',`${(chance*100).toFixed(0)}% 継続成功！`,`次回${Math.round(continueChance(s)*100)}% / +${net}枚`);
       }
     } else {
@@ -189,39 +207,31 @@ export function autoCycles(s,count,rng=Math.random){
 }
 export function machineRate(s){return s.totalInput>0?s.totalOutput/s.totalInput*100:null;}
 export function expectedStats(){
-  const meanUpperSetsAtCap=(cap)=>{
-    let alive=1,total=0;
-    for(let i=0;i<2000;i++){
-      total+=alive;
-      alive*=Math.min(cap,CONFIG.upperStart+i*CONFIG.upperIncrement);
-      if(alive<1e-12)break;
-    }
-    return total;
-  };
-  const upperAt94=meanUpperSetsAtCap(CONFIG.upperCap94);
-  const upperAt95=meanUpperSetsAtCap(CONFIG.upperCap95);
-  const meanUpperSets=(1-CONFIG.upperCap95Chance)*upperAt94+CONFIG.upperCap95Chance*upperAt95;
-  const meanSet=CONFIG.setLengths.reduce((a,x)=>a+x.g*x.p,0);
+  const upperMax=CONFIG.maxAtSets-3;
+  let alive=1,meanUpperSets=0;
+  for(let i=0;i<upperMax;i++){
+    meanUpperSets+=alive;
+    alive*=Math.min(CONFIG.upperCap,CONFIG.upperStart+i*CONFIG.upperIncrement);
+  }
+  const meanNormalSetGames=CONFIG.setLengths.reduce((a,x)=>a+x.g*x.p,0);
+  const meanSuperSetGames=CONFIG.upperSetLengths.reduce((a,x)=>a+x.g*x.p,0);
   const meanCzWin=CONFIG.normalG.reduce((a,x)=>a+x.p*CONFIG.czWinByNormalG[x.g],0);
   const pAt=meanCzWin*(CONFIG.revolutionBonusChance*CONFIG.bonusAtChance.revolution
     +(1-CONFIG.revolutionBonusChance)*CONFIG.bonusAtChance.decisive);
   const p=CONFIG.normalRushContinue;
   const pSuper=pAt*p**3;
-  const expectedRushGames=meanSet*(pAt*(1+p+p**2)+pSuper*meanUpperSets);
+  const expectedRushGames=meanNormalSetGames*pAt*(1+p+p**2)+meanSuperSetGames*pSuper*meanUpperSets;
   const meanNormalGames=CONFIG.normalG.reduce((a,x)=>a+x.g*x.p,0);
   const meanNormalPayout=CONFIG.normalReels.reduce((a,x)=>a+x.p*x.paid,0);
-  const normalLoss=meanNormalGames*(CONFIG.normalBet-meanNormalPayout);
-  const czLoss=CONFIG.czGames*CONFIG.czBet*(1-CONFIG.czPayThreeChance);
+  const meanNormalLoss=meanNormalGames*(CONFIG.normalBet-meanNormalPayout);
+  const meanCzLoss=CONFIG.czGames*CONFIG.czBet*(1-CONFIG.czPayThreeChance);
   const bonusNet=meanCzWin*(CONFIG.revolutionBonusChance*460+(1-CONFIG.revolutionBonusChance)*60);
-  const rushNet=expectedRushGames*CONFIG.netPerAtGame;
-  const expectedProfit=-normalLoss-czLoss+bonusNet+rushNet;
+  const expectedProfit=-meanNormalLoss-meanCzLoss+bonusNet+expectedRushGames*CONFIG.netPerAtGame;
   const inputPerCycle=meanNormalGames*CONFIG.normalBet+CONFIG.czGames*CONFIG.czBet
     +meanCzWin*(CONFIG.revolutionBonusChance*(51+1/9)+(1-CONFIG.revolutionBonusChance)*16)*3
     +expectedRushGames*3;
-  return {
-    meanNormalGames,meanCzWin,meanNormalLoss:normalLoss,meanCzLoss:czLoss,
-    meanSetGames:meanSet,meanUpperSets,meanUpperSetsAt94:upperAt94,meanUpperSetsAt95:upperAt95,
+  return {meanNormalGames,meanCzWin,meanNormalLoss,meanCzLoss,
+    meanSetGames:meanNormalSetGames,meanNormalSetGames,meanSuperSetGames,meanUpperSets,
     atChancePerCZ:pAt,superChancePerCycle:pSuper,expectedRushGames,
-    expectedProfit,inputPerCycle,expectedRate:100*(1+expectedProfit/inputPerCycle)
-  };
+    expectedProfit,inputPerCycle,expectedRate:100*(1+expectedProfit/inputPerCycle)};
 }
