@@ -754,6 +754,16 @@ function choose(pred){
 }
 
 
+function syncTurboReels(){
+  if(state.waiting){
+    if(state.phase==='normal')els.sumLine.textContent='第1リール '+state.values[0]+' / 残り2リール';
+    else if(state.phase==='rune')els.sumLine.textContent='? + ? + ? / 3リール非公開';
+    else if(state.phase==='at')els.sumLine.textContent='3リール公開済み / 確率欄の100%が正解';
+    else els.sumLine.textContent='公開合計 '+(state.values[0]+state.values[1])+' + ?';
+  }else if(state.phase==='normal')els.sumLine.textContent='STARTで第1リールを公開';
+  else if(state.phase==='hrend')els.sumLine.textContent='HIGH RUSH END / REVIVAL抽選待ち';
+  else els.sumLine.textContent='STARTで次の抽選へ';
+}
 function turboProgress(){
   return Math.min(turbo.target,state.completedAtCount-turbo.completedAtStart);
 }
@@ -781,7 +791,8 @@ function stopTurbo(message){
   const details='　区間差枚 '+signed(delta)+'枚 / 区間機械割 '+pct+
     ' / 現在 '+signed(state.medals)+'枚';
   els.turboStatus.textContent=status+details;
-  setMessage(status+details,'win');
+  syncTurboReels();
+  setMessage(status+details,delta>=0?'win':'lose');
   updateTurboControls();
   render();
 }
@@ -812,6 +823,7 @@ function turboTick(){
     return;
   }
   updateTurboControls();
+  syncTurboReels();
   render();
   turbo.timer=setTimeout(turboTick,0);
 }
