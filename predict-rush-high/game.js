@@ -20,7 +20,8 @@ const els={
   maxAtGainStat:$('maxAtGainStat'),totalBetStat:$('totalBetStat'),totalPayoutStat:$('totalPayoutStat'),
   netStat:$('netStat'),rtpStat:$('rtpStat'),settingsBtn:$('settingsBtn'),settingsDialog:$('settingsDialog'),
   probToggle:$('probToggle'),soundToggle:$('soundToggle'),vibrateToggle:$('vibrateToggle'),
-  autoToggle:$('autoToggle'),autoMode:$('autoMode'),autoSpeed:$('autoSpeed'),resetBtn:$('resetBtn')
+  autoToggle:$('autoToggle'),autoMode:$('autoMode'),autoSpeed:$('autoSpeed'),resetBtn:$('resetBtn'),
+  batch10Btn:$('batch10Btn'),batch100Btn:$('batch100Btn'),batchResult:$('batchResult')
 };
 
 const PAY={low:5,mid:8,high:15};
@@ -60,6 +61,7 @@ function freshState(){
 let autoRunning=false;
 let autoPausedForManual=false;
 let autoTimer=null;
+let bulkRunning=false;
 
 const roll=()=>1+Math.floor(Math.random()*9);
 const classify=sum=>sum<=15?'low':sum<=20?'mid':'high';
@@ -221,11 +223,13 @@ function autoStep(){
 }
 
 function vibration(pattern){
+  if(bulkRunning)return;
   if(!state.settings.vibrate)return;
   try{navigator.vibrate&&navigator.vibrate(pattern)}catch(_){}
 }
 
 function tone(type){
+  if(bulkRunning)return;
   if(!state.settings.sound)return;
   try{
     const C=window.AudioContext||window.webkitAudioContext;
@@ -239,6 +243,7 @@ function tone(type){
 }
 
 function setMessage(text,type=''){
+  if(bulkRunning)return;
   els.message.textContent=text;
   els.message.classList.remove('win','lose');
   if(type)els.message.classList.add(type);
@@ -261,6 +266,7 @@ function maybeStartRateUpChance(prefix){
 }
 
 function animate(index){
+  if(bulkRunning)return;
   const e=els.reels[index];
   e.classList.remove('pop');void e.offsetWidth;e.classList.add('pop');
   setTimeout(()=>e.classList.remove('pop'),220);
@@ -282,6 +288,7 @@ function realProbabilities(){
 }
 
 function showProbability(){
+  if(bulkRunning)return;
   if(!state.settings.probability){els.probabilityPanel.classList.add('is-hidden');return}
   if(state.phase==='at'&&state.waiting){
     const sum=state.values.reduce((a,b)=>a+b,0);
@@ -348,6 +355,7 @@ function renderDetailedStats(){
 }
 
 function render(){
+  if(bulkRunning)return;
   els.medals.textContent=state.medals;
   els.atEarned.textContent=state.phase==='normal'?0:signed(state.atEarned);
   els.streak.textContent=state.phase==='normal'?'—':state.atSet;
@@ -554,11 +562,11 @@ function startRound(){
     if(state.medals<NORMAL_BET)return;
     state.medals-=NORMAL_BET;state.totalBet+=NORMAL_BET;
     state.values=[roll(),null,null];animate(0);
-    els.sumLine.textContent='第1リール '+state.values[0]+' / 残り2リール';
+    if(!bulkRunning)els.sumLine.textContent='第1リール '+state.values[0]+' / 残り2リール';
     setMessage('ATゲージ '+state.gauge+'。LOW / MID / HIGH を選択。');
   }else if(state.phase==='rune'){
     state.values=[null,null,null];
-    els.sumLine.textContent='? + ? + ? / 3リール非公開';
+    if(!bulkRunning)els.sumLine.textContent='? + ? + ? / 3リール非公開';
     setMessage('RUNE DRIVE '+(state.runeGame+1)+'G。完全ノーヒントでLOW / MID / HIGHを選択。');
   }else if(state.phase==='at'){
     if(state.medals<AT_BET)return;
@@ -566,23 +574,25 @@ function startRound(){
     if(state.highRush)state.highRushEarned-=AT_BET;
     state.values=[roll(),roll(),roll()];
     state.values.forEach((_,i)=>animate(i));
-    els.sumLine.textContent='3リール公開済み / 確率欄の100%が正解';
+    if(!bulkRunning)els.sumLine.textContent='3リール公開済み / 確率欄の100%が正解';
     const bonusLabel=state.highRush?'HIGH RUSH BONUS '+state.highRushSet:'BONUS '+state.atSet;
     setMessage(bonusLabel+' / '+(state.atGame+1)+'G。正解ゾーンを選択。');
   }else if(state.phase==='judge'&&state.guaranteedJudge){
     resolveGuaranteedJudge();return;
   }else{
     state.values=[roll(),roll(),null];animate(0);animate(1);
-    els.sumLine.textContent='公開合計 '+(state.values[0]+state.values[1])+' + ?';
+    if(!bulkRunning)els.sumLine.textContent='公開合計 '+(state.values[0]+state.values[1])+' + ?';
     if(state.phase==='superboost')setMessage('SUPER RATE UP CHANCE。継続は確定済み。成功でHIGH RUSH継続期待度95%。');
     else if(state.phase==='boost')setMessage('CONTINUE RATE CHANCE。継続は確定済み。成功でHIGH RUSH継続期待度85%。');
     else setMessage('BATTLE JUDGE。成功でBONUS '+(state.atSet+1)+'へ。HIGH RUSH昇格率 '+currentNormalHighRushUpLabel()+'。');
   }
-  state.waiting=true;showProbability();els.choiceArea.classList.remove('is-hidden');els.startBtn.classList.add('is-hidden');
+  state.waiting=true;
+  if(!bulkRunning){showProbability();els.choiceArea.classList.remove('is-hidden');els.startBtn.classList.add('is-hidden');}
   vibration(18);tone('tap');render();
 }
 
 function addHistory(mode,pred,actual,sum,hit,reward){
+  if(bulkRunning)return;
   state.history.unshift({mode,pred,actual,sum,hit,reward});
   state.history=state.history.slice(0,10);
 }
@@ -620,7 +630,7 @@ function choose(pred){
     state.values=[roll(),roll(),roll()];state.values.forEach((_,i)=>animate(i));
     sum=state.values.reduce((a,b)=>a+b,0);actual=classify(sum);hit=pred===actual;state.runeGame++;
     if(hit)state.runeCount++;
-    els.sumLine.textContent='TOTAL '+sum+' = '+LABEL[actual];
+    if(!bulkRunning)els.sumLine.textContent='TOTAL '+sum+' = '+LABEL[actual];
     addHistory('RUNE '+state.runeGame,LABEL[pred],LABEL[actual],sum,hit,0);
     if(state.runeGame>=RUNE_GAMES){
       state.phase='at';state.values=[null,null,null];
@@ -632,7 +642,7 @@ function choose(pred){
     }
   }else if(state.phase==='at'){
     sum=state.values.reduce((a,b)=>a+b,0);actual=classify(sum);hit=pred===actual;state.atGame++;
-    els.sumLine.textContent='TOTAL '+sum+' = '+LABEL[actual];
+    if(!bulkRunning)els.sumLine.textContent='TOTAL '+sum+' = '+LABEL[actual];
     if(hit){
       reward=state.highRush?highRushPay(state.highRushSet)[actual]:PAY[actual];
       state.medals+=reward;state.totalPayout+=reward;state.atEarned+=reward;
@@ -652,7 +662,7 @@ function choose(pred){
   }else if(state.phase==='judge'){
     state.values[2]=roll();animate(2);sum=state.values.reduce((a,b)=>a+b,0);actual=classify(sum);hit=pred===actual;
     state.judgeAttempts++;if(hit)state.judgeHits++;
-    els.sumLine.textContent='TOTAL '+sum+' = '+LABEL[actual];
+    if(!bulkRunning)els.sumLine.textContent='TOTAL '+sum+' = '+LABEL[actual];
     if(hit){
       const normalJudgeReward=state.highRush?0:NORMAL_JUDGE_REWARD;
       if(normalJudgeReward){
@@ -689,7 +699,7 @@ function choose(pred){
   }else if(state.phase==='boost'||state.phase==='superboost'){
     const isSuper=state.phase==='superboost';
     state.values[2]=roll();animate(2);sum=state.values.reduce((a,b)=>a+b,0);actual=classify(sum);hit=pred===actual;
-    els.sumLine.textContent='TOTAL '+sum+' = '+LABEL[actual];
+    if(!bulkRunning)els.sumLine.textContent='TOTAL '+sum+' = '+LABEL[actual];
     addHistory(isSuper?'SUPER UP':'RATE UP',LABEL[pred],LABEL[actual],sum,hit,0);
     state.phase='at';state.values=[null,null,null];
     if(hit){
@@ -709,7 +719,7 @@ function choose(pred){
     state.values[1]=roll();state.values[2]=roll();animate(1);animate(2);
     sum=state.values.reduce((a,b)=>a+b,0);actual=classify(sum);hit=pred===actual;
     state.normalGames++;state.currentDrought++;state.maxDrought=Math.max(state.maxDrought,state.currentDrought);
-    els.sumLine.textContent='TOTAL '+sum+' = '+LABEL[actual];
+    if(!bulkRunning)els.sumLine.textContent='TOTAL '+sum+' = '+LABEL[actual];
     if(hit){
       state.normalHits++;reward=PAY[pred];state.medals+=reward;state.totalPayout+=reward;state.gauge+=pred==='high'?2:1;
       if(state.gauge>=5){
@@ -730,16 +740,111 @@ function choose(pred){
     addHistory('通常',LABEL[pred],LABEL[actual],sum,hit,reward);
   }
 
-  state.waiting=false;els.choiceArea.classList.add('is-hidden');els.startBtn.classList.remove('is-hidden');render();
+  state.waiting=false;
+  if(!bulkRunning){els.choiceArea.classList.add('is-hidden');els.startBtn.classList.remove('is-hidden');}
+  render();
   if(autoRunning)continueAuto();
+}
+
+
+function runBatch(cycles){
+  if(bulkRunning||![10,100].includes(cycles))return;
+  // Reuse the actual game rules and AUTO choices, without overwriting the live session.
+  if(autoRunning)stopAuto();
+  const liveState=state;
+  const sim=freshState();
+  sim.medals=1000000000; // Virtual credit: always finish the requested cycles.
+  sim.settings.auto=false;
+  sim.settings.sound=false;
+  sim.settings.vibrate=false;
+  const rows=[];
+  let outcome=null,error=null,steps=0;
+  state=sim;
+  bulkRunning=true;
+  try{
+    let cumulative=0;
+    for(let i=1;i<=cycles;i++){
+      const bet0=state.totalBet,pay0=state.totalPayout,normal0=state.normalGames,at0=state.totalAtGain;
+      let hr=false,boost=false,superBoost=false;
+      while(state.completedAtCount<i){
+        if(++steps>5000000)throw Error('処理回数の上限に達しました');
+        if(state.waiting){
+          const choice=autoChoice();
+          if(!choice)throw Error('予想を選択できない状態です');
+          choose(choice);
+        }else{
+          startRound();
+        }
+        if(state.highRush)hr=true;
+        if(state.highRushBoosted)boost=true;
+        if(state.highRushSuperBoosted)superBoost=true;
+      }
+      const spent=state.totalBet-bet0,paid=state.totalPayout-pay0,net=paid-spent;
+      cumulative+=net;
+      rows.push({index:i,normal:state.normalGames-normal0,atGain:state.totalAtGain-at0,net,cumulative,hr,boost,superBoost});
+    }
+    outcome={
+      bet:state.totalBet,payout:state.totalPayout,
+      net:state.totalPayout-state.totalBet,at:state.totalAtGain,
+      highRush:rows.filter(r=>r.hr).length,
+      boosted:rows.filter(r=>r.boost).length,
+      superBoosted:rows.filter(r=>r.superBoost).length,
+      wins:rows.filter(r=>r.net>0).length,
+      maxNet:Math.max(...rows.map(r=>r.net)),
+      minNet:Math.min(...rows.map(r=>r.net))
+    };
+  }catch(e){error=e;}
+  finally{
+    bulkRunning=false;
+    state=liveState;
+    render();
+  }
+  els.batchResult.classList.remove('is-hidden');
+  if(error){
+    els.batchResult.textContent='一括プレイを完了できませんでした: '+error.message;
+    return;
+  }
+  const fmt=n=>Math.round(n).toLocaleString('ja-JP');
+  const diff=n=>(n>0?'+':n===0?'±':'')+fmt(n)+'枚';
+  const stats=[
+    ['TOTAL 差枚',diff(outcome.net)],
+    ['実戦機械割',outcome.bet?(outcome.payout/outcome.bet*100).toFixed(2)+'%':'—'],
+    ['平均差枚',diff(outcome.net/cycles)+'/cycle'],
+    ['勝ちサイクル',outcome.wins+' / '+cycles],
+    ['HIGH RUSH 到達',outcome.highRush+' / '+cycles],
+    ['85% MODE 到達',outcome.boosted+' / '+cycles],
+    ['95% MODE 到達',outcome.superBoosted+' / '+cycles],
+    ['最高差枚',diff(outcome.maxNet)],
+    ['最低差枚',diff(outcome.minNet)],
+    ['平均AT純増',diff(outcome.at/cycles)],
+    ['総投入',fmt(outcome.bet)+'枚'],
+    ['総払出',fmt(outcome.payout)+'枚']
+  ];
+  els.batchResult.innerHTML=
+    '<div class="batch-result-title">'+cycles+'サイクル実行結果</div>'+
+    '<div class="batch-metrics">'+stats.map(([label,value])=>
+      '<div class="batch-metric"><span>'+label+'</span><strong>'+value+'</strong></div>'
+    ).join('')+'</div>'+
+    '<details class="batch-details"><summary>サイクル別の結果（'+cycles+'件）</summary>'+
+    '<div class="batch-table-wrap"><table class="batch-table"><thead><tr>'+
+    '<th>#</th><th>通常G</th><th>AT純増</th><th>差枚</th><th>累計差枚</th><th>到達</th>'+
+    '</tr></thead><tbody>'+rows.map(r=>
+      '<tr><td>'+r.index+'</td><td>'+fmt(r.normal)+'</td>'+
+      '<td>'+diff(r.atGain)+'</td><td class="'+(r.net>=0?'batch-plus':'batch-minus')+'">'+diff(r.net)+'</td>'+
+      '<td>'+diff(r.cumulative)+'</td>'+
+      '<td>'+(r.superBoost?'95%':r.boost?'85%':r.hr?'HR':'通常AT')+'</td></tr>'
+    ).join('')+'</tbody></table></div></details>';
 }
 
 function reset(){
   clearAutoTimer();autoRunning=false;autoPausedForManual=false;
   const keep={...state.settings};state=freshState();state.settings=keep;
   els.choiceArea.classList.add('is-hidden');els.startBtn.classList.remove('is-hidden');
-  els.sumLine.textContent='STARTで第1リールを公開';setMessage('セッションをリセットしました。');render();els.settingsDialog.close();
+  if(!bulkRunning)els.sumLine.textContent='STARTで第1リールを公開';setMessage('セッションをリセットしました。');render();els.settingsDialog.close();
 }
+
+els.batch10Btn.addEventListener('click',()=>runBatch(10));
+els.batch100Btn.addEventListener('click',()=>runBatch(100));
 
 els.startBtn.addEventListener('click',()=>{
   if(state.settings.auto){
