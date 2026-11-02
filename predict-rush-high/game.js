@@ -21,7 +21,7 @@ const els={
   netStat:$('netStat'),rtpStat:$('rtpStat'),settingsBtn:$('settingsBtn'),settingsDialog:$('settingsDialog'),
   probToggle:$('probToggle'),soundToggle:$('soundToggle'),vibrateToggle:$('vibrateToggle'),
   autoToggle:$('autoToggle'),autoMode:$('autoMode'),autoSpeed:$('autoSpeed'),resetBtn:$('resetBtn'),
-  turbo10:$('turbo10'),turbo100:$('turbo100'),turboStop:$('turboStop'),turboStatus:$('turboStatus')
+  turbo10:$('turbo10'),turbo100:$('turbo100'),turboUntilHighRush:$('turboUntilHighRush'),turboStop:$('turboStop'),turboStatus:$('turboStatus')
 };
 
 const PAY={low:5,mid:8,high:15};
@@ -54,14 +54,14 @@ function freshState(){
     normalGames:0,normalHits:0,atCount:0,highRushCount:0,maxSet:0,currentDrought:0,maxDrought:0,
     totalBonus:0,totalBet:0,totalPayout:0,completedAtCount:0,totalAtGain:0,maxAtGain:0,
     completedHighRushCount:0,totalHighRushBonus:0,maxHighRushBonus:0,totalHighRushGain:0,maxHighRushGain:0,
-    judgeAttempts:0,judgeHits:0,settings:{probability:true,sound:true,vibrate:true,auto:false,autoMode:'semi',autoSpeed:'normal'}
+    judgeAttempts:0,judgeHits:0,fastForwardHighRushCredit:false,settings:{probability:true,sound:true,vibrate:true,auto:false,autoMode:'semi',autoSpeed:'normal'}
   };
 }
 
 let autoRunning=false;
 let autoPausedForManual=false;
 let autoTimer=null;
-const turbo={active:false,target:0,completedAtStart:0,medalsStart:0,betStart:0,payoutStart:0,steps:0,timer:null};
+const turbo={active:false,mode:'cycles',target:0,completedAtStart:0,normalGamesStart:0,medalsStart:0,betStart:0,payoutStart:0,steps:0,timer:null};
 let turboProcessing=false;
 
 const roll=()=>1+Math.floor(Math.random()*9);
@@ -137,7 +137,7 @@ function autoChoice(){
 
 function canAutoProceed(){
   if(state.phase==='normal'&&state.medals<NORMAL_BET)return false;
-  if(state.phase==='at'&&state.medals<AT_BET)return false;
+  if(state.phase==='at'&&state.medals<AT_BET&&!state.fastForwardHighRushCredit)return false;
   return true;
 }
 
@@ -487,7 +487,7 @@ function render(){
     els.reels[i].classList.toggle('covered',v==null);
   });
 
-  const insufficient=(state.phase==='normal'&&state.medals<NORMAL_BET)||(state.phase==='at'&&state.medals<AT_BET);
+  const insufficient=(state.phase==='normal'&&state.medals<NORMAL_BET)||(state.phase==='at'&&state.medals<AT_BET&&!state.fastForwardHighRushCredit);
   els.startBtn.disabled=autoRunning?false:insufficient;
   if(state.settings.auto){
     if(autoRunning&&autoPausedForManual){
@@ -521,14 +521,14 @@ function render(){
     els.choiceArea.classList.add('is-hidden');
     els.startBtn.classList.remove('is-hidden');
     els.startMain.textContent='SUPER FAST AUTO';
-    els.startSub.textContent=(state.completedAtCount-turbo.completedAtStart)+' / '+turbo.target+' サイクル進行中';
+    els.startSub.textContent=turbo.mode==='highRush'?'HIGH RUSH到達まで高速消化中':(state.completedAtCount-turbo.completedAtStart)+' / '+turbo.target+' サイクル進行中';
   }
   showProbability();
   els.gamesStat.textContent=state.normalGames;
   els.hitRateStat.textContent=state.normalGames?((state.normalHits/state.normalGames)*100).toFixed(1)+'%':'—';
   els.atCountStat.textContent=state.atCount;
   els.maxStreakStat.textContent=state.maxSet;
-  renderDetailedStats();renderHistory();
+  renderDetailedStats();renderHistory();updateTurboControls();
 }
 
 function resolveGuaranteedJudge(){
@@ -577,7 +577,7 @@ function startRound(){
     if(!turboProcessing)els.sumLine.textContent='? + ? + ? / 3リール非公開';
     setMessage('RUNE DRIVE '+(state.runeGame+1)+'G。完全ノーヒントでLOW / MID / HIGHを選択。');
   }else if(state.phase==='at'){
-    if(!turbo.active&&state.medals<AT_BET)return;
+    if(!turbo.active&&state.medals<AT_BET&&!state.fastForwardHighRushCredit)return;
     state.medals-=AT_BET;state.totalBet+=AT_BET;state.atEarned-=AT_BET;
     if(state.highRush)state.highRushEarned-=AT_BET;
     state.values=[roll(),roll(),roll()];
@@ -624,7 +624,7 @@ function finishAt(){
     state.totalHighRushGain+=highRushGain;
     state.maxHighRushGain=state.completedHighRushCount===1?highRushGain:Math.max(state.maxHighRushGain,highRushGain);
   }
-  state.phase='normal';state.atEarned=0;state.atGame=0;state.atSet=0;state.highRush=false;state.highRushSet=0;state.highRushEarned=0;state.highRushBoosted=false;state.highRushSuperBoosted=false;state.guaranteedJudge=false;state.runeGame=0;state.runeCount=0;state.values=[null,null,null];
+  state.phase='normal';state.fastForwardHighRushCredit=false;state.atEarned=0;state.atGame=0;state.atSet=0;state.highRush=false;state.highRushSet=0;state.highRushEarned=0;state.highRushBoosted=false;state.highRushSuperBoosted=false;state.guaranteedJudge=false;state.runeGame=0;state.runeCount=0;state.values=[null,null,null];
   setMessage((wasHigh?'HIGH RUSH経由AT':'AT')+'終了 / '+bonuses+'ボーナス / '+continues+'回継続 / AT累計 '+signed(total)+'枚。','lose');
   vibration(110);tone('lose');
 }
@@ -765,16 +765,23 @@ function syncTurboReels(){
   else els.sumLine.textContent='STARTで次の抽選へ';
 }
 function turboProgress(){
-  return Math.min(turbo.target,state.completedAtCount-turbo.completedAtStart);
+  const count=state.completedAtCount-turbo.completedAtStart;
+  return turbo.mode==='highRush'?count:Math.min(turbo.target,count);
+}
+function turboReachedGoal(){
+  return turbo.mode==='highRush'?state.highRush:turboProgress()>=turbo.target;
 }
 function updateTurboControls(){
   els.turbo10.disabled=turbo.active;
   els.turbo100.disabled=turbo.active;
+  els.turboUntilHighRush.disabled=turbo.active||state.highRush;
   els.turboStop.classList.toggle('is-hidden',!turbo.active);
   els.settingsBtn.disabled=turbo.active;
   if(turbo.active){
-    els.turboStatus.textContent='超高速消化中：'+turboProgress()+' / '+turbo.target+
-      ' サイクル　｜　現在 '+signed(state.medals)+'枚（メダル不足でも継続）';
+    const progress=turbo.mode==='highRush'
+      ?'HIGH RUSH待機 / 終了AT '+turboProgress()+'回 / 通常 '+(state.normalGames-turbo.normalGamesStart)+'G'
+      :turboProgress()+' / '+turbo.target+' サイクル';
+    els.turboStatus.textContent='超高速消化中：'+progress+'　｜　現在 '+signed(state.medals)+'枚（メダル不足でも継続）';
   }
 }
 function stopTurbo(message){
@@ -787,12 +794,14 @@ function stopTurbo(message){
   const bets=state.totalBet-turbo.betStart;
   const pays=state.totalPayout-turbo.payoutStart;
   const pct=bets?(pays/bets*100).toFixed(2)+'%':'—';
-  const status=message||('超高速AUTO '+done+' / '+turbo.target+' サイクル完了');
+  const status=message||(turbo.mode==='highRush'
+    ?'HIGH RUSH待機を停止（終了AT '+done+'回）'
+    :'超高速AUTO '+done+' / '+turbo.target+' サイクル完了');
   const details='　区間差枚 '+signed(delta)+'枚 / 区間機械割 '+pct+
     ' / 現在 '+signed(state.medals)+'枚';
   els.turboStatus.textContent=status+details;
   syncTurboReels();
-  setMessage(status+details,delta>=0?'win':'lose');
+  setMessage(status+details,(turbo.mode==='highRush'&&state.highRush)||delta>=0?'win':'lose');
   updateTurboControls();
   render();
 }
@@ -801,10 +810,10 @@ function turboTick(){
   if(!turbo.active)return;
   turboProcessing=true;
   let failure='';
-  // Process in bounded chunks so that STOP remains responsive and the display can refresh.
+  // Bounded chunks preserve UI responsiveness and the STOP button.
   try{
     for(let i=0;i<1200&&turbo.active;i++){
-      if(turboProgress()>=turbo.target)break;
+      if(turboReachedGoal())break;
       if(++turbo.steps>5000000)throw Error('処理回数の上限に達しました');
       if(state.waiting){
         const choice=autoChoice();
@@ -818,8 +827,16 @@ function turboTick(){
   turboProcessing=false;
   if(!turbo.active)return;
   if(failure){stopTurbo('超高速AUTOを停止：'+failure);return;}
-  if(turboProgress()>=turbo.target){
-    stopTurbo('超高速AUTO '+turbo.target+' サイクル完了');
+  if(turboReachedGoal()){
+    if(turbo.mode==='highRush'){
+      // The skipped simulation keeps all bets/results. If its balance ran below
+      // 1 medal, let the arrived HIGH RUSH finish without rewriting its stats.
+      state.fastForwardHighRushCredit=state.medals<AT_BET;
+      state.settings.auto=false;els.autoToggle.checked=false;
+      stopTurbo('HIGH RUSH突入！ ここから手動でプレイできます。');
+    }else{
+      stopTurbo('超高速AUTO '+turbo.target+' サイクル完了');
+    }
     return;
   }
   updateTurboControls();
@@ -828,11 +845,18 @@ function turboTick(){
   turbo.timer=setTimeout(turboTick,0);
 }
 function startTurbo(cycles){
-  if(turbo.active||![10,100].includes(cycles))return;
+  const untilHighRush=cycles==='highRush';
+  if(turbo.active||(!untilHighRush&&![10,100].includes(cycles)))return;
+  if(untilHighRush&&state.highRush){
+    els.turboStatus.textContent='すでにHIGH RUSH中です。現在のBONUSをプレイできます。';
+    return;
+  }
   if(autoRunning)stopAuto();
   turbo.active=true;
-  turbo.target=cycles;
+  turbo.mode=untilHighRush?'highRush':'cycles';
+  turbo.target=untilHighRush?0:cycles;
   turbo.completedAtStart=state.completedAtCount;
+  turbo.normalGamesStart=state.normalGames;
   turbo.medalsStart=state.medals;
   turbo.betStart=state.totalBet;
   turbo.payoutStart=state.totalPayout;
@@ -852,7 +876,10 @@ function reset(){
 
 els.turbo10.addEventListener('click',()=>startTurbo(10));
 els.turbo100.addEventListener('click',()=>startTurbo(100));
-els.turboStop.addEventListener('click',()=>stopTurbo('超高速AUTOを途中停止：'+turboProgress()+' / '+turbo.target+' サイクル'));
+els.turboUntilHighRush.addEventListener('click',()=>startTurbo('highRush'));
+els.turboStop.addEventListener('click',()=>stopTurbo(turbo.mode==='highRush'
+  ?'HIGH RUSHまでの高速消化を途中停止（終了AT '+turboProgress()+'回）'
+  :'超高速AUTOを途中停止：'+turboProgress()+' / '+turbo.target+' サイクル'));
 
 els.startBtn.addEventListener('click',()=>{
   if(turbo.active)return;
