@@ -55,6 +55,17 @@
     .control-stage .start-btn{position:absolute;left:0;right:0;bottom:0;margin-top:0}
     .message{min-height:72px;display:flex;align-items:center}
     .setting-row select{min-width:92px;border:1px solid var(--line);border-radius:9px;background:#0c131f;color:var(--text);padding:7px 9px;font:inherit}
+    .turbo-panel{border:1px solid #37546a;background:linear-gradient(135deg,#101d2b,#0f1828);border-radius:14px;padding:12px;margin:12px 0}
+    .turbo-panel .turbo-heading{display:flex;gap:8px;justify-content:space-between;align-items:center;font-size:12px;font-weight:900;letter-spacing:.04em}
+    .turbo-label{color:#86e5ff;font-size:10px}
+    .turbo-help{font-size:10px;line-height:1.6;color:var(--muted);margin:8px 0 10px}
+    .turbo-buttons{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .turbo-buttons button{border:1px solid #3c7186;border-radius:10px;background:#153346;color:#eafaff;font:inherit;font-size:12px;font-weight:800;padding:12px 5px;cursor:pointer}
+    .turbo-buttons button:disabled{opacity:.45;cursor:default}
+    .turbo-buttons button:focus-visible,.turbo-stop:focus-visible{outline:2px solid #8ff7ff;outline-offset:2px}
+    .turbo-stop{display:block;width:100%;margin-top:8px;padding:10px;border:1px solid #92525a;border-radius:9px;background:#311c27;color:#ffc3cc;font-size:12px;font-weight:800;cursor:pointer}
+    .turbo-stop.is-hidden{display:none!important}
+    .turbo-status{margin-top:9px;font-size:11px;line-height:1.6;color:#c5e8f8;overflow-wrap:anywhere}
     @media(max-width:520px){.detail-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
     @media(max-width:360px){.control-stage{height:173px}}
   </style>
@@ -114,6 +125,17 @@
       <div id="message" class="message" aria-live="polite">通常時は20枚BET。ATゲージ5到達でPREDICT ATへ。</div>
     </section>
 
+    <section class="turbo-panel" aria-label="超高速オート">
+      <div class="turbo-heading"><span>SUPER FAST AUTO</span><span class="turbo-label">10 / 100 CYCLES</span></div>
+      <p class="turbo-help">現在のメダル・戦績を引き継いで最適FULL AUTOを超高速実行。1サイクル＝ATが1回終了するまで。メダルがマイナスになっても止まりません。</p>
+      <div class="turbo-buttons">
+        <button id="turbo10" type="button">10サイクル</button>
+        <button id="turbo100" type="button">100サイクル</button>
+      </div>
+      <button id="turboStop" class="turbo-stop is-hidden" type="button">途中停止</button>
+      <div id="turboStatus" class="turbo-status" role="status">通常のSESSIONにすべて反映します。別枠のシミュレーションではありません。</div>
+    </section>
+
     <section class="stats-panel">
       <div class="section-heading compact"><strong>SESSION</strong><button id="historyToggle" class="text-btn" type="button">詳細を見る</button></div>
       <div class="mini-stats"><div><span>NORMAL G</span><b id="gamesStat">0</b></div><div><span>NORMAL HIT</span><b id="hitRateStat">—</b></div><div><span>AT</span><b id="atCountStat">0</b></div><div><span>MAX BONUS</span><b id="maxStreakStat">0</b></div></div>
@@ -158,8 +180,9 @@
       <p><strong>⑨ SUPER RATE UP CHANCE</strong><br>85% MODE中の継続確定後に25%で発生。2リールを見てLOW / MID / HIGHを予想し、成功で95% MODEへ。失敗してもHRは終了せず、85% MODEのまま次BONUSへ進みます。</p>
       <p><strong>⑩ 95% MODE</strong><br>成功後はHR終了まで継続期待度95%。REVIVAL込みで95%を維持するため確定継続率は約80.5%。確定継続を引かなかった場合だけ通常のBATTLE JUDGEを行います。10G区切りと配当倍率はそのままです。</p>
       <p><strong>⑪ 最適AUTO</strong><br>設定からONにすると最適打ちで自動進行します。AUTOタイプは2種類。SPECIAL MANUALでは通常時とPREDICT AT / HIGH RUSH BONUSを自動進行し、RUNE DRIVE、BATTLE JUDGE、CONTINUE RATE CHANCE、SUPER RATE UP CHANCE、HIGH RUSH ENDからのREVIVAL抽選だけ手動。FULL AUTOではこれらの特殊区間も含め、すべて最適選択で自動進行します。</p>
+      <p><strong>⑫ SUPER FAST AUTO</strong><br>10・100サイクルを高速消化します。現在のゲーム状態と戦績をそのまま引き継ぎ、AT終了を1サイクルとしてカウントします。メダル不足でも続行でき、途中停止可能。終了後はすべての収支と統計がSESSIONに反映されています。通常AUTOと違い、ゲーム進行中の表示は一定間隔で更新します。</p>
     </div></details>
-    <footer>Virtual medals only · HIGH RUSH v2.26</footer>
+    <footer>Virtual medals only · HIGH RUSH v2.28</footer>
   </main>
 
   <dialog id="settingsDialog"><form method="dialog" class="settings-card">
@@ -172,6 +195,6 @@
     <label class="setting-row"><span><b>AUTO速度</b><small>NORMALは展開を追いやすく、FASTは高速消化</small></span><select id="autoSpeed"><option value="normal">NORMAL</option><option value="fast">FAST</option></select></label>
     <button id="resetBtn" type="button" class="danger-btn">セッションをリセット</button>
   </form></dialog>
-  <script src="game.js?v=2.26"></script>
+  <script src="game.js?v=2.28"></script>
 </body>
 </html>
