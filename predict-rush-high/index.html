@@ -55,7 +55,28 @@
     .control-stage .start-btn{position:absolute;left:0;right:0;bottom:0;margin-top:0}
     .message{min-height:72px;display:flex;align-items:center}
     .setting-row select{min-width:92px;border:1px solid var(--line);border-radius:9px;background:#0c131f;color:var(--text);padding:7px 9px;font:inherit}
-    @media(max-width:520px){.detail-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    .batch-panel{margin-top:13px;border:1px solid var(--line);border-radius:14px;background:#0d1420;padding:14px}
+    .batch-note{font-size:11px;color:var(--muted);line-height:1.7;margin:8px 0 12px}
+    .batch-tag{font-size:10px;font-weight:800;color:#8ff7ff}
+    .batch-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+    .batch-actions button{padding:12px 6px;border:1px solid #41606d;background:#142938;color:#e4fcff;border-radius:11px;font-size:12px;font-weight:850;cursor:pointer}
+    .batch-actions button:active{transform:scale(.98)}
+    .batch-actions button:focus-visible{outline:2px solid #8ff7ff;outline-offset:3px}
+    .batch-results{margin-top:15px}
+    .batch-result-title{font-size:12px;font-weight:900;margin-bottom:9px;color:var(--gold)}
+    .batch-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+    .batch-metric{background:#101c2b;padding:10px 5px;border:1px solid #293447;border-radius:9px;text-align:center;min-width:0}
+    .batch-metric span{display:block;font-size:9px;color:var(--muted);overflow-wrap:anywhere}
+    .batch-metric strong{display:block;font-size:12px;margin-top:5px;overflow-wrap:anywhere}
+    .batch-details{margin-top:13px;font-size:11px}
+    .batch-details summary{cursor:pointer;font-weight:700;padding:7px 0}
+    .batch-table-wrap{overflow:auto;max-height:330px;border:1px solid var(--line);border-radius:9px}
+    .batch-table{width:100%;border-collapse:collapse;font-size:10px;white-space:nowrap;text-align:right}
+    .batch-table th,.batch-table td{padding:7px 8px;border-bottom:1px solid #293447}
+    .batch-table th{position:sticky;top:0;background:#182636;color:var(--muted);z-index:1}
+    .batch-plus{color:#9dffb4}.batch-minus{color:#ff9aa4}
+    @media(max-width:520px){.batch-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
+.detail-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
     @media(max-width:360px){.control-stage{height:173px}}
   </style>
   <title>PREDICT RUSH 105 - HIGH RUSH</title>
@@ -146,6 +167,13 @@
       </div>
     </section>
 
+    <section class="batch-panel">
+      <div class="section-heading compact"><strong>BATCH PLAY｜一括プレイ</strong><span class="batch-tag">FULL AUTO</span></div>
+      <p class="batch-note">1サイクル＝通常時からAT終了まで。最適AUTOと同じ予想で10回または100回を一括消化します。シミュレーション用の無制限クレジットで進行するため、途中でメダルが尽きても集計を続けます。通常プレイのメダル・戦績は変わりません。</p>
+      <div class="batch-actions"><button id="batch10Btn" type="button">10サイクル実行</button><button id="batch100Btn" type="button">100サイクル実行</button></div>
+      <div id="batchResult" class="batch-results is-hidden" aria-live="polite"></div>
+    </section>
+
     <details class="rules-panel"><summary>ルールを見る</summary><div class="rules-body">
       <p><strong>① NORMAL</strong><br>20枚BET。第1リールだけ見てLOW / MID / HIGHを予想します。LOW・MID的中でゲージ+1、HIGH的中で+2、MISSでゲージ0。ゲージ5でPREDICT ATへ。通常配当はLOW 5 / MID 8 / HIGH 15枚。初期所持は3000枚。</p>
       <p><strong>② RUNE DRIVE</strong><br>AT当選時の10%でBONUS開始前に突入。BET 0・3G固定で、3リールすべて非公開のままLOW / MID / HIGHを予想します。1G的中ごとに1 RUNE獲得。獲得したRUNEはそのAT中ずっと有効で、1 RUNEごとに通常ATのBATTLE JUDGE成功時のHIGH RUSH昇格率が5ポイント上昇します。0 / 1 / 2 / 3 RUNEで昇格率は9.4% / 14.4% / 19.4% / 24.4%です。</p>
@@ -158,8 +186,9 @@
       <p><strong>⑨ SUPER RATE UP CHANCE</strong><br>85% MODE中の継続確定後に25%で発生。2リールを見てLOW / MID / HIGHを予想し、成功で95% MODEへ。失敗してもHRは終了せず、85% MODEのまま次BONUSへ進みます。</p>
       <p><strong>⑩ 95% MODE</strong><br>成功後はHR終了まで継続期待度95%。REVIVAL込みで95%を維持するため確定継続率は約80.5%。確定継続を引かなかった場合だけ通常のBATTLE JUDGEを行います。10G区切りと配当倍率はそのままです。</p>
       <p><strong>⑪ 最適AUTO</strong><br>設定からONにすると最適打ちで自動進行します。AUTOタイプは2種類。SPECIAL MANUALでは通常時とPREDICT AT / HIGH RUSH BONUSを自動進行し、RUNE DRIVE、BATTLE JUDGE、CONTINUE RATE CHANCE、SUPER RATE UP CHANCE、HIGH RUSH ENDからのREVIVAL抽選だけ手動。FULL AUTOではこれらの特殊区間も含め、すべて最適選択で自動進行します。</p>
+      <p><strong>⑫ 一括プレイ</strong><br>10サイクル / 100サイクルを即時シミュレーション。通常セッションには反映しません。メダル不足で途中停止しないよう専用クレジットを使用し、差枚・機械割・上位モード到達数を集計します。</p>
     </div></details>
-    <footer>Virtual medals only · HIGH RUSH v2.26</footer>
+    <footer>Virtual medals only · HIGH RUSH v2.27</footer>
   </main>
 
   <dialog id="settingsDialog"><form method="dialog" class="settings-card">
@@ -172,6 +201,6 @@
     <label class="setting-row"><span><b>AUTO速度</b><small>NORMALは展開を追いやすく、FASTは高速消化</small></span><select id="autoSpeed"><option value="normal">NORMAL</option><option value="fast">FAST</option></select></label>
     <button id="resetBtn" type="button" class="danger-btn">セッションをリセット</button>
   </form></dialog>
-  <script src="game.js?v=2.26"></script>
+  <script src="game.js?v=2.27"></script>
 </body>
 </html>
