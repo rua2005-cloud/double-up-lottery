@@ -81,7 +81,7 @@
     </header>
 
     <section class="hud">
-      <article class="hud-card"><span>MEDALS</span><strong id="medals">3000</strong></article>
+      <article class="hud-card"><span>MEDALS</span><strong id="medals">8000</strong></article>
       <article class="hud-card"><span>AT TOTAL</span><strong id="atEarned">0</strong></article>
       <article class="hud-card"><span>BONUS</span><strong id="streak">—</strong></article>
     </section>
@@ -171,7 +171,7 @@
     </section>
 
     <details class="rules-panel"><summary>ルールを見る</summary><div class="rules-body">
-      <p><strong>① NORMAL</strong><br>20枚BET。第1リールだけ見てLOW / MID / HIGHを予想します。LOW・MID的中でゲージ+1、HIGH的中で+2、MISSでゲージ0。ゲージ5でPREDICT ATへ。通常配当はLOW 5 / MID 8 / HIGH 15枚。初期所持は3000枚。</p>
+      <p><strong>① NORMAL</strong><br>20枚BET。第1リールだけ見てLOW / MID / HIGHを予想します。LOW・MID的中でゲージ+1、HIGH的中で+2、MISSでゲージ0。ゲージ5でPREDICT ATへ。通常配当はLOW 5 / MID 8 / HIGH 15枚。初期所持は8000枚。</p>
       <p><strong>② RUNE DRIVE</strong><br>AT当選時の10%でBONUS開始前に突入。BET 0・3G固定で、3リールすべて非公開のままLOW / MID / HIGHを予想します。1G的中ごとに1 RUNE獲得。獲得したRUNEはそのAT中ずっと有効で、1 RUNEごとに通常ATのBATTLE JUDGE成功時のHIGH RUSH昇格率が5ポイント上昇します。0 / 1 / 2 / 3 RUNEで昇格率は9.4% / 14.4% / 19.4% / 24.4%です。</p>
       <p><strong>③ PREDICT AT</strong><br>1Gあたり1枚BET、10Gで1BONUS。3リールが全部見えるので正解ゾーンを選びます。通常ATの配当はLOW 5 / MID 8 / HIGH 15枚。10G終了後はBATTLE JUDGEへ。</p>
       <p><strong>④ BATTLE JUDGE</strong><br>BET 0。最初の2リールだけ見てLOW / MID / HIGHを予想します。通常ATでは成功で+20枚と次BONUSを獲得し、さらにHIGH RUSH昇格抽選を行います。基本昇格率は9.4%で、RUNE DRIVEで獲得したRUNE 1個につき+5ポイント。通常BATTLE JUDGE失敗でAT終了。HIGH RUSH中のJUDGE成功には+20枚は付きません。</p>
@@ -184,7 +184,7 @@
       <p><strong>⑪ 最適AUTO</strong><br>設定からONにすると最適打ちで自動進行します。AUTOタイプは2種類。SPECIAL MANUALでは通常時とPREDICT AT / HIGH RUSH BONUSを自動進行し、RUNE DRIVE、BATTLE JUDGE、CONTINUE RATE CHANCE、SUPER RATE UP CHANCE、HIGH RUSH ENDからのREVIVAL抽選だけ手動。FULL AUTOではこれらの特殊区間も含め、すべて最適選択で自動進行します。</p>
       <p><strong>⑫ SUPER FAST AUTO</strong><br>10・100サイクル消化に加え、「HIGH RUSH突入までスキップ」を選べます。現在のゲーム状態と戦績を引き継ぎ、実際の抽選確率で最適FULL AUTOを高速実行して昇格直後に停止します。メダル不足でも高速消化可能で、途中停止もできます。収支・戦績はすべてSESSIONに反映されます。</p>
     </div></details>
-    <footer>Virtual medals only · HIGH RUSH v2.29</footer>
+    <footer>Virtual medals only · HIGH RUSH v2.30</footer>
   </main>
 
   <dialog id="settingsDialog"><form method="dialog" class="settings-card">
@@ -197,6 +197,6 @@
     <label class="setting-row"><span><b>AUTO速度</b><small>NORMALは展開を追いやすく、FASTは高速消化</small></span><select id="autoSpeed"><option value="normal">NORMAL</option><option value="fast">FAST</option></select></label>
     <button id="resetBtn" type="button" class="danger-btn">セッションをリセット</button>
   </form></dialog>
-  <script src="game.js?v=2.29"></script>
+  <script src="game.js?v=2.30"></script>
 </body>
 </html>
