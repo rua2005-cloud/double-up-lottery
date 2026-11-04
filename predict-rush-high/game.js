@@ -48,7 +48,7 @@ let state=freshState();
 
 function freshState(){
   return{
-    medals:3000,gauge:0,phase:'normal',atEarned:0,atGame:0,atSet:0,waiting:false,
+    medals:8000,gauge:0,phase:'normal',atEarned:0,atGame:0,atSet:0,waiting:false,
     highRush:false,highRushSet:0,highRushEarned:0,highRushBoosted:false,highRushSuperBoosted:false,guaranteedJudge:false,
     runeGame:0,runeCount:0,values:[null,null,null],history:[],
     normalGames:0,normalHits:0,atCount:0,highRushCount:0,maxSet:0,currentDrought:0,maxDrought:0,
