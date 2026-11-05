@@ -21,7 +21,7 @@ const els={
   netStat:$('netStat'),rtpStat:$('rtpStat'),settingsBtn:$('settingsBtn'),settingsDialog:$('settingsDialog'),
   probToggle:$('probToggle'),soundToggle:$('soundToggle'),vibrateToggle:$('vibrateToggle'),
   autoToggle:$('autoToggle'),autoMode:$('autoMode'),autoSpeed:$('autoSpeed'),resetBtn:$('resetBtn'),
-  turbo10:$('turbo10'),turbo100:$('turbo100'),turboUntilHighRush:$('turboUntilHighRush'),turboStop:$('turboStop'),turboStatus:$('turboStatus')
+  turbo10:$('turbo10'),turbo100:$('turbo100'),turboUntilHighRush:$('turboUntilHighRush'),turboUntilSuperMode:$('turboUntilSuperMode'),turboStop:$('turboStop'),turboStatus:$('turboStatus')
 };
 
 const PAY={low:5,mid:8,high:15};
@@ -530,7 +530,7 @@ function render(){
     els.choiceArea.classList.add('is-hidden');
     els.startBtn.classList.remove('is-hidden');
     els.startMain.textContent='SUPER FAST AUTO';
-    els.startSub.textContent=turbo.mode==='highRush'?'HIGH RUSH到達まで高速消化中':(state.completedAtCount-turbo.completedAtStart)+' / '+turbo.target+' サイクル進行中';
+    els.startSub.textContent=turbo.mode==='highRush'?'HIGH RUSH到達まで高速消化中':turbo.mode==='superMode'?'94〜99% MODE到達まで高速消化中':(state.completedAtCount-turbo.completedAtStart)+' / '+turbo.target+' サイクル進行中';
   }
   showProbability();
   els.gamesStat.textContent=state.normalGames;
@@ -775,21 +775,26 @@ function syncTurboReels(){
 }
 function turboProgress(){
   const count=state.completedAtCount-turbo.completedAtStart;
-  return turbo.mode==='highRush'?count:Math.min(turbo.target,count);
+  return turbo.mode==='cycles'?Math.min(turbo.target,count):count;
 }
 function turboReachedGoal(){
-  return turbo.mode==='highRush'?state.highRush:turboProgress()>=turbo.target;
+  if(turbo.mode==='highRush')return state.highRush;
+  if(turbo.mode==='superMode')return state.highRushSuperBoosted;
+  return turboProgress()>=turbo.target;
 }
 function updateTurboControls(){
   els.turbo10.disabled=turbo.active;
   els.turbo100.disabled=turbo.active;
   els.turboUntilHighRush.disabled=turbo.active||state.highRush;
+  els.turboUntilSuperMode.disabled=turbo.active||state.highRushSuperBoosted;
   els.turboStop.classList.toggle('is-hidden',!turbo.active);
   els.settingsBtn.disabled=turbo.active;
   if(turbo.active){
     const progress=turbo.mode==='highRush'
       ?'HIGH RUSH待機 / 終了AT '+turboProgress()+'回 / 通常 '+(state.normalGames-turbo.normalGamesStart)+'G'
-      :turboProgress()+' / '+turbo.target+' サイクル';
+      :turbo.mode==='superMode'
+        ?'94〜99% MODE待機 / 終了AT '+turboProgress()+'回 / 通常 '+(state.normalGames-turbo.normalGamesStart)+'G'
+        :turboProgress()+' / '+turbo.target+' サイクル';
     els.turboStatus.textContent='超高速消化中：'+progress+'　｜　現在 '+signed(state.medals)+'枚（メダル不足でも継続）';
   }
 }
@@ -805,12 +810,14 @@ function stopTurbo(message){
   const pct=bets?(pays/bets*100).toFixed(2)+'%':'—';
   const status=message||(turbo.mode==='highRush'
     ?'HIGH RUSH待機を停止（終了AT '+done+'回）'
-    :'超高速AUTO '+done+' / '+turbo.target+' サイクル完了');
+    :turbo.mode==='superMode'
+      ?'94〜99% MODE待機を停止（終了AT '+done+'回）'
+      :'超高速AUTO '+done+' / '+turbo.target+' サイクル完了');
   const details='　区間差枚 '+signed(delta)+'枚 / 区間機械割 '+pct+
     ' / 現在 '+signed(state.medals)+'枚';
   els.turboStatus.textContent=status+details;
   syncTurboReels();
-  setMessage(status+details,(turbo.mode==='highRush'&&state.highRush)||delta>=0?'win':'lose');
+  setMessage(status+details,((turbo.mode==='highRush'&&state.highRush)||(turbo.mode==='superMode'&&state.highRushSuperBoosted)||delta>=0)?'win':'lose');
   updateTurboControls();
   render();
 }
@@ -837,12 +844,13 @@ function turboTick(){
   if(!turbo.active)return;
   if(failure){stopTurbo('超高速AUTOを停止：'+failure);return;}
   if(turboReachedGoal()){
-    if(turbo.mode==='highRush'){
-      // The skipped simulation keeps all bets/results. If its balance ran below
-      // 1 medal, let the arrived HIGH RUSH finish without rewriting its stats.
+    if(turbo.mode==='highRush'||turbo.mode==='superMode'){
+      // Keep every skipped bet/result and preserve the user's optimal AUTO setting.
+      // If balance fell below 1 medal, allow the reached mode to be played.
       state.fastForwardHighRushCredit=state.medals<AT_BET;
-      state.settings.auto=false;els.autoToggle.checked=false;
-      stopTurbo('HIGH RUSH突入！ ここから手動でプレイできます。');
+      stopTurbo(turbo.mode==='superMode'
+        ?currentHighRushRateLabel()+' MODE突入！ ここからプレイできます。'
+        :'HIGH RUSH突入！ ここからプレイできます。');
     }else{
       stopTurbo('超高速AUTO '+turbo.target+' サイクル完了');
     }
@@ -855,15 +863,20 @@ function turboTick(){
 }
 function startTurbo(cycles){
   const untilHighRush=cycles==='highRush';
-  if(turbo.active||(!untilHighRush&&![10,100].includes(cycles)))return;
+  const untilSuperMode=cycles==='superMode';
+  if(turbo.active||(!untilHighRush&&!untilSuperMode&&![10,100].includes(cycles)))return;
   if(untilHighRush&&state.highRush){
     els.turboStatus.textContent='すでにHIGH RUSH中です。現在のBONUSをプレイできます。';
     return;
   }
+  if(untilSuperMode&&state.highRushSuperBoosted){
+    els.turboStatus.textContent='すでに'+currentHighRushRateLabel()+' MODE中です。現在のBONUSをプレイできます。';
+    return;
+  }
   if(autoRunning)stopAuto();
   turbo.active=true;
-  turbo.mode=untilHighRush?'highRush':'cycles';
-  turbo.target=untilHighRush?0:cycles;
+  turbo.mode=untilHighRush?'highRush':untilSuperMode?'superMode':'cycles';
+  turbo.target=(untilHighRush||untilSuperMode)?0:cycles;
   turbo.completedAtStart=state.completedAtCount;
   turbo.normalGamesStart=state.normalGames;
   turbo.medalsStart=state.medals;
@@ -886,9 +899,12 @@ function reset(){
 els.turbo10.addEventListener('click',()=>startTurbo(10));
 els.turbo100.addEventListener('click',()=>startTurbo(100));
 els.turboUntilHighRush.addEventListener('click',()=>startTurbo('highRush'));
+els.turboUntilSuperMode.addEventListener('click',()=>startTurbo('superMode'));
 els.turboStop.addEventListener('click',()=>stopTurbo(turbo.mode==='highRush'
   ?'HIGH RUSHまでの高速消化を途中停止（終了AT '+turboProgress()+'回）'
-  :'超高速AUTOを途中停止：'+turboProgress()+' / '+turbo.target+' サイクル'));
+  :turbo.mode==='superMode'
+    ?'94〜99% MODEまでの高速消化を途中停止（終了AT '+turboProgress()+'回）'
+    :'超高速AUTOを途中停止：'+turboProgress()+' / '+turbo.target+' サイクル'));
 
 els.startBtn.addEventListener('click',()=>{
   if(turbo.active)return;
