@@ -128,13 +128,13 @@
     </section>
 
     <section class="turbo-panel" aria-label="超高速オート">
-      <div class="turbo-heading"><span>SUPER FAST AUTO</span><span class="turbo-label">10 / 100 / HR / 94〜99%</span></div>
-      <p class="turbo-help">現在のメダル・戦績を引き継いで最適FULL AUTOを超高速実行。1サイクル＝ATが1回終了するまで。「HIGH RUSHまで」はHR昇格時、「94〜99% MODEまで」はSUPER RATE UP成功時に停止します。メダルがマイナスでも高速消化は継続し、到達したモードをプレイできます。最適AUTOの設定は維持されます。</p>
+      <div class="turbo-heading"><span>SUPER FAST AUTO</span><span class="turbo-label">10 / 100 / HR / 94% MODE</span></div>
+      <p class="turbo-help">現在のメダル・戦績を引き継いで最適FULL AUTOを超高速実行。1サイクル＝ATが1回終了するまで。「HIGH RUSHまで」はHR昇格時、「94%報酬MODEまで」はSUPER RATE UP成功時に停止します。メダルがマイナスでも高速消化は継続し、到達したモードをプレイできます。最適AUTOの設定は維持されます。</p>
       <div class="turbo-buttons">
         <button id="turbo10" type="button">10サイクル</button>
         <button id="turbo100" type="button">100サイクル</button>
         <button id="turboUntilHighRush" class="turbo-to-high" type="button">HIGH RUSH突入までスキップ</button>
-        <button id="turboUntilSuperMode" class="turbo-to-super" type="button">94〜99% MODE突入までスキップ</button>
+        <button id="turboUntilSuperMode" class="turbo-to-super" type="button">94%報酬MODE突入までスキップ</button>
       </div>
       <button id="turboStop" class="turbo-stop is-hidden" type="button">途中停止</button>
       <div id="turboStatus" class="turbo-status" role="status">通常のSESSIONにすべて反映します。別枠のシミュレーションではありません。</div>
@@ -180,13 +180,14 @@
       <p><strong>⑤ HIGH RUSH</strong><br>各BONUSは10G固定。HR BONUS 1〜5はLOW / MID / HIGHが9 / 15 / 27枚、6〜10は18 / 30 / 54枚、11以降は30 / 50 / 90枚。</p>
       <p><strong>⑥ HRの継続・REVIVAL</strong><br>各10Gの終了後、まず確定継続を抽選します。確定継続でなければBATTLE JUDGEへ。JUDGE成功で継続、失敗するとHIGH RUSH ENDで一度停止します。ENDを押した瞬間に15%でREVIVALを抽選し、当選なら次BONUSへ復活、非当選なら終了します。REVIVAL用の追加予想はありません。通常HRの合算継続期待度は約74.4%です。</p>
       <p><strong>⑦ CONTINUE RATE CHANCE</strong><br>HRの継続が確定したあと、85% MODE未到達なら毎回12%で発生します。確定継続でもBATTLE JUDGE成功でもREVIVALでも同じく抽選されます。CHANCEでは2リールを見て予想し、成功で85% MODEへ。失敗しても継続はすでに確定しているのでHRは終わりません。</p>
-      <p><strong>⑧ 85% MODE</strong><br>成功後はHR終了まで継続期待度85%。REVIVAL込みで85%を維持するため確定継続率は約41.5%。確定継続を引かなかった場合は通常のBATTLE JUDGEを行います。継続が確定するたび、94〜99% MODE未到達なら25%でSUPER RATE UP CHANCEを抽選します。</p>
-      <p><strong>⑨ SUPER RATE UP CHANCE</strong><br>85% MODE中の継続確定後に25%で発生。2リールを見てLOW / MID / HIGHを予想し、成功で94〜99% MODEへ。成功時に94%（40%）・95%（35%）・96%（15%）・97%（6%）・98%（3%）・99%（1%）のいずれかを抽選し、HR終了まで固定します。失敗してもHRは終了せず、85% MODEのまま次BONUSへ進みます。</p>
-      <p><strong>⑩ 94〜99% MODE</strong><br>抽選された継続期待度はHR終了まで固定。各継続期待度は15% REVIVAL込みとなるよう確定継続率を自動調整します。確定継続を引かなかった場合だけ通常のBATTLE JUDGEを行います。10G区切りと配当倍率はそのままです。</p>
+      <p><strong>⑧ 85% MODE</strong><br>成功後はHR終了まで継続期待度85%。REVIVAL込みで85%を維持するため確定継続率は約41.5%。確定継続を引かなかった場合は通常のBATTLE JUDGEを行います。継続が確定するたび、94%報酬MODE未到達なら25%でSUPER RATE UP CHANCEを抽選します。</p>
+      <p><strong>⑨ SUPER RATE UP CHANCE</strong><br>85% MODE中の継続確定後に25%で発生。2リールを見てLOW / MID / HIGHを予想し、成功で94%報酬MODEへ。BOOST（40%）・HYPER（57%）・LEGEND（3%）のどれかを抽選してHR終了まで固定します。失敗してもHRは終了せず、85% MODEのまま次BONUSへ進みます。</p>
+      <p><strong>⑩ 94%報酬MODE</strong><br>BOOST / HYPER / LEGENDのどのモードでも継続期待度はREVIVAL込み94%で固定。各10G BONUS開始時にモード別の倍率抽選を行い、そのBONUS中のLOW / MID / HIGH払出に倍率を適用します。倍率は次BONUSで再抽選、モード自体はHR終了まで固定。継続抽選は確定継続抽選・BATTLE JUDGE・15% REVIVALの従来方式です。
+<table><tr><th>配当倍率</th><th>BOOST (40%)</th><th>HYPER (57%)</th><th>LEGEND (3%)</th></tr><tr><td>×1</td><td>95%</td><td>77%</td><td>10%</td></tr><tr><td>×2</td><td>4%</td><td>21%</td><td>10%</td></tr><tr><td>×3</td><td>0%</td><td>1%</td><td>15%</td></tr><tr><td>×5</td><td>1%</td><td>1%</td><td>25%</td></tr><tr><td>×10</td><td>0%</td><td>0%</td><td>40%</td></tr><tr><td>平均倍率</td><td>×1.08</td><td>×1.27</td><td>×6.00</td></tr></table></p>
       <p><strong>⑪ 最適AUTO</strong><br>設定からONにすると最適打ちで自動進行します。AUTOタイプは2種類。SPECIAL MANUALでは通常時とPREDICT AT / HIGH RUSH BONUSを自動進行し、RUNE DRIVE、BATTLE JUDGE、CONTINUE RATE CHANCE、SUPER RATE UP CHANCE、HIGH RUSH ENDからのREVIVAL抽選だけ手動。FULL AUTOではこれらの特殊区間も含め、すべて最適選択で自動進行します。</p>
-      <p><strong>⑫ SUPER FAST AUTO</strong><br>10・100サイクル消化に加え、「HIGH RUSH突入まで」「94〜99% MODE突入まで」の2種類の到達スキップを選べます。現在のゲーム状態と戦績を引き継ぎ、実際の抽選確率で最適FULL AUTOを高速実行して目的のモードに昇格した瞬間に停止します。メダル不足でも高速消化可能で、途中停止もできます。最適AUTOの設定は変更せず、収支・戦績はすべてSESSIONに反映されます。</p>
+      <p><strong>⑫ SUPER FAST AUTO</strong><br>10・100サイクル消化に加え、「HIGH RUSH突入まで」「94%報酬MODE突入まで」の2種類の到達スキップを選べます。現在のゲーム状態と戦績を引き継ぎ、実際の抽選確率で最適FULL AUTOを高速実行して目的のモードに昇格した瞬間に停止します。メダル不足でも高速消化可能で、途中停止もできます。最適AUTOの設定は変更せず、収支・戦績はすべてSESSIONに反映されます。</p>
     </div></details>
-    <footer>Virtual medals only · HIGH RUSH v2.32</footer>
+    <footer>Virtual medals only · HIGH RUSH v2.33</footer>
   </main>
 
   <dialog id="settingsDialog"><form method="dialog" class="settings-card">
@@ -199,6 +200,6 @@
     <label class="setting-row"><span><b>AUTO速度</b><small>NORMALは展開を追いやすく、FASTは高速消化</small></span><select id="autoSpeed"><option value="normal">NORMAL</option><option value="fast">FAST</option></select></label>
     <button id="resetBtn" type="button" class="danger-btn">セッションをリセット</button>
   </form></dialog>
-  <script src="game.js?v=2.32"></script>
+  <script src="game.js?v=2.33"></script>
 </body>
 </html>
