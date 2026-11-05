@@ -63,6 +63,7 @@
     .turbo-buttons button{border:1px solid #3c7186;border-radius:10px;background:#153346;color:#eafaff;font:inherit;font-size:12px;font-weight:800;padding:12px 5px;cursor:pointer}
     .turbo-buttons button:disabled{opacity:.45;cursor:default}
     .turbo-buttons .turbo-to-high{grid-column:1 / -1;border-color:#947419;background:linear-gradient(135deg,#594309,#342906);color:#fff2aa;font-size:14px;padding:14px 8px}
+    .turbo-buttons .turbo-to-super{grid-column:1 / -1;border-color:#9b6ac9;background:linear-gradient(135deg,#49275f,#2c1b49);color:#f5d8ff;font-size:14px;padding:14px 8px}
     .turbo-buttons button:focus-visible,.turbo-stop:focus-visible{outline:2px solid #8ff7ff;outline-offset:2px}
     .turbo-stop{display:block;width:100%;margin-top:8px;padding:10px;border:1px solid #92525a;border-radius:9px;background:#311c27;color:#ffc3cc;font-size:12px;font-weight:800;cursor:pointer}
     .turbo-stop.is-hidden{display:none!important}
@@ -127,12 +128,13 @@
     </section>
 
     <section class="turbo-panel" aria-label="超高速オート">
-      <div class="turbo-heading"><span>SUPER FAST AUTO</span><span class="turbo-label">10 / 100 / HIGH RUSH</span></div>
-      <p class="turbo-help">現在のメダル・戦績を引き継いで最適FULL AUTOを超高速実行。1サイクル＝ATが1回終了するまで。「HIGH RUSHまで」は実際の抽選を繰り返し、昇格した瞬間に停止します。メダルがマイナスでも高速消化は継続し、到達したHIGH RUSHをプレイできます。</p>
+      <div class="turbo-heading"><span>SUPER FAST AUTO</span><span class="turbo-label">10 / 100 / HR / 94〜99%</span></div>
+      <p class="turbo-help">現在のメダル・戦績を引き継いで最適FULL AUTOを超高速実行。1サイクル＝ATが1回終了するまで。「HIGH RUSHまで」はHR昇格時、「94〜99% MODEまで」はSUPER RATE UP成功時に停止します。メダルがマイナスでも高速消化は継続し、到達したモードをプレイできます。最適AUTOの設定は維持されます。</p>
       <div class="turbo-buttons">
         <button id="turbo10" type="button">10サイクル</button>
         <button id="turbo100" type="button">100サイクル</button>
         <button id="turboUntilHighRush" class="turbo-to-high" type="button">HIGH RUSH突入までスキップ</button>
+        <button id="turboUntilSuperMode" class="turbo-to-super" type="button">94〜99% MODE突入までスキップ</button>
       </div>
       <button id="turboStop" class="turbo-stop is-hidden" type="button">途中停止</button>
       <div id="turboStatus" class="turbo-status" role="status">通常のSESSIONにすべて反映します。別枠のシミュレーションではありません。</div>
@@ -182,9 +184,9 @@
       <p><strong>⑨ SUPER RATE UP CHANCE</strong><br>85% MODE中の継続確定後に25%で発生。2リールを見てLOW / MID / HIGHを予想し、成功で94〜99% MODEへ。成功時に94%（40%）・95%（35%）・96%（15%）・97%（6%）・98%（3%）・99%（1%）のいずれかを抽選し、HR終了まで固定します。失敗してもHRは終了せず、85% MODEのまま次BONUSへ進みます。</p>
       <p><strong>⑩ 94〜99% MODE</strong><br>抽選された継続期待度はHR終了まで固定。各継続期待度は15% REVIVAL込みとなるよう確定継続率を自動調整します。確定継続を引かなかった場合だけ通常のBATTLE JUDGEを行います。10G区切りと配当倍率はそのままです。</p>
       <p><strong>⑪ 最適AUTO</strong><br>設定からONにすると最適打ちで自動進行します。AUTOタイプは2種類。SPECIAL MANUALでは通常時とPREDICT AT / HIGH RUSH BONUSを自動進行し、RUNE DRIVE、BATTLE JUDGE、CONTINUE RATE CHANCE、SUPER RATE UP CHANCE、HIGH RUSH ENDからのREVIVAL抽選だけ手動。FULL AUTOではこれらの特殊区間も含め、すべて最適選択で自動進行します。</p>
-      <p><strong>⑫ SUPER FAST AUTO</strong><br>10・100サイクル消化に加え、「HIGH RUSH突入までスキップ」を選べます。現在のゲーム状態と戦績を引き継ぎ、実際の抽選確率で最適FULL AUTOを高速実行して昇格直後に停止します。メダル不足でも高速消化可能で、途中停止もできます。収支・戦績はすべてSESSIONに反映されます。</p>
+      <p><strong>⑫ SUPER FAST AUTO</strong><br>10・100サイクル消化に加え、「HIGH RUSH突入まで」「94〜99% MODE突入まで」の2種類の到達スキップを選べます。現在のゲーム状態と戦績を引き継ぎ、実際の抽選確率で最適FULL AUTOを高速実行して目的のモードに昇格した瞬間に停止します。メダル不足でも高速消化可能で、途中停止もできます。最適AUTOの設定は変更せず、収支・戦績はすべてSESSIONに反映されます。</p>
     </div></details>
-    <footer>Virtual medals only · HIGH RUSH v2.30</footer>
+    <footer>Virtual medals only · HIGH RUSH v2.32</footer>
   </main>
 
   <dialog id="settingsDialog"><form method="dialog" class="settings-card">
@@ -197,6 +199,6 @@
     <label class="setting-row"><span><b>AUTO速度</b><small>NORMALは展開を追いやすく、FASTは高速消化</small></span><select id="autoSpeed"><option value="normal">NORMAL</option><option value="fast">FAST</option></select></label>
     <button id="resetBtn" type="button" class="danger-btn">セッションをリセット</button>
   </form></dialog>
-  <script src="game.js?v=2.31"></script>
+  <script src="game.js?v=2.32"></script>
 </body>
 </html>
