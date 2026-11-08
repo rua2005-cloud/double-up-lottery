@@ -102,7 +102,7 @@ function stop(reason='停止しました'){
   save();render(true);message(reason+' / 今回 '+num(game.games-before)+'G 消化');
 }
 function stopEvent(events,mode){
-  return (mode==='at' && events.some(x=>x.kind==='at')) ||
+  return (mode==='at' && events.some(x=>x.kind==='at' || (x.kind==='upper' && x.message.includes('引き戻し成功')))) ||
     (mode==='bonus' && events.some(x=>x.kind==='bonus' && !x.message.includes('プロローグ'))) ||
     (mode==='upper' && events.some(x=>x.kind==='upper' && x.message.includes('上位ATに突入')));
 }
