@@ -88,7 +88,7 @@ function render(force=false) {
     const label=document.createElement('strong');label.textContent='GAME '+num(item.game);
     li.append(label,document.createTextNode(item.message));return li;
   }));
-  put('auto-indicator',auto ? 'AUTO / '+num(auto.rate)+' G/s' : 'MANUAL MODE');
+  put('auto-indicator',auto ? 'AUTO / '+num(auto.fast && game.phase === 'normal' ? 8000 : auto.playRate)+' G/s'+(auto.fast && game.phase === 'normal' ? ' · 通常時スキップ' : '') : 'MANUAL MODE');
   for(const id of ['spin','auto','fast'])$(id).disabled=!!auto;
   $('stop').disabled=!auto;
   $('speed').disabled=!!auto;$('target').disabled=!!auto;
@@ -108,21 +108,31 @@ function stopEvent(events,mode){
 }
 function startAuto(fast=false){
   if(auto)return;
-  const speed=fast ? 8000 : Number($('speed').value);
+  const playRate=Number($('speed').value);
   const mode=$('target').value;
   const maximum=/^\d+$/.test(mode) ? Number(mode) : Infinity;
-  auto={start:game.games,rate:speed,mode,maximum,budget:0,last:performance.now(),frame:0};
+  auto={start:game.games,fast,playRate,mode,maximum,budget:0,last:performance.now(),frame:0};
   render(true);
-  message('オート実行中 / '+num(speed)+'G/秒 / '+$('target').selectedOptions[0].textContent);
+  message('オート実行中 / '+(fast ? '通常時高速 → CZ・ATは' : '全状態で')+num(playRate)+'G/秒 / '+$('target').selectedOptions[0].textContent);
   function frame(now){
     if(!auto)return;
     const run=auto, elapsed=Math.max(0,Math.min(250,now-run.last));
-    run.last=now;run.budget+=elapsed*run.rate/1000;
-    const frames=Math.min(1200,Math.floor(run.budget),run.maximum-(game.games-run.start));
+    run.last=now;
+    // Only normal play is accelerated. CZ/AT/bonus keep the selected pace.
+    const rate=run.fast && game.phase==='normal' ? 8000 : run.playRate;
+    run.budget+=elapsed*rate/1000;
+    const frames=Math.min(1200,Math.floor(run.budget),run.maximum-(game.games-run.start),2000000-(game.games-run.start));
     run.budget-=frames;
     for(let i=0;i<frames;i++){
+      const wasNormal=game.phase==='normal';
       const events=game.step();
       if(stopEvent(events,run.mode)){stop('停止条件に到達');return;}
+      // The accelerated batch must stop at the very first CZ spin.
+      // On return to normal the next frame resumes fast mode.
+      if(wasNormal !== (game.phase==='normal')){
+        run.budget=0;
+        break;
+      }
     }
     if(game.games-run.start>=run.maximum){stop('指定ゲーム数を消化');return;}
     if(game.games-run.start>=2000000){stop('安全上限200万G');return;}
