@@ -40,9 +40,9 @@
         <div class="reel-frame"><div class="reel-head"><span>R E E L S</span><span id="role-display">—</span></div><div class="reels"><div class="reel" id="reel-1">◆</div><div class="reel" id="reel-2">◇</div><div class="reel" id="reel-3">◆</div></div><div class="reel-foot"><span>3-BET / 1 GAME</span><span id="last-pay">PAY 0</span></div></div>
         <div class="action-panel">
           <div class="control-head"><div><strong>GAME CONTROL</strong><span>SPACE キーで1G消化</span></div><button id="reset" class="text-btn">データリセット</button></div>
-          <div class="buttons"><button id="spin" class="spin-btn">1G 回す <span>SPIN</span></button><button id="auto" class="auto-btn">オート開始 <span>AUTO</span></button><button id="fast" class="fast-btn">高速オート <span>FAST ×</span></button><button id="stop" class="stop-btn" disabled>停止 <span>STOP</span></button></div>
-          <div class="auto-options"><label>消化速度<select id="speed"><option value="4">通常 4G/秒</option><option value="50">高速 50G/秒</option><option value="500">超高速 500G/秒</option><option value="8000" selected>MAX 8,000G/秒</option></select></label><label>停止条件<select id="target"><option value="1000">1,000G消化</option><option value="10000" selected>10,000G消化</option><option value="50000">50,000G消化</option><option value="at">AT当選まで</option><option value="bonus">ボーナス当選まで</option><option value="upper">上位AT突入まで</option><option value="unlimited">手動停止まで</option></select></label></div>
-          <div id="auto-progress" class="auto-progress" aria-live="polite">オートは任意のタイミングで停止できます。</div>
+          <div class="buttons"><button id="spin" class="spin-btn">1G 回す <span>SPIN</span></button><button id="auto" class="auto-btn">オート開始 <span>AUTO</span></button><button id="fast" class="fast-btn">通常時スキップ <span>FAST</span></button><button id="stop" class="stop-btn" disabled>停止 <span>STOP</span></button></div>
+          <div class="auto-options"><label>CZ・ATのオート速度<select id="speed"><option value="1">ゆっくり 1G/秒</option><option value="2">ゆっくり 2G/秒</option><option value="4" selected>通常 4G/秒</option><option value="6">やや速い 6G/秒</option></select></label><label>停止条件<select id="target"><option value="1000">1,000G消化</option><option value="10000" selected>10,000G消化</option><option value="50000">50,000G消化</option><option value="at">AT当選まで</option><option value="bonus">ボーナス当選まで</option><option value="upper">上位AT突入まで</option><option value="unlimited">手動停止まで</option></select></label></div>
+          <div id="auto-progress" class="auto-progress" aria-live="polite">「通常時スキップ」は通常時だけ一瞬で消化し、CZ・AT・ボーナスは選択速度で表示します。</div>
         </div>
       </section>
       <aside class="sidebar">
@@ -54,6 +54,6 @@
     <details class="help panel"><summary>ゲームシステム・数値の説明 <span>＋</span></summary><div class="help-content"><p>通常時はレア役、ゾーン、スタンプ12個などでCZを抽選。CZ成功でATに入ります。AT導入の100枚ボーナス後、初回20Gでボーナスを引くと前半50Gに進みます。</p><p><strong>前半50G</strong>ではボーナスを引いても残りGを引き継ぎ、<strong>後半ST10G</strong>はボーナスを引くと10Gに戻ります。ポイント1000ptで上位CZへ。上位CZ成功で、両方の才能がLv2の上位ATに入ります。</p><p>上位ATは1000ptで再セットし、終了後100G以内にAT当選すれば上位へ復帰します。変換HOLD中はST残りGが減りません。全ゲーム3BET、ボーナスの「100枚」などは純増ではなく総払出です。</p><p><strong>機械割</strong>＝総払出÷総投入×100。初当たり確率の分母は通常時のゲーム数です。数万G程度では大きくばらつきます。目標97.9%は実機の公表値を参考にしたもので、このゲームの非公開内部抽選は独自設定です。</p><p class="fine">現金・景品交換のないオリジナルの仮想ゲーム。原作の画像・音楽・キャラクター等は使用していません。ブラウザの保存領域に自動保存します。</p></div></details>
     <footer>ST:REDRIVE · INDEPENDENT SIMULATOR <span>NO REAL-MONEY GAMBLING</span></footer>
   </div>
-  <script type="module" src="./app.js"></script>
+  <script type="module" src="./app.js?v=2"></script>
 </body>
 </html>
