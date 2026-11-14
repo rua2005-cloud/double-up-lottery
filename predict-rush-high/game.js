@@ -36,8 +36,10 @@ const SUPER_RATE_UP_CHANCE_RATE=.25;
 const RUNE_DRIVE_RATE=.10;
 const RUNE_GAMES=3;
 const RUNE_HR_RATE_STEP=.05;
-const REVIVAL_TARGET_RATE=.15;
-const BASE_TARGET_RATE=REVIVAL_TARGET_RATE+(1-REVIVAL_TARGET_RATE)*NATURAL_JUDGE_RATE;
+// The base mode trades its former 15% post-failure revival for a pre-judge guarantee.
+const BOOST_REVIVAL_RATE=.15;
+const SUPER_REVIVAL_RATE=.40;
+const BASE_TARGET_RATE=BOOST_REVIVAL_RATE+(1-BOOST_REVIVAL_RATE)*NATURAL_JUDGE_RATE;
 const BOOST_TARGET_RATE=.85;
 const SUPER_TARGET_RATE=.94;
 const SUPER_MODES=[
@@ -45,10 +47,13 @@ const SUPER_MODES=[
   {name:'HYPER',weight:57,multipliers:[{value:1,weight:77},{value:2,weight:21},{value:3,weight:1},{value:5,weight:1}]},
   {name:'LEGEND',weight:3,multipliers:[{value:1,weight:10},{value:2,weight:10},{value:3,weight:15},{value:5,weight:25},{value:10,weight:40}]}
 ];
-const NATURAL_WITH_REVIVAL_RATE=NATURAL_JUDGE_RATE+(1-NATURAL_JUDGE_RATE)*REVIVAL_TARGET_RATE;
-const SUPER_GUARANTEE_RATE=(SUPER_TARGET_RATE-NATURAL_WITH_REVIVAL_RATE)/(1-NATURAL_WITH_REVIVAL_RATE);
-const GUARANTEE_RATE=0;
-const BOOST_GUARANTEE_RATE=(BOOST_TARGET_RATE-NATURAL_WITH_REVIVAL_RATE)/(1-NATURAL_WITH_REVIVAL_RATE);
+function guaranteeRateForTarget(target,revivalRate){
+  const rateWithoutGuarantee=NATURAL_JUDGE_RATE+(1-NATURAL_JUDGE_RATE)*revivalRate;
+  return (target-rateWithoutGuarantee)/(1-rateWithoutGuarantee);
+}
+const GUARANTEE_RATE=guaranteeRateForTarget(BASE_TARGET_RATE,0);
+const BOOST_GUARANTEE_RATE=guaranteeRateForTarget(BOOST_TARGET_RATE,BOOST_REVIVAL_RATE);
+const SUPER_GUARANTEE_RATE=guaranteeRateForTarget(SUPER_TARGET_RATE,SUPER_REVIVAL_RATE);
 let state=freshState();
 
 function freshState(){
@@ -109,6 +114,16 @@ function currentGuaranteeRate(){
   if(state.highRushSuperBoosted)return SUPER_GUARANTEE_RATE;
   if(state.highRushBoosted)return BOOST_GUARANTEE_RATE;
   return GUARANTEE_RATE;
+}
+
+function currentRevivalRate(){
+  if(state.highRushSuperBoosted)return SUPER_REVIVAL_RATE;
+  if(state.highRushBoosted)return BOOST_REVIVAL_RATE;
+  return 0;
+}
+
+function currentRevivalRateLabel(){
+  return Math.round(currentRevivalRate()*100)+'%';
 }
 
 function currentHighRushRateLabel(){
@@ -450,16 +465,16 @@ function render(){
     els.modeChip.classList.add('hrend');
     els.machine.classList.add('hrend');
     els.roundTitle.textContent='HIGH RUSH END';
-    els.roundRule.textContent='END / 15% REVIVAL';
-    els.payTable.innerHTML='<span>END <b>15% REVIVAL</b></span>';
+    els.roundRule.textContent='END / '+currentRevivalRateLabel()+' REVIVAL';
+    els.payTable.innerHTML='<span>END <b>'+currentRevivalRateLabel()+' REVIVAL</b></span>';
     els.atStatus.classList.remove('is-hidden');
     els.atStatus.classList.add('hrend');
     els.atPhaseLabel.textContent='BATTLE JUDGE FAILED';
     els.atGameText.textContent='END';
-    els.atStatusNote.textContent='BATTLE JUDGE失敗。ENDを押した瞬間に15%でREVIVALを抽選します。';
+    els.atStatusNote.textContent='BATTLE JUDGE失敗。ENDを押した瞬間に'+currentRevivalRateLabel()+'でREVIVALを抽選します。';
     renderAtProgress();
     els.startMain.textContent='END';
-    els.startSub.textContent='タップで終了 / 15% REVIVAL抽選';
+    els.startSub.textContent='タップで終了 / '+currentRevivalRateLabel()+' REVIVAL抽選';
   }else if(state.phase==='boost'||state.phase==='superboost'){
     const isSuper=state.phase==='superboost';
     els.modeChip.textContent=isSuper?'SUPER RATE UP':'RATE UP CHANCE';
@@ -502,7 +517,7 @@ function render(){
     els.atStatus.classList.add('judge');
     els.atPhaseLabel.textContent=state.highRush?'HIGH RUSH BONUS '+state.highRushSet+' COMPLETE':'BONUS '+state.atSet+' COMPLETE';
     els.atGameText.textContent='10 / 10';
-    els.atStatusNote.textContent=state.highRush?(state.highRushSuperBoosted?state.superMode+' MODE（94%継続） / HIGH RUSH継続を賭けたBATTLE JUDGE。失敗後はENDで15% REVIVAL抽選。':state.highRushBoosted?'85% MODE / HIGH RUSH継続を賭けたBATTLE JUDGE。失敗後はENDで15% REVIVAL抽選。':'BATTLE JUDGE成功で継続確定。失敗後はENDで15% REVIVAL抽選。'):'成功で+20枚＋次BONUS。HIGH RUSH昇格率 '+currentNormalHighRushUpLabel()+(state.runeCount?'（RUNE '+state.runeCount+'）':'')+'。';
+    els.atStatusNote.textContent=state.highRush?(state.highRushSuperBoosted?state.superMode+' MODE（94%継続） / HIGH RUSH継続を賭けたBATTLE JUDGE。失敗後はENDで40% REVIVAL抽選。':state.highRushBoosted?'85% MODE / HIGH RUSH継続を賭けたBATTLE JUDGE。失敗後はENDで15% REVIVAL抽選。':'BATTLE JUDGE成功で継続確定。失敗するとHIGH RUSH終了（REVIVALなし）。'):'成功で+20枚＋次BONUS。HIGH RUSH昇格率 '+currentNormalHighRushUpLabel()+(state.runeCount?'（RUNE '+state.runeCount+'）':'')+'。';
     renderAtProgress();
     els.startMain.textContent='BATTLE JUDGE START';
     els.startSub.textContent='成功で BONUS '+(state.atSet+1)+' / BET 0';
@@ -574,7 +589,7 @@ function resolveGuaranteedJudge(){
 }
 
 function resolveHighRushEnd(){
-  if(Math.random()<REVIVAL_TARGET_RATE){
+  if(Math.random()<currentRevivalRate()){
     state.atSet++;state.highRushSet++;state.totalBonus++;state.maxSet=Math.max(state.maxSet,state.atSet);
     state.atGame=0;state.guaranteedJudge=false;state.values=[null,null,null];
     nextSuperBonusMultiplier();
@@ -725,9 +740,9 @@ function choose(pred){
       }
     }else{
       addHistory('JUDGE',LABEL[pred],LABEL[actual],sum,false,0);
-      if(state.highRush){
+      if(state.highRush&&currentRevivalRate()>0){
         state.phase='hrend';state.guaranteedJudge=false;
-        setMessage('BATTLE JUDGE失敗。HIGH RUSH END。ENDを押してREVIVAL抽選へ。','lose');
+        setMessage('BATTLE JUDGE失敗。HIGH RUSH END。ENDを押して'+currentRevivalRateLabel()+' REVIVAL抽選へ。','lose');
         vibration(110);tone('lose');
       }else{
         finishAt();
